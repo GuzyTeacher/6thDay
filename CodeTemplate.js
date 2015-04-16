@@ -528,7 +528,7 @@ $(document).ready(function(){
 	InsectTorso.push(makePicture('Animations/People/I1Torso.png'));
 	InsectTorso.push(makePicture('Animations/People/I2Torso.png'));
 	InsectTorso.push(makePicture('Animations/People/I3Torso.png'));
-	
+	InsectTorso.push(makePicture('Animations/People/I4Torso.png'));
 	
 	InsectTorso.push(makePicture('Animations/People/MaggotTorso.png'));
 	InsectTorso.push(makePicture('Animations/People/Bug1Torso.png'));
@@ -4652,12 +4652,18 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		if(Math.random() > 0.95) result.stats.armorPlate = true
 		result.stats.health = 180;
 		result.stats.torso = rand(2) + 1;
-		result.stats.legs= 1 + rand(2);
+		result.stats.legs= 2 + rand(2);
 		result.stats.abdomen = rand(2);
 		result.stats.hasArms = true;
 		result.stats.wing = rand(2)
 		result.stats.hair = rand(5) + 1
 		result.stats.type = t
+		
+		if(Math.random() < 0.2){
+			result.stats.torso = 4
+			result.stats.hair = 0
+			result.stats.armorPlate = false
+		}
 		return result
 	}
 	
@@ -4670,16 +4676,21 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.greets.push("Easy meat.");
 		if(Math.random() > 0.5) result.greeting = addSound('Sounds/greeting2.ogg');
 		else result.greeting = addSound('Sounds/greeting1.ogg')
-		if(Math.random() > 0.5){	
+		var randType = Math.random();
+		if(randType > 0.6){	
 			result.weapon.push(PunchInsect());
 			result.weapon.push(insectHeal());
 			result.weapon.push(blank());
-		}else{
+		}else if(randType > 0.2){
 			result.weapon.push(Punch0());
 			result.weapon.push(insectHeal());
 			if(Math.random() < 0.5) result.giveGun(SMG(), 2)
 			else result.giveGun(RIFLE(),2)
 			
+		}else{
+			result.weapon.push(Monster2Punch());
+			result.weapon.push(insectHeal());
+		
 		}
 		result.weapon.push(blank());
 		result.stats.health = 250;
@@ -4692,10 +4703,15 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 			result.stats.abdomen = 0;
 		}
 			if(Math.random() > 0.8) result.stats.armorPlate = true
+			
+			
+			
 		result.stats.hasArms = true;
 		result.stats.wing = rand(2)
 		result.stats.hair = rand(6)
 		result.stats.type = t
+		
+		
 		return result
 	}
 	
@@ -11131,8 +11147,15 @@ draw: trash can
 	sond options configurable to make trigger on plyre proximity
 		-> jump scares!
 		
-	corner siper webs
+	corner spider webs
+	cocooned humans
+	dead bodies of marines and scientists
 	200x200 giant web masses for wall panels
 	large blood smear, maybe even some more writing
 	1 massive 400px blood message
+	
+	
+	4legs insect, make stand stance show all 4 legs, not just two
+	
+	
 */
