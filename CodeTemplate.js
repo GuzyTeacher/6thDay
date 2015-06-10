@@ -8,8 +8,48 @@ $(document).ready(function(){
 	var w = $("#canvas").width();
 	var h = $("#canvas").height();
 	var mx, my;
+	
+	function addNotes(mess){notes += "  -" + mess + "~"}
+	var notes = "Last update: June 3rd 2015 ~~New stuff: ~~"
+	addNotes("More Levels!");
+	addNotes("Tweaks to UI for elevators");
+	addNotes("Bug Fix for prompts");
+	addNotes("Sledge Hammers and Hazmat Suits!");
+	addNotes("Swappable guns!");
+	addNotes("Manual Reloading");
+	addNotes("Updated gun sounds");
+	addNotes("Speech Bubbles");
+	addNotes("Collision Bug fix")
+	addNotes("Fix to a couple cutscenes");
+	
+	addNotes("UI Overhaul for the editor");
+	addNotes("Up to 33 Levels!");
+	addNotes("This update screen");
+	addNotes("Cool bio textures, tons of them");
+	addNotes("More level: 24, 25, 26, 27, 28");
+	
+	notes += "~~Stuff in Testing: ~~"
+	addNotes("Not much ATM");
+	
+	notes += "~~TO DO: ~~";
+	addNotes("Save games");
+	addNotes("Tweeks to collision detection");
+	addNotes("More sounds");
+	addNotes("More Levels");
+	addNotes("Redo rear leg of small bug animation");
+	addNotes("End game condition");
+	addNotes("Ingame option button for saves/options");
+	addNotes("System to get from main game to main menu and back again.");
+	addNotes("Mid wall pipe joiners");
+	addNotes("Thin horizontal pipes");
+	addNotes("Bio Floors");
+	
 	var numObjects = 0;
 	var numObjectsLoaded =0;
+	
+	var paintDelay = 0;
+	var tStart = 0;
+	var tEnd = 0;
 	
 	
 	var mapD = 10
@@ -17,6 +57,15 @@ $(document).ready(function(){
 	var mapH = Math.round((h * 2)/(100/mapD));
 	var mapX = w - mapW;
 	var mapY = h - mapH;
+	var mapAni = 0;
+	var mapAlpha = 0;
+	
+	var allyX = 10;
+	var allyY = 10;
+	
+	var switching = true;
+	var w1 = null
+	var w2 = null
 	
 	var terminalVel = 20
 	
@@ -26,7 +75,14 @@ $(document).ready(function(){
 	var allies = []
 	var ctxOx = 0;
 	var ctxOy = 0;
+	var castOx = 0;
+	var castOy = 0;
+	var rumble = 0;
+	
 	var dPx, dPy;
+	
+	var dataX = 300
+	var dataY = h - 100
 	
 	var aniDelay = 1;
 	var ani = 0;
@@ -73,11 +129,43 @@ $(document).ready(function(){
 	var promptTitle = []
 	var promptIndex = -1;
 	var promptAni = 0;
-
-	function makePrompt(t, m){
+	var promptScroll = 0
+	var promptLines = 0;
+	var promptHeight = 220
+	var promptCreature = []
+	
+	var aniFast = 0; // max value of 10
+	
+	function makePrompt(t, m, c){
 		promptIndex = 0;
 		promptMessage.push(m);
 		promptTitle.push(t);
+		
+		var mess = m;
+		var i =0;
+		var cSpeak = ""
+		var slicer = -1;
+		while (i < mess.length){
+			if(mess[i] == '$'){
+				slicer = i;
+				while(i < mess.length - 1){
+					i++;
+					cSpeak += mess[i];
+				}
+			}
+			i++;
+		}
+		
+		
+		if(cSpeak.length > 0) {
+			if(cSpeak == 99) promptCreature.push(creature.length-1);
+			else if(cSpeak == 98) promptCreature.push(creature.length-2);
+			else if(cSpeak == 97)promptCreature.push(creature.length-3) ;
+			else promptCreature.push(Number(cSpeak)) ;
+			mess = mess.slice(0,slicer);
+			promptMessage[promptMessage.length -1] = mess;
+		}else promptCreature.push(null);
+		
 		prompting = true;
 		
 
@@ -90,8 +178,7 @@ $(document).ready(function(){
 			var speaker = ""
 			for(var i=0; i < m.length;i++){
 				if(m[i] != '~'){
-					speaker += m[i]
-				
+					speaker += m[i];
 				}
 			}
 		
@@ -101,7 +188,61 @@ $(document).ready(function(){
 		}
 	}
 	
-	//Test prompt
+	var slogan = []
+	slogan.push("Why change the world when you can change its people? --")
+	slogan.push("Home is where the heart is.");
+	slogan.push("Build a better heart, build a better home");
+	slogan.push("Send them where they're happiest");
+	slogan.push("Lets send them home");
+	slogan.push("It just makes sense");
+	slogan.push("Its best for everybody");
+	slogan.push("Increase happiness, increase profits!");
+	slogan.push("A better world for everyone");
+	slogan.push("Join the colonies!");
+	slogan.push("Room for all -- the colonies need you today --");
+	slogan.push("Its time to do whats right for everyone --");
+	
+	
+	//Names
+	var ranks = []
+	ranks.push("Pvt.");
+	ranks.push("Lt.");
+	ranks.push("Cpt.");
+	ranks.push("Cpl.");
+	ranks.push("Lt Col.");
+	
+	var HNames = []
+	HNames.push("Monroe");
+	HNames.push("Bailey");
+	HNames.push("Stevens");
+	HNames.push("Kader");
+	HNames.push("Dowe");
+	HNames.push("Dering");
+	HNames.push("Reade");
+	HNames.push("Wynn");
+	HNames.push("Holt");
+	HNames.push("Cantos");
+	HNames.push("Silva");
+	HNames.push("Santini");
+	HNames.push("Gorman");
+	HNames.push("Moora");
+	HNames.push("Cotte");
+	HNames.push("Cooker");
+	
+	var PNames = [];
+	PNames.push("Eve");
+	PNames.push("Clara");
+	PNames.push("Sil");
+	PNames.push("Tess");
+	PNames.push("Crys");
+	PNames.push("Rena");
+	PNames.push("Mora");
+	PNames.push("Kasa");
+	PNames.push("Tora");
+	PNames.push("Nade");
+	PNames.push("Lide");
+	PNames.push("Luca");
+	PNames.push("Vela");
 	
 	var nPanel = 0
 	var mapGrid = []
@@ -121,15 +262,63 @@ $(document).ready(function(){
 		}
 	}
 	
+	var brushes = []
+	
+	function Brush(i){
+		this.row = []
+		for(var a =0; a < i; a++){
+			this.row[a] = []
+			for(var b=0; b < i; b++){
+				this.row[a][b] = dist(a,b, Math.floor(i/2), Math.floor(i/2));
+				//if(this.row[a][b] > i / 2) this.row[a][b] = 100
+			}
+		
+		}
+	}
+	
+	var shimmer = 5;
 	
 	var lightGrid = []
 	var lightRes = 15
-	for(var i =0; i < Math.floor(w + lightRes); i++){
-		lightGrid[i] = [];
-		for(var j =0; j < Math.floor(h + lightRes); j++){
-			lightGrid[i][j] = 0;
+	for(var i =0; i < Math.floor(w + lightRes*2); i++){
+		lightGrid[Math.floor(i/lightRes)] = [];
+		for(var j =0; j < Math.floor(h + lightRes*2); j++){
+			lightGrid[Math.floor(i/lightRes)][Math.floor(j/lightRes)] = 0;
 		}
 	}
+	
+	
+	var lightGridC = []
+	for(var i =0; i < Math.floor(w + lightRes*2); i++){
+		lightGridC[Math.floor(i/lightRes)] = [];
+		for(var j =0; j < Math.floor(h + lightRes*2); j++){
+			lightGridC[Math.floor(i/lightRes)][Math.floor(j/lightRes)] = new cTile(0,0,0);
+		}
+	}
+	
+	function cTile(red,green,blue){
+		this.r = red
+		this.g = green
+		this.b = blue
+		this.getCol = function(){
+			var result = "#"
+			this.r = Math.floor(this.r)
+			this.g = Math.floor(this.g)
+			this.b = Math.floor(this.b)
+			if(this.r < 16) result += "0"
+			result += this.r.toString(16).toUpperCase();
+			
+			if(this.g < 16) result += "0"
+			result += this.g.toString(16).toUpperCase();
+			
+			if(this.b < 16) result += "0"
+			result += this.b.toString(16).toUpperCase();
+			
+			return result;
+		}
+	}
+	
+
 	
 	//Map editor stuff
 	var snapSize = 10
@@ -140,6 +329,7 @@ $(document).ready(function(){
 	var header = "";
 	var levelEdit = ""
 	var lighting = false;
+	var gridLines = true;
 	
 	
 	function output(t){
@@ -151,6 +341,32 @@ $(document).ready(function(){
 	//////////////////////////////////
 	var buttonSound1 = addSound('Sounds/metalButton.ogg', false);
 	buttonSound1.setVolume(0.5);
+	
+	
+	var heart1 = addSound('Sounds/heart1.ogg',false);
+	var heart2 = addSound('Sounds/heart2.ogg',false);
+	
+	var heartDelay = 15;
+	var heartTimer = 0;
+	var hPump = true;
+	
+	function getHeartDelay(){
+		var result = 15;
+		
+		//Basic Movement
+		if(creature[cS].sx != 0) result -= 3;
+	
+		//Number of enemies
+		for(var i=0; i < creature.length; i++){
+			if(creature[i].stats.type != creature[cS].stats.type && creature[i].stats.health > 0) result -= 3;
+		}
+		
+		//Player health
+		if(creature[cS].stats.health < creature[cS].stats.MaxHealth * 0.25) result -= 2
+	
+		if(result < 4) result = 4;
+		return result;
+	}
 	
 	var backHum = addSound('Sounds/backHum.ogg',true);
 
@@ -191,9 +407,32 @@ $(document).ready(function(){
 	var flickerSound = []
 	for(var i=0; i < 15; i++)flickerSound.push(addSound('Sounds/flickerLight2.ogg', false));
 	
+	var insectDeathSound = []
+	insectDeathSound.push(addSound("Sounds/deaths/insectDeath1.ogg",false))
+	insectDeathSound.push(addSound("Sounds/deaths/insectDeath2.ogg",false))
+	insectDeathSound.push(addSound("Sounds/deaths/insectDeath3.ogg",false))
+	insectDeathSound.push(addSound("Sounds/deaths/insectDeath4.ogg",false))
+	
+	function playInsectDeathSound (a,b){
+		var v = dist(creature[cS].x, creature[cS].y, a,b);
+		
+		if(v < 300){
+			v = 1-(v / 300)
+		for(var i=0; i < insectDeathSound.length; i++){
+			if(insectDeathSound[i].soundVar.currentTime == 0) {
+				insectDeathSound[i].setVolume(v);
+				insectDeathSound[i].play()
+				break;
+			}
+		}
+		}
+	
+	}
+	
+	
 	function stopSound(){
-	for(var i=0; i < alarmSound.length; i++) alarmSound[i].stop();
-	for(var i=0; i < doorSound.length; i++) doorSound[i].stop();
+		for(var i=0; i < alarmSound.length; i++) alarmSound[i].stop();
+		for(var i=0; i < doorSound.length; i++) doorSound[i].stop();
 		for(var i=0; i < flickerSound.length; i++) flickerSound[i].stop();
 		for(var i=0; i < steamSound.length; i++) steamSound[i].stop();
 		for(var i=0; i < spinSound.length; i++) spinSound[i].stop();
@@ -226,7 +465,7 @@ $(document).ready(function(){
 	//msg.voice = voices[6];
 	// Note: some voices don't support altering params
 
-	msg.volume = 0.1; // 0 to 1
+	msg.volume = 0.3; // 0 to 1
 	msg.rate = 1; // 0.1 to 10
 	msg.pitch = 5; 
 
@@ -251,7 +490,7 @@ $(document).ready(function(){
 	}
 	console.log(voices[10])*/
 	
-	console.log(msg.volume)
+	
 };
 	//1 - Male direct voice
 	//2- decnt computer female voice
@@ -284,7 +523,19 @@ $(document).ready(function(){
 	pipes.push(makePicture("Animations/Objects/Features/Pipe3.png"));
 	pipes.push(makePicture("Animations/Objects/Features/Pipe4.png"));
 	pipes.push(makePicture("Animations/Objects/Features/Pipe5.png"));
-	
+	pipes.push(makePicture("Animations/Objects/Shadows/vPipe.png"))
+	pipes.push(makePicture("Animations/Objects/Shadows/1.png"))
+	pipes.push(makePicture("Animations/Objects/Shadows/2.png"))
+	pipes.push(makePicture("Animations/Objects/Shadows/3.png"))
+	pipes.push(makePicture("Animations/Objects/Shadows/4.png"))
+	pipes.push(makePicture("Animations/Objects/Shadows/5.png"))
+	pipes.push(makePicture("Animations/Objects/Shadows/6.png"))
+	pipes.push(makePicture("Animations/Objects/Shadows/1B.png"))
+	pipes.push(makePicture("Animations/Objects/Shadows/2B.png"))
+	pipes.push(makePicture("Animations/Objects/Shadows/3B.png"))
+	pipes.push(makePicture("Animations/Objects/Shadows/4B.png"))
+	pipes.push(makePicture("Animations/Objects/Shadows/5B.png"))
+	pipes.push(makePicture("Animations/Objects/Shadows/6B.png"))
 	
 	var BloodSmear = [];
 	BloodSmear.push(makePicture("Animations/Objects/Features/bs1.png"));
@@ -306,6 +557,18 @@ $(document).ready(function(){
 	panelHall.push(makePicture('Animations/Objects/Features/panelDense.png'));
 	panelHall.push(makePicture('Animations/Objects/Features/panelOpen.png'));
 	panelHall.push(makePicture('Animations/Objects/Features/panelHalf.png'));
+	panelHall.push(makePicture('Animations/Objects/Features/panelFar.png'));
+
+	panelHall.push(makePicture('Animations/Objects/Features/panelBio4.png'));
+	panelHall.push(makePicture('Animations/Objects/Features/panelBio5.png'));
+	panelHall.push(makePicture('Animations/Objects/Features/panelBio6.png'));
+	panelHall.push(makePicture('Animations/Objects/Features/panelBio2.png'));
+	panelHall.push(makePicture('Animations/Objects/Features/panelBio3.png'));
+	panelHall.push(makePicture('Animations/Objects/Features/panelBio7.png'));
+	panelHall.push(makePicture('Animations/Objects/Features/panelBio8.png'));
+	panelHall.push(makePicture('Animations/Objects/Features/panelSquare.png'));
+	panelHall.push(makePicture('Animations/Objects/Features/panelOcto1.png'));
+	
 	
 	var panelHallClean = [] 
 	//panelHallClean.push(makePicture('Animations/Objects/WallPanel1Clean.png'));
@@ -346,16 +609,43 @@ $(document).ready(function(){
 	wallFeatures.push(makePicture('Animations/Objects/Features/server.png'));//index 30
 	wallFeatures.push(makePicture('Animations/Objects/Features/sneezeGuard.png'));
 	wallFeatures.push(makePicture('Animations/Objects/Features/table.png'));
-	
-	
+	wallFeatures.push(makePicture('Animations/Objects/Features/rails.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/sideBarRight.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/sideBarLeft.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/belt.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/beltOpenning.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/beltLegs.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/toolBack.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/tool1.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/tool2.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/drain.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/pipeEnd.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/locker1.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/bunk1.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/table2.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/chair.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/chair2.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/chair3.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/chair4.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/bed3.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/bed4.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/narrowTank1.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/narrowTank2.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/narrowTank3.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/narrowTank4.png'));
 	
 	var floor = [];
 	floor.push(makePicture('Animations/Objects/floor1.png'));
 	floor.push(makePicture('Animations/Objects/crateMed1.png'));
 	floor.push(makePicture('Animations/Objects/crateSmall1.png'));
 	floor.push(makePicture('Animations/Objects/floor2.png'));
-	
-	
+	floor.push(makePicture('Animations/Objects/floor3.png'));
+	floor.push(makePicture('Animations/Objects/floor1Wide.png'));
+	floor.push(makePicture('Animations/Objects/ceiling1Wide.png'));
+	floor.push(makePicture('Animations/Objects/floor3Wide.png'));
+	floor.push(makePicture('Animations/Objects/floor4.png'));
+	floor.push(makePicture('Animations/Objects/floor4wide.png'));
+	floor.push(makePicture('Animations/Objects/Features/Bio/wallJoiner.png'));
 	
 	var doorFrame = makePicture('Animations/Objects/Features/hatch2.png')
 	var doorHatch = makePicture('Animations/Objects/Features/hatch.png')
@@ -390,6 +680,139 @@ $(document).ready(function(){
 	foreGPic.push(makePicture('Animations/Objects/Foreground/Med1.png'));
 	foreGPic.push(makePicture('Animations/Objects/Foreground/lamp.png'));
 	foreGPic.push(makePicture('Animations/Objects/Foreground/DeskCenter.png'));
+	foreGPic.push(makePicture('Animations/Objects/Foreground/miniTable.png'));
+	foreGPic.push(makePicture('Animations/Objects/Foreground/sideSeats.png'));
+	foreGPic.push(makePicture('Animations/Objects/Foreground/plantPot.png'));
+	foreGPic.push(makePicture('Animations/Objects/Foreground/plant1.png'));
+	foreGPic.push(makePicture('Animations/Objects/Foreground/plant2.png'));
+	foreGPic.push(makePicture('Animations/Objects/Foreground/plant3.png'));
+	foreGPic.push(makePicture('Animations/Objects/PosterArt/glass1.png'));
+	foreGPic.push(makePicture('Animations/Objects/PosterArt/glass2.png'));
+	foreGPic.push(makePicture('Animations/Objects/PosterArt/glass3.png'));
+	foreGPic.push(makePicture('Animations/Objects/PosterArt/glass4.png'));
+	foreGPic.push(makePicture('Animations/Objects/PosterArt/glass5.png'));
+	foreGPic.push(makePicture('Animations/Objects/PosterArt/glass6.png'));
+	foreGPic.push(makePicture('Animations/Objects/Features/bridge1.png'));
+	foreGPic.push(makePicture('Animations/Objects/Features/bridge2.png'));
+	foreGPic.push(makePicture('Animations/Objects/Features/bridge3.png'));
+	foreGPic.push(makePicture('Animations/Objects/Features/bridge4.png'));
+	foreGPic.push(makePicture('Animations/Objects/Features/bridge5.png'));
+	foreGPic.push(makePicture('Animations/Objects/Features/monitorHuge.png'));
+	var animators = [];
+	animators.push({pic: makePicture('Animations/Objects/blood1.png'), name:"Blood Drip"});
+	animators.push({pic: makePicture('Animations/Objects/waterDrip.png'), name:"Water W"});
+	animators.push({pic: makePicture('Animations/Objects/waterDripLong.png'), name:"Water W Mid"});
+	animators.push({pic: makePicture('Animations/Objects/waterDripDark.png'), name:"Water WD"});
+	animators.push({pic: makePicture('Animations/Objects/waterDripLongDark.png'), name:"Water WD Mid"});
+	animators.push({pic: makePicture('Animations/Objects/waterDripSplash.png'), name:"Water Wide Splash"});
+	
+	animators.push({pic: makePicture('Animations/Objects/waterPour.png'), name:"Water Stream Left"});
+	animators.push({pic: makePicture('Animations/Objects/waterPour2.png'), name:"Water Stream Right"});
+	animators.push({pic: makePicture('Animations/Objects/waterPourLong.png'), name:"Water Stream Mid"});
+	animators.push({pic: makePicture('Animations/Objects/waterSplash.png'), name:"Water Stream Splash"});
+
+	
+	var animatorsNames = [];
+	
+	
+	var bioPic = []
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/b1.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/b2.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/b3.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/b4.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/b5.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/b6.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/b7.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/b8.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/w1.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/w2.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/w3.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/w4.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/w5.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/w6.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/w7.png'));
+	bioPic.push(makePicture('Animations/People/body1.png'));
+	bioPic.push(makePicture('Animations/People/body2.png'));
+	bioPic.push(makePicture('Animations/People/body3.png'));
+	bioPic.push(makePicture('Animations/People/body4.png'));
+	bioPic.push(makePicture('Animations/People/body5.png'));
+	bioPic.push(makePicture('Animations/People/body6.png'));
+		bioPic.push(makePicture('Animations/Objects/Features/Bio/g1.png'));
+		bioPic.push(makePicture('Animations/Objects/Features/Bio/bioPipeHA.png'));
+		bioPic.push(makePicture('Animations/Objects/Features/Bio/bioPipeHB.png'));
+		bioPic.push(makePicture('Animations/Objects/Features/Bio/bioPipeHC.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/bioPipeVA.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/bioPipeVB.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/bioPipeVC.png'));
+	
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/elbow1A.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/elbow1B.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/elbow2A.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/elbow2B.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/elbow3A.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/elbow3B.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/elbow4A.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/elbow4B.png'));
+	
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/BioBigTile.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/BioBigTileV.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/BioBigTile2V.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/wallEyes1.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/wallEyes2.png'));
+	
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/wallGeneral1.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/wallGeneral2.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/wallGeneral3.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/panelBio.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/joiner1.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/joiner2.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/joiner3.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/joiner4.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/joiner5.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/BioEdgeL.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/BioEdgeR.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/pipeFitV.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/bioBulkHead1.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/bioBulkHead2.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/FloorsLeftEdge.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/FloorsRightEdge.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/BioEdgeLT.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/BioEdgeRT.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/BioEdgeLB.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/BioEdgeRB.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/growth1.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/growth2.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/growth3.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/egg.png'));
+	bioPic.push(makePicture('Animations/Objects/Features/Bio/eggHatch.png'));
+	bioPic.push(makePicture('Animations/People/body7.png'));
+	bioPic.push(makePicture('Animations/People/body8.png'));
+	bioPic.push(makePicture('Animations/People/body9.png'));
+	bioPic.push(makePicture('Animations/People/body10.png'));
+	bioPic.push(makePicture('Animations/People/body11.png'));
+	bioPic.push(makePicture('Animations/People/body12.png'));
+	bioPic.push(makePicture('Animations/People/body13.png'));
+	bioPic.push(makePicture('Animations/People/body14.png'));
+	bioPic.push(makePicture('Animations/People/body15.png'));
+	bioPic.push(makePicture('Animations/People/body16.png'));
+	var posterArt = []
+	posterArt.push(makePicture('Animations/Objects/PosterArt/art1.png'));
+	posterArt.push(makePicture('Animations/Objects/PosterArt/art2.png'));
+	posterArt.push(makePicture('Animations/Objects/PosterArt/art3.png'));
+	posterArt.push(makePicture('Animations/Objects/PosterArt/art4.png'));
+	posterArt.push(makePicture('Animations/Objects/PosterArt/art5.png'));
+	posterArt.push(makePicture('Animations/Objects/PosterArt/art6.png'));
+	posterArt.push(makePicture('Animations/Objects/PosterArt/art7.png'));
+	
+	var windowArt = []
+	windowArt.push(makePicture('Animations/Objects/PosterArt/window1.png'));
+	windowArt.push(makePicture('Animations/Objects/PosterArt/window2.png'));
+	windowArt.push(makePicture('Animations/Objects/PosterArt/window3.png'));
+	windowArt.push(makePicture('Animations/Objects/PosterArt/window4.png'));
+	windowArt.push(makePicture('Animations/Objects/PosterArt/window5.png'));
+	windowArt.push(makePicture('Animations/Objects/PosterArt/window6.png'));
+	windowArt.push(makePicture('Animations/Objects/PosterArt/window7.png'));
+	
 	
 	var sideWall = []
 	sideWall.push(makePicture('Animations/Objects/sideWall1.png'));
@@ -399,6 +822,13 @@ $(document).ready(function(){
 	sideWall.push(makePicture('Animations/Objects/sideWall5.png'));
 	sideWall.push(makePicture('Animations/Objects/sideWall6.png'));
 	sideWall.push(makePicture('Animations/Objects/sideWall7.png'));
+	sideWall.push(makePicture('Animations/Objects/sideWall1Tall.png'));
+	sideWall.push(makePicture('Animations/Objects/sideWall2Tall.png'));
+	sideWall.push(makePicture('Animations/Objects/sideWall3Tall.png'));
+	sideWall.push(makePicture('Animations/Objects/Features/Bio/bioSideWall.png'));
+	
+	
+	
 	var sideWallDebris = []
 	//sideWallDebris.push(makePicture('Animations/Objects/sideWallDebris.png'));
 	//sideWallDebris.push(makePicture('Animations/Objects/sideWallDebris2.png'));
@@ -473,6 +903,24 @@ $(document).ready(function(){
 	mHeadPics.push(makePicture("Animations/Objects/Weapons/MaggotHead.png"))
 	mHeadPics.push(makePicture("Animations/Objects/Weapons/MaggotHead2.png"))
 	mHeadPics.push(makePicture("Animations/Objects/Weapons/MaggotHead1.png"))
+	
+	var marinePunchPics = []
+	marinePunchPics.push(makePicture("Animations/Objects/Weapons/MarinePunch1.png"))
+	marinePunchPics.push(makePicture("Animations/Objects/Weapons/MarinePunch2.png"))
+	marinePunchPics.push(makePicture("Animations/Objects/Weapons/MarinePunch3.png"))
+	marinePunchPics.push(makePicture("Animations/Objects/Weapons/MarinePunch4.png"))
+	
+	var sciPunchPics = []
+	sciPunchPics.push(makePicture("Animations/Objects/Weapons/sciSaw1.png"))
+	sciPunchPics.push(makePicture("Animations/Objects/Weapons/sciSaw2.png"))
+	
+	var sciHammerPics = []
+	sciHammerPics.push(makePicture("Animations/Objects/Weapons/sledge1.png"))
+	sciHammerPics.push(makePicture("Animations/Objects/Weapons/sledge2.png"))
+	sciHammerPics.push(makePicture("Animations/Objects/Weapons/sledge3.png"))
+	sciHammerPics.push(makePicture("Animations/Objects/Weapons/sledge4.png"))
+	sciHammerPics.push(makePicture("Animations/Objects/Weapons/sledge5.png"))
+	
 	var mPunchPics = []
 	mPunchPics.push(makePicture("Animations/Objects/Weapons/Monster1Punch1.png"))
 	mPunchPics.push(makePicture("Animations/Objects/Weapons/Monster1Punch2.png"))
@@ -530,20 +978,58 @@ $(document).ready(function(){
 	InsectTorso.push(makePicture('Animations/People/I3Torso.png'));
 	InsectTorso.push(makePicture('Animations/People/I4Torso.png'));
 	
+		
 	InsectTorso.push(makePicture('Animations/People/MaggotTorso.png'));
 	InsectTorso.push(makePicture('Animations/People/Bug1Torso.png'));
+	InsectTorso.push(makePicture('Animations/People/SmallBugTorso.png'));
+	
 	
 	var InsectWing = [];
 	InsectWing.push(makePicture('Animations/People/InsectWing.png'));
 	
+	var wormHead = []
+	wormHead.push(makePicture('Animations/People/wormHead.png'))
+	wormHead.push(makePicture('Animations/People/wormHead2.png'))
+	wormHead.push(makePicture('Animations/People/wormHead3.png'))
+	wormHead.push(makePicture('Animations/People/wormHead2.png'))
+	wormHead.push(makePicture('Animations/People/wormHeadDead.png'))
+	wormHead.push(makePicture('Animations/People/wormHeadDead2.png'))
+	wormHead.push(makePicture('Animations/People/wormHeadDead3.png'))
 	
+	var wormBody = []
+	wormBody.push(makePicture('Animations/People/wormBody3.png'))
+	wormBody.push(makePicture('Animations/People/wormBody.png'))
+	wormBody.push(makePicture('Animations/People/wormBody2.png'))
+	wormBody.push(makePicture('Animations/People/wormBody.png'))
 	
+	var eggBase = makePicture('Animations/People/eggBase.png')
+	
+	var eggBody = []
+	eggBody.push(makePicture('Animations/People/eggBody3.png'))
+	eggBody.push(makePicture('Animations/People/eggBody1.png'))
+	eggBody.push(makePicture('Animations/People/eggBody2.png'))
+	eggBody.push(makePicture('Animations/People/eggBody1.png'))
+	
+	var eggHead = []
+	eggHead.push(makePicture('Animations/People/eggHead2.png'))
+	eggHead.push(makePicture('Animations/People/eggHead3.png'))
+	eggHead.push(makePicture('Animations/People/eggHead4.png'))
+	eggHead.push(makePicture('Animations/People/eggHead5.png'))
+	eggHead.push(makePicture('Animations/People/eggHeadDead1.png'))
+	eggHead.push(makePicture('Animations/People/eggHeadDead2.png'))
+	eggHead.push(makePicture('Animations/People/eggHeadDead3.png'))
+	
+	var egg = makePicture('Animations/Objects/Features/Bio/egg.png')
+	var eggHatch = makePicture('Animations/Objects/Features/Bio/eggHatch.png')
+		
 	var InsectLeg = [];
 	InsectLeg.push(makePicture('Animations/People/I0Legs.png'));
 	InsectLeg.push(makePicture('Animations/People/I1Legs.png'));
 	InsectLeg.push(makePicture('Animations/People/I2Legs.png'));
 	InsectLeg.push(makePicture('Animations/People/I3Legs.png'));
 	InsectLeg.push(makePicture('Animations/People/I4Legs.png'));
+	InsectLeg.push(makePicture('Animations/People/SmallBugLegs.png'));
+	InsectLeg.push(makePicture('Animations/People/SmallBugLegs2.png'));
 	var hair = []
 	/*hair.push(makePicture('Animations/People/I0Hair.png'));
 	hair.push(makePicture('Animations/People/I1Hair.png'));
@@ -558,6 +1044,10 @@ $(document).ready(function(){
 	hair.push(makePicture('Animations/People/Hair5.png'));
 	hair.push(makePicture('Animations/People/Hair6.png'));
 	hair.push(makePicture("Animations/People/MarineHelmet.png"));
+	hair.push(makePicture("Animations/People/Hair7Hazmat.png"));
+	
+	
+	
 	var leftArm = []
 	leftArm.push(makePicture('Animations/People/I0LeftArm.png'));
 	leftArm.push(makePicture('Animations/People/MarineLeftArm.png'));
@@ -576,14 +1066,105 @@ $(document).ready(function(){
 	HumanTorso.push(makePicture("Animations/People/ScientistTorso1.png"));//Male
 	HumanTorso.push(makePicture("Animations/People/ScientistTorso2.png"));//Female
 	HumanTorso.push(makePicture("Animations/People/ScientistTorso3.png"));//Female
-	
+	HumanTorso.push(makePicture("Animations/People/ScientistTorso4.png"));//Female w Helmet
+
 	var HumanLeg = [];
 	HumanLeg.push(makePicture("Animations/People/MarineLegs1.png"));
 	HumanLeg.push(makePicture("Animations/People/ScientistLegs1.png"));
+	HumanLeg.push(makePicture("Animations/People/ScientistLegs2.png"));
+	HumanLeg.push(makePicture("Animations/People/ScientistLegs3.png"));
+	HumanLeg.push(makePicture("Animations/People/MarineLegs2.png"));
+	HumanLeg.push(makePicture("Animations/People/MarineLegs3.png"));
+	HumanLeg.push(makePicture("Animations/People/MarineLegs4.png"));
+	
+	/////////////////
+	///	Character portraits
+	var mask = []
+	mask.push(makePicture('Faces/Human/sMask.png'));
+	
+	var goggles = []
+	goggles.push(makePicture('Faces/Human/goggles.png'));
+	
+	var portHair = []
+	portHair.push(blankPic);
+	portHair.push(makePicture('Faces/Human/hair1.png'));
+	portHair.push(makePicture('Faces/Human/hair2.png'));
+	portHair.push(makePicture('Faces/Human/hair3.png'));
+	portHair.push(makePicture('Faces/Human/hair4.png'));
+	portHair.push(makePicture('Faces/Human/hair5.png'));
+	portHair.push(makePicture('Faces/Human/hair6.png'));
+	portHair.push(makePicture('Faces/Human/hair7.png'));
+	portHair.push(makePicture('Faces/Human/hair8.png'));
+	
+	var fBase = makePicture('Faces/Human/base.png')
+	var mBase = makePicture('Faces/Human/mbase.png')
+	var bugFace = makePicture('Faces/Insect/bugFace.png')
+	var maggotFace = makePicture('Faces/Insect/maggotFace.png')
+	
+	var marineFace = makePicture('Faces/Human/marine.png')
+	var marineBase = makePicture('Faces/Human/MarineBase.png')
+	var doctorClothes = makePicture('Faces/Human/sciClothes.png')
+	
+	var portNoses = []
+	portNoses.push(makePicture('Faces/Human/nose1.png'));
+	portNoses.push(makePicture('Faces/Human/nose2.png'));
+	portNoses.push(makePicture('Faces/Human/nose3.png'));
+	portNoses.push(makePicture('Faces/Human/nose4.png'));
+	portNoses.push(makePicture('Faces/Human/nose5.png'));
+	portNoses.push(makePicture('Faces/Human/nose6.png'));
+	portNoses.push(makePicture('Faces/Human/nose7.png'));
+	
+	var portEyes = []
+	portEyes.push(makePicture('Faces/Human/eyes1.png'));
+	portEyes.push(makePicture('Faces/Human/eyes2.png'));
+	portEyes.push(makePicture('Faces/Human/eyes3.png'));
+	portEyes.push(makePicture('Faces/Human/eyes4.png'));
+	portEyes.push(makePicture('Faces/Human/eyes5.png'));
+	
+	var portMouth = []
+	portMouth.push(makePicture('Faces/Human/mouth1.png'));
+	portMouth.push(makePicture('Faces/Human/mouth2.png'));
+	portMouth.push(makePicture('Faces/Human/mouth3.png'));
+	portMouth.push(makePicture('Faces/Human/mouth4.png'));
+	portMouth.push(makePicture('Faces/Insect/mouth1.png'));
+	
+	var portEyeBrow = []
+	portEyeBrow.push(makePicture('Faces/Human/eyebrow1.png'));
+	portEyeBrow.push(makePicture('Faces/Human/eyebrow2.png'));
+	portEyeBrow.push(makePicture('Faces/Human/eyebrow0.png'));
+	//portNoses.push(makePicture('Faces/Human/nose3.png'));
+	
+	
+	var portBarcode = []
+	portBarcode.push(makePicture('Faces/Human/barcode1.png'));
+	portBarcode.push(makePicture('Faces/Human/barcode2.png'));
+	portBarcode.push(makePicture('Faces/Human/barcode3.png'));
+	portBarcode.push(makePicture('Faces/Human/barcode4.png'));
+	
+	var portInsectEyes = [];
+	portInsectEyes.push(makePicture('Faces/Insect/eyes.png'));
+	portInsectEyes.push(makePicture('Faces/Insect/eyes2.png'));
+	portInsectEyes.push(makePicture('Faces/Insect/eyes3.png'));
+	
+	var portReptileEyes = [];
+	portReptileEyes.push(makePicture('Faces/Reptile/eyes.png'));
+	portReptileEyes.push(makePicture('Faces/Reptile/eyes2.png'));
+	portReptileEyes.push(makePicture('Faces/Reptile/eyes3.png'));
+	
+	var portReptile = [];
+	portReptile.push(makePicture('Faces/Reptile/level1.png'));
+	portReptile.push(makePicture('Faces/Reptile/level2.png'));
+	portReptile.push(makePicture('Faces/Reptile/level3.png'));
+	
+	var portInsect = [];
+	portInsect.push(makePicture('Faces/Insect/level1.png'));
+	portInsect.push(makePicture('Faces/Insect/level2.png'));
+	portInsect.push(makePicture('Faces/Insect/level3.png'));
+	
 	
 	
 	//Buttons
-var lighter = new Button(60, 0, 50,50, "Lights");
+var lighter = new Button(70, 10, 50,30, "Lights");
 	lighter.job = function() {lighting = !lighting;}
 	
 		var OKButton = new ButtonGraphic(w/2 - 100, h/2 + 150, 200, 100, "OK");
@@ -591,11 +1172,15 @@ var lighter = new Button(60, 0, 50,50, "Lights");
 		buttonSound1.play();
 		promptIndex++
 		promptAni = 0;
+		promptScroll = 0
+		aniFast = 0;
 		if(promptIndex >= promptMessage.length){
 		//Reached the end of the messages
 			promptIndex = -1
+			promptScroll = 0
 			promptMessage = []
 			promptTitle = []
+			promptCreature = [];
 			prompting = false;
 		}
 	}
@@ -753,7 +1338,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	var mainMenuButtons = [];
 	mainMenuButtons.push(new ButtonGraphic(w/2-100,200, 200,100,"New Game"));
 	mainMenuButtons.push(new ButtonGraphic(w/2-100,500, 200,100,"Map Editor"));
-	mainMenuButtons.push(new ButtonGraphic(w/2-100,300, 200,100,"Load Game"));
+	mainMenuButtons.push(new ButtonGraphic(w/2-100,300, 200,100,"UPDATES"));
 	mainMenuButtons.push(new ButtonGraphic(w/2-100,400, 200,100,"Credits"));
 	
 	mainMenuButtons[0].job = function(){
@@ -823,7 +1408,9 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	mainMenuButtons[2].job = function(){
 		buttonSound1.play();
-		makePrompt("Not done yet", "Sorry this feature is still super TBA. ~~Try again in 6 - 8 months.")
+		//makePrompt("Not done yet", "Sorry this feature is still super TBA. ~~Try again in 6 - 8 months.")
+		
+		makePrompt("UPDATES", notes);
 		};
 	
 	mainMenuButtons[3].job = function(){
@@ -836,41 +1423,57 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	//Editor options (based on images)
 	
 	//config button
-	var config = new Button(0, 0, 50,50, "CONFIG");
-	var leftSlide = new Button(0, h - 125, 24,10, "<<");
+	var scrollSpeed = 250
+	var config = new Button(10, 10, 50,30, "CONFIG");
+	var gridToggle = new Button(130,10,50,30, "GRID");
+	gridToggle.job = function (){gridLines = !gridLines};
+	
+	var loadEdit = new Button(190, 10, 50,30, "LOAD");
+	loadEdit.job = mainMenuButtons[1].job;
+	
+	
+	var leftSlide = new Button(0, h - 145, 24,20, "<<");
 	leftSlide.job = function(){
 		if(selEdit == 1){
-			for(var i=0; i < bgOptions.length; i++)	bgOptions[i].b.x -= 50
+			for(var i=0; i < bgOptions.length; i++)	bgOptions[i].b.x -= scrollSpeed
 		}else if (selEdit == 2){
-			for(var i=0; i < wOptions.length; i++)	wOptions[i].b.x -= 50
+			for(var i=0; i < wOptions.length; i++)	wOptions[i].b.x -= scrollSpeed
 		}else if (selEdit == 3){
-			for(var i=0; i < lOptions.length; i++)	iOptions[i].b.x -= 50
+			for(var i=0; i < lOptions.length; i++)	iOptions[i].b.x -= scrollSpeed
 		}else if (selEdit == 4){
-			for(var i=0; i < iOptions.length; i++)	iOptions[i].b.x -= 50
+			for(var i=0; i < iOptions.length; i++)	iOptions[i].b.x -= scrollSpeed
 		}else if (selEdit == 5){
-			for(var i=0; i < fOptions.length; i++)	fOptions[i].b.x -= 50
+			for(var i=0; i < fOptions.length; i++)	fOptions[i].b.x -= scrollSpeed
 		}else if (selEdit == 6){
-			for(var i=0; i < cOptions.length; i++)	cOptions[i].b.x -= 50
+			for(var i=0; i < cOptions.length; i++)	cOptions[i].b.x -= scrollSpeed
 		}else if (selEdit == 7){
-			for(var i=0; i < sOptions.length; i++)	sOptions[i].b.x -= 50
+			for(var i=0; i < sOptions.length; i++)	sOptions[i].b.x -= scrollSpeed
+		}else if (selEdit == 8){
+			for(var i=0; i < bOptions.length; i++)	bOptions[i].b.x -= scrollSpeed
+		}else if (selEdit == 9){
+			for(var i=0; i < aOptions.length; i++)	aOptions[i].b.x -= scrollSpeed
 		}
 	}
-	var rightSlide = new Button(25, h - 125, 24,10, ">>");
+	var rightSlide = new Button(25, h - 145, 24,20, ">>");
 	rightSlide.job = function(){
 		if(selEdit == 1){
-			for(var i=0; i < bgOptions.length; i++)	bgOptions[i].b.x += 50
+			for(var i=0; i < bgOptions.length; i++)	bgOptions[i].b.x += scrollSpeed
 		}else if (selEdit == 2){
-			for(var i=0; i < wOptions.length; i++)	wOptions[i].b.x += 50
+			for(var i=0; i < wOptions.length; i++)	wOptions[i].b.x += scrollSpeed
 		}else if (selEdit == 3){
-			for(var i=0; i < lOptions.length; i++)	iOptions[i].b.x += 50
+			for(var i=0; i < lOptions.length; i++)	iOptions[i].b.x += scrollSpeed
 		}else if (selEdit == 4){
-			for(var i=0; i < iOptions.length; i++)	iOptions[i].b.x += 50
+			for(var i=0; i < iOptions.length; i++)	iOptions[i].b.x += scrollSpeed
 		}else if (selEdit == 5){
-			for(var i=0; i < fOptions.length; i++)	fOptions[i].b.x += 50
+			for(var i=0; i < fOptions.length; i++)	fOptions[i].b.x += scrollSpeed
 		}else if (selEdit == 6){
-			for(var i=0; i < cOptions.length; i++)	cOptions[i].b.x += 50
+			for(var i=0; i < cOptions.length; i++)	cOptions[i].b.x += scrollSpeed
 		}else if (selEdit == 7){
-			for(var i=0; i < sOptions.length; i++)	sOptions[i].b.x += 50
+			for(var i=0; i < sOptions.length; i++)	sOptions[i].b.x += scrollSpeed
+		}else if (selEdit == 8){
+			for(var i=0; i < bOptions.length; i++)	bOptions[i].b.x += scrollSpeed
+		}else if (selEdit == 9){
+			for(var i=0; i < aOptions.length; i++)	aOptions[i].b.x += scrollSpeed
 		}
 	}
 	var fOptions = []
@@ -931,6 +1534,23 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			this.spec = Number (prompt("Initial position? 0= bottom units in pixels", ""));
 			this.spec2 = Number(prompt("Max height? 100 , 200, etc", ""));
 		}
+		
+		
+		bgOptions.push(new editOption(100 + i * 60, h - 100, null));
+		bgOptions[bgOptions.length-1].imageText = "ceiling[0]"
+		bgOptions[bgOptions.length-1].name = "Stairs"
+		bgOptions[bgOptions.length-1].insert = function(){
+			this.text = "wallPanels.push(new Stair(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.spec + "," + this.spec2 + "));"
+			wallPanels.push(new Stair( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec, this.spec2))
+			
+			lastEdit.push(4)
+		}
+		bgOptions[bgOptions.length-1].spec = 'right' //position
+		bgOptions[bgOptions.length-1].spec2 = 100; //max height
+		bgOptions[bgOptions.length-1].config = function(){
+			this.spec = (prompt("Direction?  left or right", "left"));
+			this.spec2 = Number(prompt("Type? 0- Scaffold, 1- solid", ""));
+		}
 	
 		
 	bgOptions.push(new editOption(100 + i * 60, h - 100, null));
@@ -968,7 +1588,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		this.spec3 = Number(prompt("Grate or no grate? YESY = 1, NO = 0", "1"))
 	}
 	
-		bgOptions.push(new editOption(100 + i * 60, h - 100, null));
+	bgOptions.push(new editOption(100 + i * 60, h - 100, null));
 	bgOptions[bgOptions.length-1].imageText = ""
 	bgOptions[bgOptions.length-1].name = "Monitor"
 	bgOptions[bgOptions.length-1].insert = function(){
@@ -981,6 +1601,22 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	bgOptions[bgOptions.length-1].spec2 = 0; //max height
 	bgOptions[bgOptions.length-1].config = function(){
 		this.spec = prompt("Message?  Keep it short, these monitors are small", "ALERT");
+		//this.spec2 = Number(prompt("Lit behind? 0- Nope   1- Yes Please", "0"));
+	}
+	
+	bgOptions.push(new editOption(100 + i * 60, h - 100, null));
+	bgOptions[bgOptions.length-1].imageText = ""
+	bgOptions[bgOptions.length-1].name = "Ad Board"
+	bgOptions[bgOptions.length-1].insert = function(){
+		this.text = "wallPanels.push(new Billboard(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", '" + this.spec + "'," + this.spec2 + "));"
+		wallPanels.push(new Billboard( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec, this.spec2))
+		
+		lastEdit.push(4)
+	}
+	bgOptions[bgOptions.length-1].spec = "" //position
+	bgOptions[bgOptions.length-1].spec2 = 0; //max height
+	bgOptions[bgOptions.length-1].config = function(){
+		this.spec = prompt("Message?  Type 'random' to get a predone slogan, leave it blank to get a broken stutter billboard", "random");
 		//this.spec2 = Number(prompt("Lit behind? 0- Nope   1- Yes Please", "0"));
 	}
 	
@@ -1006,6 +1642,74 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	for(var i=0; i < wallFeatures.length; i++) {
 		fOptions.push(new editOption(100 + i * 60, h - 100, wallFeatures[i]));
 		fOptions[fOptions.length-1].imageText = "wallFeatures[" + i + "]"
+		fOptions[fOptions.length-1].insert = function(){
+			if(this.spec == 1){
+				this.text = "foreGround.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				foreGround.push(new ForeGround( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(7)
+			}else{
+				this.text = "wallPanels.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				wallPanels.push(new ForeGround( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(4)
+			}
+		}
+		fOptions[fOptions.length-1].spec = 0
+		fOptions[fOptions.length-1].config = function(){
+			this.spec = prompt("Foreground (F) Background (B)  Background is default", "");
+			if(this.spec == "F") this.spec = 1
+			else this.spec = 0
+		}
+	}
+	
+	
+	for(var i=0; i < ceiling.length; i++) {
+		fOptions.push(new editOption(100 + i * 60, h - 100, ceiling[i]));
+		fOptions[fOptions.length-1].imageText = "ceiling[" + i + "]"
+		fOptions[fOptions.length-1].insert = function(){
+			if(this.spec == 1){
+				this.text = "foreGround.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				foreGround.push(new ForeGround( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(7)
+			}else{
+				this.text = "wallPanels.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				wallPanels.push(new ForeGround( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(4)
+			}
+		}
+		fOptions[fOptions.length-1].spec = 0
+		fOptions[fOptions.length-1].config = function(){
+			this.spec = prompt("Foreground (F) Background (B)  Background is default", "");
+			if(this.spec == "F") this.spec = 1
+			else this.spec = 0
+		}
+	}
+	
+	for(var i=0; i < floor.length; i++) {
+		fOptions.push(new editOption(100 + i * 60, h - 100, floor[i]));
+		fOptions[fOptions.length-1].imageText = "floor[" + i + "]"
+		fOptions[fOptions.length-1].insert = function(){
+			if(this.spec == 1){
+				this.text = "foreGround.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				foreGround.push(new ForeGround( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(7)
+			}else{
+				this.text = "wallPanels.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				wallPanels.push(new ForeGround( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(4)
+			}
+		}
+		fOptions[fOptions.length-1].spec = 0
+		fOptions[fOptions.length-1].config = function(){
+			this.spec = prompt("Foreground (F) Background (B)  Background is default", "");
+			if(this.spec == "F") this.spec = 1
+			else this.spec = 0
+		}
+	}
+	
+	for(var i=0; i < sideWall.length; i++) {
+		fOptions.push(new editOption(100 + i * 60, h - 100, sideWall[i]));
+		fOptions[fOptions.length-1].imageText = "sideWall[" + i + "]"
+		fOptions[fOptions.length-1].name = sideWall[i].width + "x" +sideWall[i].height;
 		fOptions[fOptions.length-1].insert = function(){
 			if(this.spec == 1){
 				this.text = "foreGround.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
@@ -1093,6 +1797,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	for(var i=0; i < floor.length; i++) {
 		wOptions.push(new editOption(100 + i * 60, h - 100, floor[i]));
 		wOptions[wOptions.length-1].imageText = "floor[" + i + "]"
+		wOptions[wOptions.length-1].name = floor[i].width + "x" + floor[i].height;
 		wOptions[wOptions.length-1].insert = function(){
 			this.text = "wall.push(createWall(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", 100,30," + this.imageText + "));"
 			wall.push(createWall( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,100,30,this.pic))
@@ -1113,6 +1818,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	for(var i=0; i < sideWall.length; i++) {
 		wOptions.push(new editOption(100 + i * 60, h - 100, sideWall[i]));
 		wOptions[wOptions.length-1].imageText = "sideWall[" + i + "]"
+		wOptions[wOptions.length-1].name = sideWall[i].width + "x" +sideWall[i].height;
 		wOptions[wOptions.length-1].insert = function(){
 			this.text = "wall.push(createWall(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", 30,100," + this.imageText + "));"
 			wall.push(createWall( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, 30, 100,this.pic))
@@ -1145,6 +1851,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	for(var i=0; i < ceiling.length; i++) {
 		wOptions.push(new editOption(100 + i * 60, h - 100, ceiling[i]));
 		wOptions[wOptions.length-1].imageText = "ceiling[" + i + "]"
+		wOptions[wOptions.length-1].name = ceiling[i].width + "x" + ceiling[i].height;
 		wOptions[wOptions.length-1].insert = function(){
 			this.text = "wall.push(createWall(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", 100,50," + this.imageText + "));"
 			wall.push(createWall( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,100,50,this.pic))
@@ -1204,12 +1911,57 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			else this.spec = 0
 		}
 	}
+
+	
+	for(var i=0; i < windowArt.length; i++) {
+		fOptions.push(new editOption(100 + i * 60, h - 100, windowArt[i]));
+		fOptions[fOptions.length-1].imageText = "windowArt[" + i + "]"
+		fOptions[fOptions.length-1].insert = function(){
+			if(this.spec == 1){
+				this.text = "foreGround.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				foreGround.push(new ForeGround( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(7)
+			}else{
+				this.text = "wallPanels.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				wallPanels.push(new ForeGround( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(4)
+			}
+		}
+		fOptions[fOptions.length-1].spec = 0
+		/*fOptions[fOptions.length-1].config = function(){
+			this.spec = prompt("Foreground (F) Background (B)  Background is default", "");
+			if(this.spec == "F") this.spec = 1
+			else this.spec = 0
+		}*/
+	}
+	
+	for(var i=0; i < posterArt.length; i++) {
+		fOptions.push(new editOption(100 + i * 60, h - 100, posterArt[i]));
+		fOptions[fOptions.length-1].imageText = "posterArt[" + i + "]"
+		fOptions[fOptions.length-1].insert = function(){
+			if(this.spec == 1){
+				this.text = "foreGround.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				foreGround.push(new ForeGround( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(7)
+			}else{
+				this.text = "wallPanels.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				wallPanels.push(new ForeGround( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(4)
+			}
+		}
+		fOptions[fOptions.length-1].spec = 0
+		fOptions[fOptions.length-1].config = function(){
+			this.spec = prompt("Foreground (F) Background (B)  Background is default", "");
+			if(this.spec == "F") this.spec = 1
+			else this.spec = 0
+		}
+	}
 	
 	//Lights
 	var lOptions = []
 	lOptions.push(new editOption(50, h - 100, null));
 	lOptions[0].imageText = "panelHallClean[" + i + "]"
-	lOptions[0].name = "RoundLight";
+	lOptions[0].name = "Round Light";
 	lOptions[0].insert = function(){
 		this.text = "rLights.push(new staticLight(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", 20));"
 		rLights.push(new staticLight( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,20))
@@ -1227,7 +1979,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	lOptions.push(new editOption(170, h - 100, null));
 	lOptions[2].imageText = ""
-	lOptions[2].name = "SpinLight";
+	lOptions[2].name = "Spin Light";
 	lOptions[2].insert = function(){
 		this.text = "dLights.push(new spinLight(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",50,0));"
 		dLights.push(new spinLight(Math.floor((mx- ctxOx) / snapSize)*snapSize,Math.floor((my-ctxOy) / snapSize)*snapSize, 50,0));
@@ -1236,7 +1988,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	lOptions.push(new editOption(230, h - 100, null));
 	lOptions[3].imageText = ""
-	lOptions[3].name = "FlikrLight";
+	lOptions[3].name = "Flicker Light";
 	lOptions[3].insert = function(){
 		this.text = "lamps.push(new FlickerLamp(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "));"
 		lamps.push(new FlickerLamp(Math.floor((mx - ctxOx) / snapSize)*snapSize,Math.floor((my-ctxOy) / snapSize)*snapSize));
@@ -1246,7 +1998,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	lOptions.push(new editOption(290, h - 100, null));
 	lOptions[4].imageText = ""
-	lOptions[4].name = "AngledLight";
+	lOptions[4].name = "Angled Light";
 	lOptions[4].insert = function(){
 		this.text = "dLights.push(new angledLight(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "," +  this.spec2 + ", "+ this.spec + "));"
 		dLights.push(new angledLight( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec2, this.spec))
@@ -1261,7 +2013,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	lOptions.push(new editOption(210, h - 100, null));
 	lOptions[5].imageText = ""
-	lOptions[5].name = "GlowLamp";
+	lOptions[5].name = "Glow Lamp";
 	lOptions[5].insert = function(){
 		this.text = "lamps.push(new glowLamp(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "));"
 		lamps.push(new glowLamp(Math.floor((mx-ctxOx) / snapSize)*snapSize,Math.floor((my-ctxOy) / snapSize)*snapSize));
@@ -1270,7 +2022,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	lOptions.push(new editOption(270, h - 100, null));
 	lOptions[6].imageText = ""
-	lOptions[6].name = "DeadLamp";
+	lOptions[6].name = "Dead Lamp";
 	lOptions[6].insert = function(){
 		this.text = "lamps.push(new deadLamp(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "));"
 		lamps.push(new deadLamp(Math.floor((mx-ctxOx) / snapSize)*snapSize,Math.floor((my-ctxOy) / snapSize)*snapSize));
@@ -1298,7 +2050,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	
 		lOptions.push(new editOption(100 + i * 60, h - 100, ceilingHole[i]));
-		lOptions[lOptions.length-1].imageText = "WordTicker"
+		lOptions[lOptions.length-1].imageText = "Word Ticker"
 		lOptions[lOptions.length-1].insert = function(){
 			this.text = "wallPanels.push(new wordTicker(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", '" + this.spec + "'));"
 			wallPanels.push(new wordTicker( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec))
@@ -1342,7 +2094,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	lOptions.push(new editOption(110, h - 100, null));
 	lOptions[13].imageText = ""
-	lOptions[13].name = "PulseLight";
+	lOptions[13].name = "Pulse Light";
 	lOptions[13].insert = function(){
 		this.text = "lamps.push(new pulseLight(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "));"
 		lamps.push(new pulseLight(Math.floor((mx-ctxOx) / snapSize)*snapSize,Math.floor((my-ctxOy) / snapSize)*snapSize));
@@ -1398,41 +2150,73 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	lOptions.push(new editOption(170, h - 100, null));
 	lOptions[17].imageText = ""
-	lOptions[17].name = "SteamJet";
+	lOptions[17].name = "Steam Jet";
 	lOptions[17].insert = function(){
 		this.text = "dLights.push(new steamJet(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "));"
 		dLights.push(new steamJet(Math.floor((mx- ctxOx) / snapSize)*snapSize,Math.floor((my-ctxOy) / snapSize)*snapSize));
 		lastEdit.push(0)
 	}
 	
+	lOptions.push(new editOption(290, h - 100, null));
+	lOptions[18].imageText = ""
+	lOptions[18].name = "Water Light";
+	lOptions[18].insert = function(){
+		this.text = "dLights.push(new WaterLight(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "," +  this.spec + ", "+ this.spec2 + "));"
+		dLights.push(new WaterLight( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec, this.spec2))
+		lastEdit.push(0)
+	}
+	lOptions[18].spec = 150;
+	lOptions[18].spec2 = 4;
+	lOptions[18].config = function(){
+		this.spec = Number(prompt("State the desired radius.", this.spec));
+		this.spec2 = Number(prompt("State the desired intensity. /n 4- Pretty Bright /n 1- Super Bright", this.spec2));
+	}
+	
+	
+	lOptions.push(new editOption(100 + i * 60, h - 100, ceilingHole[i]));
+		lOptions[lOptions.length-1].imageText = "Fire"
+		lOptions[lOptions.length-1].name = "Fire"
+		lOptions[lOptions.length-1].insert = function(){
+			this.text = "wallPanels.push(new Fire(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", '" + this.spec + "'));"
+			wallPanels.push(new Fire( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec))
+			lastEdit.push(4);
+		}
+		lOptions[lOptions.length-1].spec = "test" //top, bottom
+		lOptions[lOptions.length-1].spec2 = 0; //Cleanliness
+		lOptions[lOptions.length-1].config = function(){
+			this.spec = prompt("Current;y unused.  Type away!", "It makes no difference");
+			
+			//this.spec2 = Number(prompt("How clean and dank?  0 - very dank, 1 - very clean, 0.5 - No effect", ""));
+		}
+	
 	
 	//Items
 	var iOptions = []
 	iOptions.push(new editOption(50, h - 100, null));
-	iOptions[0].imageText = "iconPistol"
-	iOptions[0].name = "Pistol";
-	iOptions[0].pic = iconPistol;
-	iOptions[0].insert = function(){
+	iOptions[iOptions.length-1].imageText = "iconPistol"
+	iOptions[iOptions.length-1].name = "Pistol";
+	iOptions[iOptions.length-1].pic = iconPistol;
+	iOptions[iOptions.length-1].insert = function(){
 		this.text = "items.push(pistolItem(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "));"
 		items.push(pistolItem( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize))
 		lastEdit.push(6)
 	}
 	
 	iOptions.push(new editOption(110, h - 100, null));
-	iOptions[1].imageText = "iconSMG"
-	iOptions[1].name = "SMG";
-	iOptions[1].pic = iconSMG;
-	iOptions[1].insert = function(){
+	iOptions[iOptions.length-1].imageText = "iconSMG"
+	iOptions[iOptions.length-1].name = "SMG";
+	iOptions[iOptions.length-1].pic = iconSMG;
+	iOptions[iOptions.length-1].insert = function(){
 		this.text = "items.push(smgItem(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "));"
 		items.push(smgItem( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize))
 		lastEdit.push(6)
 	}
 	
 	iOptions.push(new editOption(170, h - 100, null));
-	iOptions[2].imageText = "iconPistol"
-	iOptions[2].name = "Rifle";
-	iOptions[2].pic = iconRifle;
-	iOptions[2].insert = function(){
+	iOptions[iOptions.length-1].imageText = "iconPistol"
+	iOptions[iOptions.length-1].name = "Rifle";
+	iOptions[iOptions.length-1].pic = iconRifle;
+	iOptions[iOptions.length-1].insert = function(){
 		this.text = "items.push(rifleItem(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "));"
 		items.push(rifleItem( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize))
 		lastEdit.push(6)
@@ -1440,30 +2224,30 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	
 	iOptions.push(new editOption(230, h - 100, null));
-	iOptions[3].imageText = "iconPistol"
-	iOptions[3].name = "MedKit";
-	iOptions[3].pic = iconMed;
-	iOptions[3].insert = function(){
+	iOptions[iOptions.length-1].imageText = "iconPistol"
+	iOptions[iOptions.length-1].name = "MedKit";
+	iOptions[iOptions.length-1].pic = iconMed;
+	iOptions[iOptions.length-1].insert = function(){
 		this.text = "items.push(medItem(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "));"
 		items.push(medItem( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize))
 		lastEdit.push(6)
 	}
 	
 	iOptions.push(new editOption(230, h - 100, null));
-	iOptions[3].imageText = "iconArmor"
-	iOptions[3].name = "Armor";
-	iOptions[3].pic = iconArmor;
-	iOptions[3].insert = function(){
+	iOptions[iOptions.length-1].imageText = "iconArmor"
+	iOptions[iOptions.length-1].name = "Armor";
+	iOptions[iOptions.length-1].pic = iconArmor;
+	iOptions[iOptions.length-1].insert = function(){
 		this.text = "items.push(armorItem(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "));"
 		items.push(armorItem( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize))
 		lastEdit.push(6)
 	}
 	
 	iOptions.push(new editOption(230, h - 100, null));
-	iOptions[4].imageText = ""
-	iOptions[4].name = "Steam Trap";
-	iOptions[4].pic = null;
-	iOptions[4].insert = function(){
+	iOptions[iOptions.length-1].imageText = ""
+	iOptions[iOptions.length-1].name = "Steam Trap";
+	iOptions[iOptions.length-1].pic = null;
+	iOptions[iOptions.length-1].insert = function(){
 		this.text = "items.push(steamTrap(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + "));"
 		items.push(steamTrap( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize))
 		lastEdit.push(6)
@@ -1481,7 +2265,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	}
 	
 	iOptions[iOptions.length-1].config = function(){
-		this.spec = prompt("Message title?", "Default title!");
+		this.spec = prompt("Message title?  To make it have a creature portrait, put $(creature index) on the end of the message.  Example $0", "Default title!");
 		this.spec2 = prompt("Full Message?", "");
 	}
 	
@@ -1499,6 +2283,23 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	iOptions[iOptions.length-1].config = function(){
 		this.spec = prompt("Message title?", "Default title!");
 		this.spec2 = prompt("Full Message?", "");
+	}
+	
+	
+	
+	iOptions.push(new editOption(230, h - 100, null));
+	iOptions[iOptions.length-1].imageText = "blankPic"
+	iOptions[iOptions.length-1].name = "Rumbler";
+	iOptions[iOptions.length-1].pic = blankPic;
+	iOptions[iOptions.length-1].insert = function(){
+		this.text = "items.push(rumbler(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + ", '" + this.spec + "', '" + this.spec2 + "'));"
+		items.push(rumbler( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.pic, this.spec, this.spec2))
+		lastEdit.push(6)
+	}
+	
+	iOptions[iOptions.length-1].config = function(){
+		this.spec = Number(prompt("Duration in screen draws?", "35"));
+		this.spec2 = Number(prompt("0- Constant    1- One time only", "1"));
 	}
 	
 	var sOptions = [];
@@ -1531,6 +2332,92 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	}
 	
 	
+	var bOptions = []
+	for(var i=0; i < bioPic.length; i++) {
+		bOptions.push(new editOption(100 + i * 60, h - 100, bioPic[i]));
+		bOptions[bOptions.length-1].imageText = "bioPic[" + i + "]"
+		bOptions[bOptions.length-1].insert = function(){
+			if(this.spec == 1){
+				this.text = "foreGround.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				foreGround.push(new ForeGround( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(7)
+			}else{
+				this.text = "wallPanels.push(new ForeGround(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				wallPanels.push(new ForeGround( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(4)
+			}
+		}
+		bOptions[bOptions.length-1].spec = 0
+		bOptions[bOptions.length-1].config = function(){
+			this.spec = prompt("Foreground (F) Background (B)  Background is default", "");
+			if(this.spec == "F") this.spec = 1
+			else this.spec = 0
+		}
+	}
+	
+	var aOptions = [];
+	for(var i=0; i < animators.length; i++) {
+		aOptions.push(new editOption(100 + i * 60, h - 100, animators[i].pic));
+		aOptions[aOptions.length-1].imageText = "animators[" + i + "].pic"
+		aOptions[aOptions.length-1].name = animators[i].name;
+		aOptions[aOptions.length-1].insert = function(){
+			if(this.spec == 1){
+				this.text = "foreGround.push(new Animator(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				foreGround.push(new Animator( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(7)
+			}else{
+				this.text = "wallPanels.push(new Animator(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + "));"
+				wallPanels.push(new Animator( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,this.pic))
+				lastEdit.push(4)
+			}
+		}
+		aOptions[aOptions.length-1].spec = 0
+		aOptions[aOptions.length-1].config = function(){
+			this.spec = prompt("Foreground (F) Background (B)  Background is default", this.spec);
+			if(this.spec == "F") this.spec = 1
+			else this.spec = 0
+		}
+	}
+	
+	aOptions.push(new editOption(230, h - 100, null));
+	aOptions[aOptions.length-1].imageText = ""
+	aOptions[aOptions.length-1].name = "conveyr belt";
+	aOptions[aOptions.length-1].pic = null;
+	aOptions[aOptions.length-1].insert = function(){
+		this.text = "wallPanels.push(new cBelt(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",'" + this.spec + "','" + this.spec2 + "'));"
+		wallPanels.push(new cBelt( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec, this.spec2))
+		lastEdit.push(10)
+	}
+	aOptions[aOptions.length-1].spec = 4
+	aOptions[aOptions.length-1].spec2 = 2
+	
+	aOptions[aOptions.length-1].config = function(){
+		this.spec = Number(prompt("Length? use multiples of 50", "4"));
+		this.spec2 = Number(prompt("Number of items on the belt?", "1"));
+	}
+	
+	
+	aOptions.push(new editOption(230, h - 100, null));
+	aOptions[aOptions.length-1].imageText = ""
+	aOptions[aOptions.length-1].name = "Tank Mover";
+	aOptions[aOptions.length-1].pic = null;
+	aOptions[aOptions.length-1].insert = function(){
+		this.text = "wallPanels.push(new tankMover(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",'" + this.spec + "','" + this.spec2 + "'));"
+		wallPanels.push(new tankMover( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec, this.spec2))
+		lastEdit.push(10)
+	}
+	aOptions[aOptions.length-1].spec = 4
+	aOptions[aOptions.length-1].spec2 = 6
+	
+	aOptions[aOptions.length-1].config = function(){
+		this.spec = Number(prompt("Number of canisters?", "4"));
+		//this.spec2 = Number(prompt("Number of slots?", "1"));
+	}
+	
+	
+	///////////////
+	//	Creature options
+	
 	cOptions.push(new editOption(50, h - 100, null));
 	cOptions[cOptions.length-1].imageText = ""
 	cOptions[cOptions.length-1].name = "Marine";
@@ -1553,7 +2440,17 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	cOptions.push(new editOption(50, h - 100, null));
 	cOptions[cOptions.length-1].imageText = ""
-	cOptions[cOptions.length-1].name = "EntryInsect";
+	cOptions[cOptions.length-1].name = "Sci Armed";
+	cOptions[cOptions.length-1].pic = null;
+	cOptions[cOptions.length-1].insert = function(){
+		this.text = "creature.push(ScientistArmed(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",3));"
+		creature.push(ScientistArmed( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,3))
+		lastEdit.push(5)
+	}
+	
+	cOptions.push(new editOption(50, h - 100, null));
+	cOptions[cOptions.length-1].imageText = ""
+	cOptions[cOptions.length-1].name = "Entry Insect";
 	cOptions[cOptions.length-1].pic = null;
 	cOptions[cOptions.length-1].insert = function(){
 		this.text = "creature.push(baseLineMutant(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",0));"
@@ -1563,7 +2460,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	cOptions.push(new editOption(50, h - 100, null));
 	cOptions[cOptions.length-1].imageText = ""
-	cOptions[cOptions.length-1].name = "EntryRept";
+	cOptions[cOptions.length-1].name = "Entry Reptile";
 	cOptions[cOptions.length-1].pic = null;
 	cOptions[cOptions.length-1].insert = function(){
 		this.text = "creature.push(baseLineMutant(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",1));"
@@ -1573,7 +2470,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 		cOptions.push(new editOption(50, h - 100, null));
 	cOptions[cOptions.length-1].imageText = ""
-	cOptions[cOptions.length-1].name = "MaggotMan";
+	cOptions[cOptions.length-1].name = "Maggot Man";
 	cOptions[cOptions.length-1].pic = null;
 	cOptions[cOptions.length-1].insert = function(){
 		this.text = "creature.push(Maggot(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",0));"
@@ -1581,7 +2478,17 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		lastEdit.push(5)
 	}
 	
-		cOptions.push(new editOption(50, h - 100, null));
+	cOptions.push(new editOption(50, h - 100, null));
+	cOptions[cOptions.length-1].imageText = ""
+	cOptions[cOptions.length-1].name = "Small Bug";
+	cOptions[cOptions.length-1].pic = null;
+	cOptions[cOptions.length-1].insert = function(){
+		this.text = "creature.push(BugSmall(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",0));"
+		creature.push(BugSmall( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,0))
+		lastEdit.push(5)
+	}
+	
+	cOptions.push(new editOption(50, h - 100, null));
 	cOptions[cOptions.length-1].imageText = ""
 	cOptions[cOptions.length-1].name = "Bug";
 	cOptions[cOptions.length-1].pic = null;
@@ -1593,7 +2500,17 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	cOptions.push(new editOption(50, h - 100, null));
 	cOptions[cOptions.length-1].imageText = ""
-	cOptions[cOptions.length-1].name = "LowInsect";
+	cOptions[cOptions.length-1].name = "Worm";
+	cOptions[cOptions.length-1].pic = null;
+	cOptions[cOptions.length-1].insert = function(){
+		this.text = "creature.push(worm(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",0));"
+		creature.push(worm( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize,0))
+		lastEdit.push(5)
+	}
+	
+	cOptions.push(new editOption(50, h - 100, null));
+	cOptions[cOptions.length-1].imageText = ""
+	cOptions[cOptions.length-1].name = "Low Insect";
 	cOptions[cOptions.length-1].pic = null;
 	cOptions[cOptions.length-1].insert = function(){
 		this.text = "creature.push(LowInsect(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",0));"
@@ -1603,7 +2520,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	cOptions.push(new editOption(50, h - 100, null));
 	cOptions[cOptions.length-1].imageText = ""
-	cOptions[cOptions.length-1].name = "MedInsect";
+	cOptions[cOptions.length-1].name = "Med Insect";
 	cOptions[cOptions.length-1].pic = null;
 	cOptions[cOptions.length-1].insert = function(){
 		this.text = "creature.push(MedInsect(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",0));"
@@ -1613,7 +2530,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	cOptions.push(new editOption(50, h - 100, null));
 	cOptions[cOptions.length-1].imageText = ""
-	cOptions[cOptions.length-1].name = "HighInsect";
+	cOptions[cOptions.length-1].name = "High Insect";
 	cOptions[cOptions.length-1].pic = null;
 	cOptions[cOptions.length-1].insert = function(){
 		this.text = "creature.push(HighInsect(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",0));"
@@ -1623,7 +2540,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	cOptions.push(new editOption(50, h - 100, null));
 	cOptions[cOptions.length-1].imageText = ""
-	cOptions[cOptions.length-1].name = "LowReptile";
+	cOptions[cOptions.length-1].name = "Low Reptile";
 	cOptions[cOptions.length-1].pic = null;
 	cOptions[cOptions.length-1].insert = function(){
 		this.text = "creature.push(LowReptile(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",1));"
@@ -1633,7 +2550,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	cOptions.push(new editOption(50, h - 100, null));
 	cOptions[cOptions.length-1].imageText = ""
-	cOptions[cOptions.length-1].name = "MedReptile";
+	cOptions[cOptions.length-1].name = "Medium Reptile";
 	cOptions[cOptions.length-1].pic = null;
 	cOptions[cOptions.length-1].insert = function(){
 		this.text = "creature.push(MedReptile(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",1));"
@@ -1643,7 +2560,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	cOptions.push(new editOption(50, h - 100, null));
 	cOptions[cOptions.length-1].imageText = ""
-	cOptions[cOptions.length-1].name = "HighReptile";
+	cOptions[cOptions.length-1].name = "High Reptile";
 	cOptions[cOptions.length-1].pic = null;
 	cOptions[cOptions.length-1].insert = function(){
 		this.text = "creature.push(HighReptile(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",1));"
@@ -1653,18 +2570,74 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 
 	cOptions.push(new editOption(230, h - 100, null));
 	cOptions[cOptions.length-1].imageText = "recorder"
-	cOptions[cOptions.length-1].name = "Spawner";
+	cOptions[cOptions.length-1].name = "Spawn Trap";
 	cOptions[cOptions.length-1].pic = null;
 	cOptions[cOptions.length-1].insert = function(){
-		this.text = "items.push(spawnTrap(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + ", '" + this.spec + "', '" + this.spec2 + "'));"
-		items.push(spawnTrap( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.pic, this.spec, this.spec2))
+		this.text = "items.push(spawnTrap(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + ", '" + this.spec + "', '" + this.spec2 + "','" + this.spec3 + "'));"
+		items.push(spawnTrap( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.pic, this.spec, this.spec2, this.spec3))
 		lastEdit.push(6)
 	}
 	
 	cOptions[cOptions.length-1].config = function(){
+		this.spec = prompt("Creature type? \n 0:Insect \n 1:Reptile \n 2:Scientist \n 3:Marine", "0");
+		if(this.spec == 0) this.spec2 = prompt("Insect Level? \n 0:Low \n 1:Med \n 2:High \n 3:Bug \n 4:Maggot \n 5:BugSmall \n 6:Worm", "0");
+		else this.spec2 = prompt("Level? 0:Low 1:Med 2:High", "0");
+		
+		this.spec3 = prompt("Spawn Coordinates? x,y  Example: 250,1180  No brackets or spaces.", "#,#");
+	}
+	cOptions.push(new editOption(230, h - 100, null));
+	cOptions[cOptions.length-1].imageText = "recorder"
+	cOptions[cOptions.length-1].name = "Egg";
+	cOptions[cOptions.length-1].pic = null;
+	cOptions[cOptions.length-1].insert = function(){
+		this.text = "wallPanels.push(new Egg(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize +  ", '" + this.spec + "', '" + this.spec2 + "'));"
+		wallPanels.push(new Egg( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec, this.spec2))
+		lastEdit.push(4)
+	}
+	
+	cOptions[cOptions.length-1].config = function(){
+		this.spec = prompt("Hatch Creature type? \n 0:Insect \n 1:Reptile \n 2:Scientist \n 3:Marine", "0");
+		if(this.spec == 0) this.spec2 = prompt("Insect Level? \n 0:Low \n 1:Med \n 2:High \n 3:Bug \n 4:Maggot \n 5:BugSmall \n 6:Worm", "0");
+		else this.spec2 = prompt("Level? 0:Low 1:Med 2:High", "0");
+		
+		//this.spec3 = prompt("Spawn Coordinates? x,y  Example: 250,1180  No brackets or spaces.", "#,#");
+	}
+	
+	cOptions.push(new editOption(230, h - 100, null));
+	cOptions[cOptions.length-1].imageText = "recorder"
+	cOptions[cOptions.length-1].name = "Egg Layer";
+	cOptions[cOptions.length-1].pic = null;
+	cOptions[cOptions.length-1].insert = function(){
+		this.text = "creature.push(new EggLayer(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize +  ", '" + this.spec + "', '" + this.spec2 + "'));"
+		creature.push(new EggLayer( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec, this.spec2))
+		lastEdit.push(5)
+	}
+	
+	cOptions[cOptions.length-1].config = function(){
+		this.spec = prompt("Lay Creature type? \n 0:Insect \n 1:Reptile \n 2:Scientist \n 3:Marine", "0");
+		if(this.spec == 0) this.spec2 = prompt("Insect Level? \n 0:Low \n 1:Med \n 2:High \n 3:Bug \n 4:Maggot \n 5:BugSmall \n 6:Worm", "0");
+		else this.spec2 = prompt("Level? 0:Low 1:Med 2:High", "0");
+		
+		//this.spec3 = prompt("Spawn Coordinates? x,y  Example: 250,1180  No brackets or spaces.", "#,#");
+	}
+	
+	
+	cOptions.push(new editOption(230, h - 100, null));
+	cOptions[cOptions.length-1].imageText = "recorder"
+	cOptions[cOptions.length-1].name = "Perm Spawn";
+	cOptions[cOptions.length-1].pic = null;
+	cOptions[cOptions.length-1].insert = function(){
+		this.text = "wallPanels.push(new spawner(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", '" + this.spec + "', '" + this.spec2 + "','" + this.spec3 + "'));"
+		wallPanels.push(new spawner( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec, this.spec2, this.spec3))
+		lastEdit.push(4)
+	}
+	
+	cOptions[cOptions.length-1].config = function(){
 		this.spec = prompt("Creature type? 0- Insect 1- Reptile 2- Human", "0");
-		if(this.spec == 0) this.spec2 = prompt("Insect Level? 0- Low 1-Med 2-High 3- Bug 4- Maggot", "0");
+		if(this.spec == 0) this.spec2 = prompt("Insect Level? 0:Low 1:Med 2:High 3:Bug 4:Maggot 5:BugSmall", "0");
 		else this.spec2 = prompt("Level? 0- Low 1-Med 2-High", "0");
+		
+		this.spec3 = Number(prompt("Spawn Rate? 1 sec:" + Math.floor(1000/60) + " 2 sec:" + Math.floor(2000/60) + " 3 sec: "+ Math.floor(3000/60) + " 4 sec: "+ Math.floor(4000/60) + " 5 sec: ", Math.round(5000/60), ""));
 	}
 
 	
@@ -1678,7 +2651,15 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			bgOptions[i].b.y = h - 50
 		}
 	}
-	
+	for(var i=0; i < aOptions.length; i++) {
+		if(i%2 == 0) {
+			aOptions[i].b.x = 50 + i * 30
+			aOptions[i].b.y = h - 110
+		}else{
+			aOptions[i].b.x = 50 + (i-1) * 30
+			aOptions[i].b.y = h - 50
+		}
+	}
 	for(var i=0; i < wOptions.length; i++) {
 		if(i%2 == 0) {
 			wOptions[i].b.x = 50 + i * 30
@@ -1695,6 +2676,16 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		}else{
 			sOptions[i].b.x = 50 + (i-1) * 30
 			sOptions[i].b.y = h - 50
+		}
+	}
+	
+	for(var i=0; i < bOptions.length; i++) {
+		if(i%2 == 0) {
+			bOptions[i].b.x = 50 + i * 30
+			bOptions[i].b.y = h - 110
+		}else{
+			bOptions[i].b.x = 50 + (i-1) * 30
+			bOptions[i].b.y = h - 50
 		}
 	}
 	
@@ -1798,7 +2789,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			//Select nearby allies
 			allies = [];
 			for(var i=0; i < this.creature.length; i++){
-				if (dist(playerCharacter.x, playerCharacter.y, this.creature[i].x, this.creature[i].y) < 200){
+				if (dist(playerCharacter.x, playerCharacter.y, this.creature[i].x, this.creature[i].y) < 200 && this.creature[i].stats.type == playerCharacter.stats.type){
 					allies.push(this.creature[i])
 					this.creature.splice(i,1)
 					i--;
@@ -1879,8 +2870,8 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		
 		if(allies.length >0){	
 			for(var i=0; i < allies.length; i++){
-				allies[i].x = level[n].startx + i * 20;
-				allies[i].y = level[n].starty;
+				allies[i].x = level[n].start.x + i * 20;
+				allies[i].y = level[n].start.y;
 				creature.push(allies[i])
 			}
 		}
@@ -1902,6 +2893,58 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		//speak(levelName);
 	}
 	
+	
+	
+	function Stair(a,b,c,d){
+		this.x = a
+		this.y = b
+		
+		if(c == 'left') this.dir = -1
+		else this.dir = 1
+		
+		this.draw = function(){
+			ctx.beginPath()
+			if(this.dir == 1){
+				ctx.moveTo(this.x, this.y)
+				ctx.lineTo(this.x + 100, this.y + 100)
+			}else{
+				ctx.moveTo(this.x + 100, this.y)
+				ctx.lineTo(this.x, this.y + 100)
+			}
+			ctx.strokeStyle = 'red'
+			ctx.strokeWidth = 10;
+			ctx.stroke();
+			ctx.closePath();
+			
+			
+			var tH = this.y + mx - this.x
+			
+			ctx.fillStyle = 'green'
+			ctx.fillRect(mx, tH, 10,10);
+			
+			
+			for(var i =0; i < creature.length; i++){
+				if(creature[i].x + 100 >= this.x &&creature[i].x < this.x && creature[i].y + 200 >= this.y &&creature[i].y < this.y - 100){
+					ctx.fillStyle = 'yellow'
+					
+					console.log(creature[i].sx)
+					if(this.dir == 1) {
+						/*if(Math.abs(creature[i].y - ( creature[i].x - 100 - this.x + this.y)) < 50)*/ creature[i].y = creature[i].x - 100 - this.x + this.y
+							tH = this.y + creature[i].x +100 - this.x
+							ctx.fillRect(creature[i].x + 100, tH, 10,10);
+					}else{
+						/*if(Math.abs(creature[i].y + 200 - (this.x - creature[i].x - 100 + this.y)) < 50)*/ creature[i].y = this.x - creature[i].x - 100 + this.y
+					}
+					
+				}
+					
+			}
+			
+			
+			
+		}
+	
+	}
 	
 	///////////////////////
 	/// 	ACTIVE ENVIRONMENTAL CONSTRUCTORS
@@ -1934,11 +2977,10 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			this.blocker.x = this.tx - 15
 		}
 		this.goDown = function(){
-			if(this.gy + 10 <= this.y + this.maxH) this.gy += 10
+			if(this.gy + 10 <= this.y + this.maxH) this.gy = this.ty + 10//+= 10
 		}
 		this.goUp = function(){
-			if(this.gy - 10 >= this.y) this.gy -= 10
-			//this.ty -= 10
+			if(this.gy - 10 >= this.y) this.gy = this.ty - 10//-= 10
 		}
 		this.instructions = ""
 		this.remove = function(){
@@ -1948,14 +2990,31 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		this.draw = function(){
 			
 			//Force Creatures into a safe position
-			if(this.ty != this.gy){
+			
 				for(var i =0; i < creature.length; i++){
+					if(this.ty != this.gy){
 					if(Math.abs(creature[i].x + 100 - this.tx - 50) < 70 && Math.abs(creature[i].y + 200 - this.ty) < 20 ) {
-						creature[i].x = this.tx - 50 + i*5
+						//creature[i].x = this.tx - 50 + i*5
 						creature[i].y = this.ty - 200
+						if(creature[i].x+70 < this.tx) creature[i].x = this.tx - 70
+						else if(creature[i].x+100 > this.tx + 100) creature[i].x = this.tx - 70
 					}
+					}
+					if(i == cS){
+						/*if(dist(creature[i].x+100, creature[i].y + 200, this.x - 50, this.y) < 40) this.gy = this.y;
+						else if(dist(creature[i].x+100, creature[i].y + 200, this.x + 150, this.y) < 40) this.gy = this.y;
+						else if(dist(creature[i].x+100, creature[i].y + 200, this.x - 50, this.y + this.maxH) < 40) this.gy = this.y + this.maxH;
+						else if(dist(creature[i].x+100, creature[i].y + 200, this.x + 150, this.y + this.maxH) < 40) this.gy = this.y + this.maxH;
+						*/
+					
+						if(this.x - (creature[i].x + 100) < 50 &&  this.x - (creature[i].x + 100) > 0) this.gy = creature[i].y + 200
+						else if(creature[i].x - this.x < 50 &&  creature[i].x - this.x > 0) this.gy = creature[i].y + 200
+					}
+					
+					
 				}
-			}
+			
+		
 			
 			ctx.globalAlpha = 0.8
 			for(var i=0; i < this.maxH; i+= 10){
@@ -2015,7 +3074,9 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			ctx.drawImage(wallFeatures[1], this.tx, this.ty - 200);
 		}
 		this.playerOn = function(){
-			return ((creature[cS].x + creature[cS].hitBox.x + creature[cS].hitBox.width/2) - this.tx - 50) < 30 && (creature[cS].y + creature[cS].hitBox.y + creature[cS].hitBox.height - this.ty < 10);
+			//return ((creature[cS].x + creature[cS].hitBox.x + creature[cS].hitBox.width/2) - this.tx - 50) < 30 && (creature[cS].y + creature[cS].hitBox.y + creature[cS].hitBox.height - this.ty < 10);
+			return creature[cS].x + 100 > this.tx && creature[cS].x < this.tx + 100 && (creature[cS].y + creature[cS].hitBox.y + creature[cS].hitBox.height - this.ty < 10)
+		
 		}
 		
 	
@@ -2067,11 +3128,10 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			this.blocker.x = this.tx - 15
 		}
 		this.goDown = function(){
-			if(this.gy + 10 <= this.y + this.maxH) this.gy += 10
+			if(this.gy + 10 <= this.y + this.maxH) this.gy = this.ty + 10//+= 10
 		}
 		this.goUp = function(){
-			if(this.gy - 10 >= this.y) this.gy -= 10
-			//this.ty -= 10
+			if(this.gy - 10 >= this.y) this.gy = this.ty - 10//-= 10
 		}
 		this.instructions = "UP/DOWN"
 		this.remove = function(){
@@ -2080,13 +3140,20 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		this.inUse = false;
 		this.draw = function(){
 			//Force Creatures into a safe position
-			if(this.ty != this.gy){
+			
 				for(var i =0; i < creature.length; i++){
-					if(Math.abs(creature[i].x + 100 - this.tx - 100) < 120 && Math.abs(creature[i].y + 200 - this.ty) < 20 ) {
-						creature[i].x = this.tx - 30 + i * 10;
-						creature[i].y = this.ty - 200;
+					if(this.ty != this.gy){
+						if(Math.abs(creature[i].x + 100 - this.tx - 100) < 120 && Math.abs(creature[i].y + 200 - this.ty) < 20 ) {
+							creature[i].y = this.ty - 200;
+							if(creature[i].x+70 < this.tx) creature[i].x = this.tx - 70
+							else if(creature[i].x+100 > this.tx + 200) creature[i].x = this.tx + 100
+						}
 					}
-				}
+					
+					if(i == cS){
+						if(this.x - (creature[i].x + 100) < 50 &&  this.x - (creature[i].x + 100) > 0) this.gy = creature[i].y + 200
+						else if(creature[i].x -this.x - 100< 50 &&  creature[i].x - this.x -100 > 0) this.gy = creature[i].y + 200
+					}
 			}
 			
 			ctx.globalAlpha = 0.8
@@ -2164,7 +3231,9 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			ctx.drawImage(wallFeatures[1], this.tx, this.ty - 200);
 		}
 		this.playerOn = function(){
-			return Math.abs((creature[cS].x + creature[cS].hitBox.x + creature[cS].hitBox.width/2) - this.tx - 100) < 80 && Math.abs(creature[cS].y + creature[cS].hitBox.y + creature[cS].hitBox.height - this.ty) < 10;
+			//return Math.abs((creature[cS].x + creature[cS].hitBox.x + creature[cS].hitBox.width/2) - this.tx - 100) < 80 && Math.abs(creature[cS].y + creature[cS].hitBox.y + creature[cS].hitBox.height - this.ty) < 10;
+			return creature[cS].x + 100 > this.tx && creature[cS].x < this.tx + 200 && (creature[cS].y + creature[cS].hitBox.y + creature[cS].hitBox.height - this.ty < 10)
+		
 		}
 		
 	
@@ -2258,6 +3327,10 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		this.speed = 5;
 		this.sound = null
 		this.temp = -1;
+		this.smears = []
+		this.addSmear = function(){
+			this.smears.push({x: this.x + rand(70) + 40, y: this.y + rand(120) + 40});
+		}
 		if(!this.functional){
 			this.spark1 = new sparker(this.x + 45,this.y + 60)
 			this.spark2 = new sparker(this.x + 45,this.y + 180)
@@ -2276,6 +3349,11 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			
 			ctx.fillRect(this.x + 50,this.y + 40, 100,160);
 			ctx.drawImage(doorHatch, this.doorx + 50,0, 200 - this.doorx,200, this.x + 50, this.y, 200-this.doorx,200);
+			
+			
+			for(var i=0; i < this.smears.length; i++){
+				if(this.smears[i].x -this.doorx - this.x> 40)ctx.drawImage(BloodSmear[i% BloodSmear.length], this.smears[i].x -this.doorx, this.smears[i].y);
+			}
 			
 			if(this.doorx <= 90){
 				//left edge
@@ -2327,10 +3405,12 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			}
 			if(this.opening){
 				this.doorx+=this.speed
+				//for(var i=0; i < this.smears.length; i++)this.smears[i].x +=this.speed;
+				
 				if(this.doorx >= 100) this.opening = false;
 				roundLight(this.x + 170,this.y + 110,10, 1.5)
 			}else{
-			
+				//for(var i=0; i < this.smears.length; i++)this.smears[i].x -=this.speed;
 				this.doorx-=this.speed
 				//if(this.doorx <=0) this.opening = true;
 			}
@@ -2373,12 +3453,12 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		this.draw = function(){
 			this.distance = dist(this.x, this.y, -ctxOx + w/2, -ctxOy + h/2)
 			if(!talking && this.distance < 100){
-				msg.volume = (1-(this.distance / 200))/2
+				msg.volume = (1-(this.distance / 200))
 				speak(this.words);
 				talking = true
 			}else if(this.distance < 100){	
-				msg.volume = (1-(this.distance / 200))/2
-				console.log(msg.volume)
+				msg.volume = (1-(this.distance / 200))
+				//console.log(msg.volume)
 			}
 		
 		}
@@ -2587,10 +3667,101 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 						this.mIndex++
 						this.cycler = 0;
 					}
-					if(this.mIndex >= this.message.length-5) this.mIndex = 0;
+					if(this.mIndex > this.message.length-5) this.mIndex = 0;
 				}else for(var i = 0; i < this.message.length; i++) ctx.fillText(this.message[i], this.x + 50 - ctx.measureText(this.message[i]).width/2, this.y + 25 + i*6);
 			}
 			fuzz(this.x + 15, this.y + 70, 22,12); 
+			
+			//Lighting
+			lightRegion(this.x + 45, this.y +45, 5, 0.7);
+		}
+	
+	}
+	
+	function Billboard(a,b, m, op2){//opt2 is so far completely unused
+		this.x = a
+		this.y = b
+		this.message = []
+		this.ani = 0
+		this.maxAni = 20 + rand(10);
+		this.on = true
+		this.mIndex = 0;
+		this.multiLine = false;
+		this.cycler = 0
+		this.backIndex = rand(posterArt.length)
+		this.sloganIndex = rand(slogan.length);
+		var temp = ""
+		var i=0;
+		
+		if(m == 'random'){
+			while(i < slogan[this.sloganIndex].length){
+				if(slogan[this.sloganIndex][i] != ' '){
+					temp += slogan[this.sloganIndex][i];
+				}else{
+					this.message.push(temp);
+					temp = ""
+				}
+				i++;
+			}
+			this.message.push(temp);
+		}else{
+		
+			while(i < m.length){
+				if(m[i] != ' '){
+					temp += m[i];
+				}else{
+					this.message.push(temp);
+					temp = ""
+				}
+				i++;
+			}
+			this.message.push(temp);
+		}
+		
+		if(this.message.length > 3) this.multiLine = true;
+		this.draw = function(){
+			ctx.drawImage(posterArt[this.backIndex], this.x, this.y);
+			ctx.font= '4pt wallFont'
+			ctx.fillStyle = 'white'
+			
+			this.ani++
+			if(this.ani > this.maxAni){
+				this.on = !this.on
+				this.ani = 0
+			}
+			
+			if(this.message[0].length == 0 || !this.on) {
+				fuzz(this.x + 2, this.y + 2, 98, 98); 
+				if(Math.random() < 0.2) {
+					this.on = true
+					this.backIndex = rand(posterArt.length);
+				}
+			}else if(this.on){
+				if(this.message.length > 5){
+					for(var i = 0; i < 5; i++) {
+						ctx.fillStyle = 'black'
+						ctx.fillText(this.message[i + this.mIndex], 1+this.x + 50 - ctx.measureText(this.message[i + this.mIndex]).width/2, this.y + 26 + i*6);
+						ctx.fillStyle = 'white'
+						ctx.fillText(this.message[i + this.mIndex], this.x + 50 - ctx.measureText(this.message[i + this.mIndex]).width/2, this.y + 25 + i*6);
+					
+					}
+					this.cycler++
+					if(this.cycler > 5) {
+						this.mIndex++
+						this.cycler = 0;
+					}
+					if(this.mIndex > this.message.length-5) this.mIndex = 0;
+				}else{ 
+					for(var i = 0; i < this.message.length; i++) {
+						ctx.fillStyle = 'black'
+						ctx.fillText(this.message[i], this.x + 50 - ctx.measureText(this.message[i]).width/2, this.y + 25 + i*6);
+						ctx.fillStyle = 'white'
+						ctx.fillText(this.message[i], this.x + 51 - ctx.measureText(this.message[i]).width/2, this.y + 26 + i*6);
+		
+					}
+				}
+			}
+			//fuzz(this.x + 15, this.y + 70, 22,12); 
 			
 			//Lighting
 			lightRegion(this.x + 45, this.y +45, 5, 0.7);
@@ -2618,6 +3789,246 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			}
 		}
 		ctx.globalAlpha = 1;
+	}
+	
+	
+		ctx.globalAlpha = 1;
+	
+		
+	
+	function BloodDrip(a,b){
+		this.lx = a
+		this.ly = b
+		this.bloodAni = 0;
+		this.speed = 3
+		this.sCount = 0
+		this.pic = bloodDrip;
+		this.draw = function(){
+				if(this.sCount <= 0){
+					this.bloodAni++
+					this.sCount = this.speed
+				}
+				this.sCount--;
+				if(this.bloodAni > 4) this.bloodAni = 0
+				ctx.drawImage(this.pic, this.bloodAni * 50,0, 50,100, this.lx, this.ly, 50,100);
+		}
+	}
+	
+	function cBelt(a,b, len, i2){
+		//i2 unused
+	
+		this.x = a
+		this.y = b
+		this.l = len
+		this.ani = []
+		this.itemIndex = []
+		for(var i=0; i < i2; i++){
+			this.itemIndex.push(rand(3));
+			this.ani.push(i* 50);
+		}
+		//this.aBelt = false;
+		this.draw = function(){
+			//this.aBelt = !this.aBelt;
+			ctx.drawImage(wallFeatures[37], this.x,this.y-60);
+			ctx.drawImage(wallFeatures[37], this.x + this.l * 50 - 50,this.y-60);
+			
+			for(var i=0; i < this.itemIndex.length; i++){
+				if(this.itemIndex[i] == 0) ctx.drawImage(wallFeatures[41], this.x + this.ani[i], this.y-60)
+				else if(this.itemIndex[i] == 1) ctx.drawImage(wallFeatures[40], this.x + this.ani[i], this.y-60)
+				else if(this.itemIndex[i] == 2) ctx.drawImage(floor[2], this.x + this.ani[i], this.y-40)
+			}
+			
+			for(var i=0; i < this.l; i++) {
+				/*if(this.aBelt)ctx.drawImage(cBelt1, this.x + i * 50, this.y-50)
+				else ctx.drawImage(cBelt2, this.x + i * 50, this.y-50)*/
+				ctx.drawImage(wallFeatures[36], this.x + i * 50, this.y-50)
+			}
+			
+			for(var i=0; i < this.itemIndex.length; i++){
+				this.ani[i] += 2
+				if(this.ani[i] > (this.l-1) * 50){
+					this.ani[i] = 0;
+					this.itemIndex[i] = rand(3);
+				}
+			}
+			
+		}
+	}
+	
+	var gripperOpen = makePicture("Animations/Objects/gripOpen.png")
+	var gripperClosed = makePicture("Animations/Objects/gripClosed.png")
+	function tankMover(a,b, len, i2){
+		//i2 unused
+	
+		this.x = a
+		this.y = b
+		this.l = len +1//Number of canisters
+		this.ani = []
+		this.itemIndex = []
+		this.itemPicIndex = []
+		this.gx = a;
+		this.gy = b;
+		this.gtx = a;
+		this.gty = b;
+		var temp = rand(len +1)
+		this.blankIndex = temp
+		this.grabIndex = -1;
+		this.targetIndex = -1;
+		this.oldIndex = -1;
+		
+		
+		for(var i=0; i < len + 1; i++){
+			this.itemIndex.push(true);
+			this.itemPicIndex.push(rand(4));
+		}
+		
+		this.itemIndex[temp] = false
+		this.itemPicIndex[temp] = -1
+		
+		this.aniPause = 0;
+		this.lifting = false;
+		this.dropping = false;
+		
+		this.draw = function(){
+			ctx.fillStyle = '#222222'
+			ctx.fillRect(this.x, this.y, this.l * 100 - 100, 10);
+			ctx.fillStyle = '#0F0F0F'
+			ctx.fillRect(this.x + 2, this.y + 2, this.l * 100 - 104, 6);
+			
+			
+			if(this.dropping) this.gty = this.y + 20
+			
+			if(this.lifting) this.gty = this.y
+			
+			
+			//Targettting
+			if(this.grabIndex < 0){//Empty claw
+				while(this.targetIndex == -1) {
+					this.targetIndex = rand(this.itemIndex.length);
+				}
+				while(!this.itemIndex[this.targetIndex] || this.targetIndex == this.oldIndex) this.targetIndex = rand(this.itemIndex.length);
+				
+				this.gtx = this.x + this.targetIndex*100 - 50
+				
+				if(Math.abs(this.gx - this.gtx) < 5){
+					this.dropping = true
+					this.lifting = false;
+					this.gty = this.y + 20
+				}
+				
+				if(Math.abs(this.gx - this.gtx) < 5 && Math.abs(this.gy - this.gty) < 2){
+					//pick up tank
+					this.dropping = false;
+					this.lifting = true;
+					this.grabIndex = this.itemPicIndex[this.targetIndex];
+					this.itemPicIndex[this.targetIndex] = -1
+				}
+				
+				
+			}else{ //Holding a tank
+				this.gtx = this.x + this.blankIndex*100 - 50
+				
+				//Finishing pickup
+				if(Math.abs(this.gx - this.gtx) < 5 && this.lifting){
+					this.dropping = false
+					this.lifting = true;
+					this.gty = this.y
+				}
+				
+				if(Math.abs(this.gx - this.gtx) < 5 && Math.abs(this.gy - this.gty) < 2 && this.lifting){
+				//ready to begin drop
+					this.dropping = true;
+					this.lifting = false;
+					this.gty = this.y + 20
+				}
+				if(Math.abs(this.gx - this.gtx) < 5 && Math.abs(this.gy - this.gty) < 2){
+				
+					//Drop tank
+						this.itemPicIndex[this.blankIndex] = this.grabIndex;
+						this.grabIndex = -1	
+					
+						this.itemIndex[this.blankIndex] = true
+						this.itemIndex[this.targetIndex] = false
+						this.blankIndex = this.targetIndex;
+						this.oldIndex = this.targetIndex;
+						this.targetIndex = -1
+					
+						this.dropping = false;
+						this.lifting = true;
+						this.gty = this.y
+					
+				}
+				
+				
+			}
+			
+			if(this.dropping) this.gty = this.y + 20
+			
+			if(this.lifting) this.gty = this.y
+			
+			if(this.aniPause <= 0){
+				if(this.gy == this.gty){
+					if(this.gx < this.gtx) this.gx++;
+					else if(this.gx > this.gtx) this.gx--;
+				}else{
+					if(this.gy < this.gty) this.gy++;
+					else if(this.gy > this.gty) this.gy--;
+				}
+			}else this.aniPause--;
+			
+			for(var i=0; i < this.itemIndex.length; i++){
+				if(this.itemPicIndex[i] == 0) ctx.drawImage(wallFeatures[53], this.x + i * 100 - 50, this.y + 30);
+				else if(this.itemPicIndex[i] == 1) ctx.drawImage(wallFeatures[54], this.x + i * 100 - 50, this.y + 30);
+				else if(this.itemPicIndex[i] == 2) ctx.drawImage(wallFeatures[55], this.x + i * 100 - 50, this.y + 30);
+				else if(this.itemPicIndex[i] == 3) ctx.drawImage(wallFeatures[56], this.x + i * 100 - 50, this.y + 30);
+				else lightRegion(this.x + i * 100, this.y + 200, 10, 0.2);
+			}
+			
+			if(this.grabIndex == 0) ctx.drawImage(wallFeatures[53], this.gx, this.gy + 10);
+			else if(this.grabIndex == 1) ctx.drawImage(wallFeatures[54], this.gx, this.gy + 10);
+			else if(this.grabIndex == 2) ctx.drawImage(wallFeatures[55], this.gx, this.gy + 10);
+			else if(this.grabIndex == 3) ctx.drawImage(wallFeatures[56], this.gx, this.gy + 10);
+			
+			if(this.grabIndex == -1) ctx.drawImage(gripperOpen, this.gx - 10, this.gy);
+			else ctx.drawImage(gripperClosed, this.gx - 10, this.gy);
+			
+			
+		}
+	}
+	function Animator(a,b, p){
+		this.lx = a
+		this.ly = b
+		this.bloodAni = 0;
+		this.speed = 3
+		this.sCount = 0
+		this.pic = p;
+		this.draw = function(){
+				if(this.sCount <= 0){
+					this.bloodAni++
+					this.sCount = this.speed
+				}
+				this.sCount--;
+				if(this.bloodAni > 4) this.bloodAni = 0
+				ctx.drawImage(this.pic, this.bloodAni * 50,0, 50,100, this.lx, this.ly, 50,100);
+		}
+	}
+	
+	function AnimatorLarge(a,b, p){
+		this.lx = a
+		this.ly = b
+		this.bloodAni = 0;
+		this.speed = 3
+		this.sCount = 0
+		this.pic = p;
+		this.draw = function(){
+				if(this.sCount <= 0){
+					this.bloodAni++
+					this.sCount = this.speed
+				}
+				this.sCount--;
+				if(this.bloodAni > 4) this.bloodAni = 0
+				ctx.drawImage(this.pic, this.bloodAni * 50,0, 50,100, this.lx, this.ly, 100,100);
+		}
 	}
 	
 	function Lamp(a,b){
@@ -2882,8 +4293,8 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		this.col = '#' + (Math.floor(t*clean)).toString(16)+ (Math.floor(t*clean)).toString(16)+ (Math.floor(t*clean)).toString(16)
 		
 		this.draw = function(){
-				if(this.x + ctxOx > -200 && this.x + ctxOx < w + 200){
-				if(this.y + ctxOy > -200 && this.y + ctxOy < h + 200){
+				if(this.x + ctxOx >= -200 && this.x + ctxOx < w + 200){
+				if(this.y + ctxOy >= -200 && this.y + ctxOy < h + 200){
 			//Back color
 			if(this.c >= 0 && this.c <= 1){
 				ctx.fillStyle = this.col
@@ -2981,6 +4392,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	//////////
 	///STATE VARIABLES
 	loadMainMenu();
+	
 	//////////////////////
 	///GAME ENGINE START
 	//	This starts your game/program
@@ -2988,13 +4400,50 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	//	"60" sets how fast things should go
 	//	Once you choose a good speed for your program, you will never need to update this file ever again.
 
-	if(typeof game_loop != "undefined") clearInterval(game_loop);
-		game_loop = setInterval(paint, 60); //old value 130
+	//if(typeof game_loop != "undefined") clearInterval(game_loop);
+	//	game_loop = setInterval(paint, 60); //old value 130
 	}
 
 	init();	
 	
 
+	function pipeBox(x,y,width, height){
+	
+	
+		var wi = Math.floor(width/100)
+		var he = Math.floor(height/100)
+	
+		
+		ctx.drawImage(pipes[0], x-50,y-50);
+		ctx.drawImage(pipes[1], x + 50 + (wi*100),y-50);
+		for(var i=0; i <= (height-100); i+=100) ctx.drawImage(wallFeatures[12], x - 50,y+50 + i);
+		for(var i=0; i <= (height-100); i+=100) ctx.drawImage(wallFeatures[12], x + 50 + (wi*100),y+50 + i);
+		
+		for(var i=0; i <= (width-100); i+=100) ctx.drawImage(pipes[4], x + 50 + i, y - 50)
+		for(var i=0; i <= (width-100); i+=100) ctx.drawImage(pipes[4], x + 50 + i, y+50 + (he * 100))
+		ctx.drawImage(pipes[3], x - 50,y+50 + (he * 100));
+		
+		ctx.drawImage(pipes[2], x + 50 + (wi*100),y+50 + (he * 100));
+		/*
+		ctx.drawImage(wallFeatures[12], x + 550,y+50);
+		ctx.drawImage(wallFeatures[12], x + 550,y+150);
+		ctx.drawImage(pipes[2], x + 550,y+250);
+		
+		ctx.drawImage(pipes[4], x + 50, y - 50)
+		ctx.drawImage(pipes[4], x + 150, y - 50)
+		ctx.drawImage(pipes[4], x + 250, y - 50)
+		ctx.drawImage(pipes[4], x + 350, y - 50)
+		ctx.drawImage(pipes[4], x + 450, y - 50)
+		
+		ctx.drawImage(pipes[4], x + 50, y + 250)
+		ctx.drawImage(pipes[4], x + 150, y + 250)
+		ctx.drawImage(pipes[4], x + 250, y + 250)
+		ctx.drawImage(pipes[4], x + 350, y + 250)
+		ctx.drawImage(pipes[4], x + 450, y + 250)
+	*/
+	
+	}
+	
 	function drawPromptBox(){
 		var x = w/2-300
 		var y = h/2 - 160
@@ -3041,48 +4490,109 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	////////	Main Game Engine
 	////////////////////////////////////////////////////
 	///////////////////////////////////////////////////
+	/*window.requestAnimFrame = function(){
+		return
+		window.requestAnimationFrame ||
+		window.webkitRequestAnimationFrame ||
+		window.mozRequestAnimationFrame ||
+		function (callback){
+		//	window.setTimeout(callback, 1000/60);
+		};
+	
+	
+	}
+	*/
+	
+	
+	var now;
+	var then = Date.now();
+	var interval = 1000/25
+	var delta;
+	function animate() {
+
+		requestAnimFrame = window.mozRequestAnimationFrame    ||
+                   window.webkitRequestAnimationFrame ||
+                   window.msRequestAnimationFrame     ||
+                   window.oRequestAnimationFrame
+                   ;
+		/*setTimeout(function(){
+			requestAnimFrame(animate);
+			paint();
+		}, interval);*/
+		requestAnimFrame(animate);
+		now = Date.now()
+		delta = now - then;
+		
+		if(delta > interval){
+			then = Date.now()//now - (delta % interval);
+			paint();
+			//ctx.fillStyle = 'white'
+			//ctx.fillText(1000/delta + " " + 1000/interval, 100, 180);
+		}
+	}
+	
+	
+	animate();
 	function paint()
 	{
-		
 		ctx.fillStyle = 'black';
 		ctx.fillRect(0,0, w, h);	
-		
+		if(Math.random() < 0.5) shimmer *= -1; 
 		
 	//	parax = (creature[0].x - w/2)*0.1 + ctxOx*5
 	//	paray = (creature[0].y - h/2)*0.1 + ctxOy*5
 		if(screen == 0){
 		//Splash screen
 			ctx.fillStyle = 'red'
-			ctx.fillRect(200,200, 200, 20);
+			ctx.font = '20pt wallFont'
+			ctx.fillText("Loading...", w/2 - ctx.measureText("Loading...").width/2, 200);
+			ctx.fillRect(w/2 - 200, 250,400, 10);
+			ctx.fillRect(w/2 - 200, 250, 400*(numObjectsLoaded/numObjects), 20);
 		
 			if(numObjectsLoaded >= numObjects) screen = 1;
 		}else if(screen == 1){
 		//Main menu
 			for(var i = 0; i < wallPanels.length; i++) wallPanels[i].draw();
 		for(var i = 0; i < wall.length; i++) wall[i].draw();
-		for(var i = 0; i < creature.length; i++) creature[i].draw();
+		
 		
 		
 		for(var i = 0; i < lamps.length; i++) lamps[i].draw()//ctx.drawImage(lampLit, lamps[i].x, lamps[i].y);
 		for(var i=0; i < rLights.length; i++)rLights[i].draw();
 		for(var i=0; i < dLights.length; i++)dLights[i].draw();
 		for(var i=0; i < pulseLights.length; i++)pulseLights[i].draw();
-		
+		for(var i = 0; i < creature.length; i++) creature[i].draw();
 		
 			for(var i=0; i < mainMenuButtons.length; i++) mainMenuButtons[i].draw();
 			
 			lightRegion(mx,my, 10, 0.5);
+			
+			//lightRegionCol(mx + 100,my, 10, 0.09, {r:0,g:100,b:0});
 			shade();
 		
 		if(prompting){
+			ctx.globalAlpha = 0.3
+			ctx.fillStyle = 'black'
+			ctx.fillRect(0,0,w,h);
+			ctx.globalAlpha = 1;
+		
 			drawPromptBox();
 			ctx.font = '15pt wallFont'
 			ctx.fillStyle = 'white'
 			if(promptAni < 100) promptAni++
 			
 			textBox(promptTitle[promptIndex], w/2 - ctx.measureText(promptTitle[promptIndex]).width/2, h/2 - 120, 380);
-			ctx.font = '8pt wallFont'
-			textBox(promptMessage[promptIndex].slice(0,Math.floor(promptAni/100*promptMessage[promptIndex].length)), w/2 -  280, h/2 - 90, 540);
+			ctx.font = '7pt wallFont'
+			textBoxScroll(promptMessage[promptIndex].slice(0,Math.floor(promptAni/100*promptMessage[promptIndex].length)), w/2 -  270, h/2 - 90, 540, promptHeight);
+		
+			if(promptLines > promptHeight/12){
+				ctx.fillStyle = '#BBBBBB'
+				ctx.fillRect(w/2 - 280, h/2 - 102, 5, promptHeight)
+				ctx.fillStyle = 'white';
+				ctx.fillRect(w/2 - 280, h/2 - 102+ promptScroll * (promptHeight/promptLines), 5, promptHeight *((promptHeight/12)/promptLines))
+			}
+			
+		
 		
 			OKButton.draw();
 		}
@@ -3104,13 +4614,14 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 				//Level
 		for(var i = 0; i < wallPanels.length; i++) wallPanels[i].draw();
 		for(var i = 0; i < wall.length; i++) wall[i].draw();
-		for(var i = 0; i < creature.length; i++) creature[i].draw();
+		
 		
 		
 		for(var i = 0; i < lamps.length; i++) lamps[i].draw()//ctx.drawImage(lampLit, lamps[i].x, lamps[i].y);
 		for(var i=0; i < rLights.length; i++)rLights[i].draw();
 		for(var i=0; i < dLights.length; i++)dLights[i].draw();
 		for(var i=0; i < pulseLights.length; i++)pulseLights[i].draw();
+		for(var i = 0; i < creature.length; i++) creature[i].draw();
 		//for(var i=0; i < items.length; i++)items[i].draw();
 		ctx.fillStyle = 'white'
 		
@@ -3140,6 +4651,14 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			}
 		}
 		
+		for(var i=0; i < bloodSplatLarge.length;i++) bloodSplatLarge[i].draw();
+		for(var i=0; i < bloodSplatLarge.length;i++){
+			if(bloodSplatLarge[i].f > 4){
+				bloodSplatLarge.splice(i,1);
+				i--;
+			}
+		}
+		
 		ctx.restore();
 		
 		if(cutscene[scene].shaded) shade();
@@ -3161,10 +4680,25 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		
 			if(cutscene[scene].frame >= cutscene[scene].endFrame) {
 				screen = 5;
+				
 				cutscene[scene].endScene();
 			}
 			
-		}else if(screen == 5){
+		}else if(screen == 5){ //Main Game
+		//heart sound
+		tStart = Date.now();
+		if(heartTimer == 0) {
+			heartDelay = getHeartDelay();
+			if(hPump) heart1.play()
+			else heart2.play()
+			
+			hPump = !hPump;
+			heartTimer = heartDelay;
+		}
+		//console.log(heartDelay)
+		
+		heartTimer --;
+		
 		parax = ctxOx*0.5
 		paray = ctxOy*0.5
 		ctx.save();
@@ -3178,25 +4712,39 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		*/
 		
 		if(!mDown){
-			dPx = creature[cS].x + 100 + ctxOx - w/2;
-			dPy = creature[cS].y + 100 + ctxOy - h/2;
-			if(dPx < -10){
+		
+			if(mx < 100) castOx = -400
+			else if(mx > w - 100) castOx = 400
+			else castOx = 0
+			
+			dPx = creature[cS].x + 100 + ctxOx - w/2 + castOx;
+			dPy = creature[cS].y + 100 + ctxOy - h/2 + castOy;
+			if(dPx < -lightRes){
 				ctxOx += pans - dPx/10
-			}else if(dPx > 10)	ctxOx -= pans + dPx/10
+			}else if(dPx > lightRes)	ctxOx -= pans + dPx/10
 	
-			if(dPy < -10){
+			if(dPy < -lightRes){
 				ctxOy += pans - dPy/10
-			}else if(dPy > 10)	ctxOy -= pans + dPy/10
-	
+			}else if(dPy > lightRes)	ctxOy -= pans + dPy/10
+			updateMouse();
 		}	
+		
+		if(rumble > 0){
+			ctxOx += rand(rumble) - rumble/2
+			ctxOy += rand(rumble) - rumble/2
+			rumble--;
+		}
+		
 		if(ctxOx > 0) ctxOx = 0
 		if(ctxOy > 0) ctxOy = 0
 		if(ctxOx < w * -1) ctxOx = w * -1
 		if(ctxOy < h * -1) ctxOy = h * -1
+		ctxOx = Math.round(ctxOx);
+		ctxOy = Math.round(ctxOy);
 		
 		ctx.translate(ctxOx, ctxOy);
 		
-		for(var i=0; i < creature.length; i++) if(i != cS && creature[i].stats.health >0)creature[i].move();
+		for(var i=0; i < creature.length; i++) if(i != cS && creature[i].stats.health >0 && !prompting)creature[i].move();
 		
 		//Level
 		for(var i = 0; i < wallPanels.length; i++) wallPanels[i].draw();
@@ -3204,49 +4752,37 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			elevators[i].inUse= elevators[i].playerOn();
 			elevators[i].draw();
 		}
-		for(var i = 0; i < wall.length; i++) wall[i].draw();
-		for(var i = 0; i < creature.length; i++) if(creature[i].deathF != 10 && !prompting){
-			creature[i].draw();	
-			}else{//Creature is done death sequence
-				if(creature[i].stats.health <= 0){
-				if(i == cS){
-					ctx.fillText("Game Over!", 100 - ctxOx,100 - ctxOy)
-				}else{
-					creature[i].die();
-				}
-				}
-			}
-		for(var i = 0; i < elevators.length; i++) elevators[i].draw2();
 		
 		for(var i = 0; i < lamps.length; i++) lamps[i].draw()//ctx.drawImage(lampLit, lamps[i].x, lamps[i].y);
 		for(var i=0; i < rLights.length; i++)rLights[i].draw();
 		for(var i=0; i < dLights.length; i++)dLights[i].draw();
 		for(var i=0; i < pulseLights.length; i++)pulseLights[i].draw();
 		
+		for(var i = 0; i < wall.length; i++) wall[i].draw();
+		for(var i = 0; i < creature.length; i++) if( !prompting){
+			creature[i].draw();	
+			}else{//Creature is done death sequence
+				if(creature[i].stats.health <= 0 && !creature[i].died){
+					if(i == cS){
+						ctx.fillText("Game Over!", 100 - ctxOx,100 - ctxOy)
+					}else{
+						creature[i].die();
+					}
+				}
+			}
+		for(var i = 0; i < elevators.length; i++) elevators[i].draw2();
+		
+		
+		
 		for(var i=0; i < items.length; i++)items[i].draw();
 		//Draw Foreground
 		for(var i = 0; i < foreGround.length; i++) foreGround[i].draw();
 		
-		//lightArea(creature[cS].x + 100, creature[cS].y+ 100, 3, 0.08);
-		//lightArea(creature[cS].x + 150, creature[cS].y+ 100, 1, 0.08);
+
 		lightRegion(creature[cS].x + 100, creature[cS].y+ 100, 12, 0.5);
 		
 		
-		//for(var i = 0; i < wallPanels.length; i++) wallPanels[i].shade();
-		
-		//for(var i = 0; i < creature.length; i++) if(creature[i].deathF != 10) creature[i].draw();
-		/*
-		ctx.fillStyle = 'yellow'
-		ctx.globalAlpha = 0.5
-		
-		for(var i=0; i < mapGrid.length; i++){
-			for(var j=0; j < mapGrid[i].length; j++){
-				if(mapGrid[i][j].wall) ctx.fillStyle = 'red'
-				else ctx.fillStyle = 'green'
-				ctx.fillRect(i*50,j*50,48,48);
-			}
-		}
-		*/
+	
 
 		ctx.globalAlpha = 0.8
 		ctx.translate(-ctxOx/10, -ctxOy/10);
@@ -3274,7 +4810,13 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			}
 		}
 		
-		
+		for(var i=0; i < bloodSplatLarge.length;i++) bloodSplatLarge[i].draw();
+		for(var i=0; i < bloodSplatLarge.length;i++){
+			if(bloodSplatLarge[i].f > 4){
+				bloodSplatLarge.splice(i,1);
+				i--;
+			}
+		}
 		
 		ctx.restore()
 		shade();
@@ -3286,72 +4828,231 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		//UI Stuff goes here
 		ctx.fillStyle = 'white'
 		ctx.font = "15pt Orbitron" 
+		//paintDelay = Date.now() - tStart;
+		ctx.globalAlpha = 1;
+		
+		//ctx.fillText(paintDelay, 100,100);
+		
 		for(var i = 0; i < exits.length; i++){
 			if(dist(creature[cS].x + 100, creature[cS].y + 100, exits[i].x, exits[i].y) < 80){
 				//ctx.fillText("Transit Point!", 100,100);
 				if(exits[i].skip){
-					ctx.fillText("(ENTER) to Exit", creature[cS].x + ctxOx + 100 - ctx.measureText("(ENTER) to Exit").width/2, creature[cS].y + ctxOy);
+					ctx.fillText("(ENTER)", creature[cS].x + ctxOx + 100 - ctx.measureText("(ENTER)").width/2, creature[cS].y + ctxOy);
 				}else{
-					ctx.fillText("(ENTER) to Exit", creature[cS].x + ctxOx + 100 - ctx.measureText("(ENTER) to Exit").width/2, creature[cS].y + ctxOy);
+					ctx.fillText("(ENTER)", creature[cS].x + ctxOx + 100 - ctx.measureText("(ENTER)").width/2, creature[cS].y + ctxOy);
 				}
 			}
 		}
+		
+		switching = true;
+		w1 = null
+		w2 = null
+		
+		for(var i=0; i < creature[cS].weapon.length; i++){
+			if(creature[cS].weapon[i] == null || creature[cS].weapon[i].useless ) switching = false;
+		}
+	
+		if(switching){
+			for(var i = 0; i < items.length; i++){
+				
+				if(dist(creature[cS].x + 100, creature[cS].y + 100, items[i].x, items[i].y) < 80 && items[i].weapon != null){
+					for(var j= 0; j < creature[cS].weapon.length; j++){
+						//console.log("  >>" + creature[cS].weapon[j].name);
+						if(creature[cS].weapon[j].id == items[i].weapon.id) switching = false;
+					}
+					if(switching){
+						w1 = items[i]
+						w2 = creature[cS].weapon[creature[cS].sw]
+						ctx.fillText("(E - Swap)", creature[cS].x + ctxOx + 100 - ctx.measureText("(E - Swap").width/2, creature[cS].y + ctxOy);
+					}//else ctx.fillText("Nope", creature[cS].x + ctxOx + 100 - ctx.measureText("Nope").width/2, creature[cS].y + ctxOy);
+				}
+			}
+		}
+		//ctx.fillText("Switching: " + switching, creature[cS].x + ctxOx + 100, creature[cS].y + ctxOy);
+		//if(w1 != null) ctx.fillText("weapon1: " + w1.name, creature[cS].x + ctxOx + 100, creature[cS].y + ctxOy - 10);
+		//if(w2 != null) ctx.fillText("weapon2: " + w2.name, creature[cS].x + ctxOx + 100, creature[cS].y + ctxOy - 20);
+				
+		
+		ctx.globalAlpha = 0.2;
+		
 		ctx.fillStyle = 'white'
-		ctx.globalAlpha = 0.4
-		ctx.fillRect(10, h - 80, 180, 70);
-		ctx.fillRect(200, h - 80, 180, 70);
-		ctx.fillRect(390, h - 80, 180, 70);
-		ctx.fillRect(580, h - 80, 180, 70);
+		ctx.fillRect(8, h - 59 + creature[cS].sw * 12, 90, 10);
 		ctx.globalAlpha = 1;
 		
-		ctx.fillStyle = 'black'
-		ctx.font = "10pt Courier"
-		for(var i=0; i < 4; i++){
+		ctx.font = '6pt wallFont'
+		ctx.fillText("Weapons", 5, h - 62);
+		ctx.font = '5pt wallFont'
+		for(var i=0; i < creature[cS].weapon.length; i++){
 			if(creature[cS].weapon[i] != null){
-				ctx.fillText(creature[cS].weapon[i].name, 10 + 190 * i, h - 70);
-				if(creature[cS].sw == i){
-					ctx.globalAlpha = 0.2
-					ctx.fillStyle = 'white'
-					ctx.fillRect(10 + i *190, h - 80, 180, 70);
-					ctx.fillStyle = 'black'
-					ctx.globalAlpha = 1;
+				ctx.fillStyle = 'white'
+				ctx.fillText(creature[cS].weapon[i].name, 10, h - 50 + i *12);
+				if(!creature[cS].weapon[i].useless){
+					ctx.fillText("DAM: " + creature[cS].weapon[i].stats.damage, 100, h - 50 + i *12);
+					if(creature[cS].weapon[i].type ==1) ctx.fillText("AMMO: " + (creature[cS].weapon[i].ammo + creature[cS].weapon[i].clip), 170, h - 50 + i *12);
 				}
-				if(creature[cS].weapon[i].type == 1){//Projectile Weapon
-					ctx.drawImage(creature[cS].weapon[i].IconPic, 10 + 190 * i, h - 60);
-					ctx.fillText("MAG: " + creature[cS].weapon[i].clip + "/" + creature[cS].weapon[i].capacity, 90 + 190 * i, h - 70);
-					ctx.fillText("AMMO: " + creature[cS].weapon[i].ammo, 90 + 190 * i, h - 20);
-				
-				}else{
-					if(creature[cS].weapon[i].firePic.length >0) ctx.drawImage(creature[cS].weapon[i].firePic[1], 10 + 190 * i, h - 60);
-				}
-				ctx.fillText("DAM: " + creature[cS].weapon[i].stats.damage, 120 + 190 * i, h - 60);
-					
+			
 			}
 		}
 		
 	
+	
+		//Allies
+		ctx.fillStyle = 'white'
+		var ind = 0;
+		
+		for(var i=0; i < creature.length; i++){
+			if(creature[i].stats.type == creature[cS].stats.type && creature[i].stats.health > 0){
+				ctx.fillStyle = 'white'
+				if(i!= cS)ctx.globalAlpha = 0.2
+				else {
+					ctx.globalAlpha = 0.4
+					ctx.fillRect(allyX + ind + 50, allyY, 50,50);
+				}
+				
+				ctx.fillRect(allyX + ind, allyY, 50,50);
+				//ctx.fillStyle = 'black';
+				//ctx.fillRect(allyX + ind + 2, allyY + 2, 46,46)
+				for(var j = 2; j < creature[i].weapon.length;j++){
+					if(j == creature[i].sw) ctx.globalAlpha = 0.4
+					else ctx.globalAlpha = 0.2
+					ctx.fillRect(allyX + ind, allyY -12 + j* 32, 100, 30)
+					ctx.globalAlpha = 1;
+					ctx.drawImage(creature[i].weapon[j].IconPic, allyX + ind, allyY -12 + j* 32);
+				
+					ctx.globalAlpha = 0.5
+					if(creature[i].weapon[j].maxCapacity > 0){
+					ctx.fillStyle = '#AAAAAA'
+					
+					ctx.fillRect(allyX + ind, allyY -10 + j * 32, 100, 3);
+					ctx.fillStyle = 'white'
+					ctx.fillRect(allyX + ind + 1, allyY -9 + j * 32, 98 *(creature[i].weapon[j].ammo + creature[i].weapon[j].clip)/creature[i].weapon[j].maxCapacity, 1);
+					}
+					
+				}
+				
+				ctx.globalAlpha = 1;
+				
+				creature[i].drawIcon(allyX + ind + 2, allyY + 2, 50,38);
+				
+				//Name
+				ctx.font = 'italic 5pt wallFont'
+				ctx.fillText(creature[i].name2, allyX + ind + 55, allyY + 10);
+				ctx.font = '4pt wallFont'
+				ctx.fillText(creature[i].name, allyX + ind + 55, allyY + 25);
+				ctx.fillText("Lev " + creature[i].level, allyX + ind + 55, allyY + 40);
+				
+				ctx.fillStyle = 'black'
+				ctx.globalAlpha = 0.5
+				ctx.fillRect(allyX + ind + 1, allyY + 40, 50, 5);
+				ctx.globalAlpha = 1
+				
+				
+				ctx.fillStyle = '#AA0000'
+				ctx.fillRect(allyX + ind, allyY + 46, 50, 3);
+				ctx.fillStyle = '#FF0000'
+				ctx.fillRect(allyX + ind + 1, allyY + 47, 48 * creature[i].stats.health/creature[i].stats.maxHealth, 1);
+				ctx.font = 'bold4pt wallFont'
+				ctx.fillText(creature[i].stats.health + " / " + creature[i].stats.maxHealth, allyX + ind + 1, allyY + 45);
+				ctx.fillStyle = '#00AAAA'
+				ctx.fillRect(allyX + 50 + ind, allyY + 46, 50, 3);
+				ctx.fillStyle = '#00FFFF'
+				ctx.fillRect(allyX + 51 + ind, allyY + 47, 48 * creature[i].exp/(creature[i].level*50), 1);
+				
+				
+				
+				
+				ind += 105
+			}
+		}
 		
 		//Mini Map
 		ctx.fillStyle = 'white'
-		ctx.fillText(levelName, mapX,mapY);
+		
 		ctx.globalAlpha = 0.5
 		
 		ctx.fillRect(mapX, mapY, mapW, mapH);
+		ctx.globalAlpha = 1;
+		pipeBox(mapX-10, mapY-10, mapW, mapH);
+		ctx.fillStyle = 'black'
+		ctx.fillText(levelName, mapX,mapY-6);
 		
 		
+		
+		ctx.globalAlpha = 0.2;
+		ctx.fillStyle = 'white'
+		ctx.fillRect(-50, dataY+10, 800, 100);
+		
+		for(var i=0; i < 5; i++){
+			ctx.fillRect(mapX, mapY + mapAni, mapW, -i);
+		}
+		
+		mapAni+=5
+		
+		if(mapAni > mapH + 10) mapAni = 0
+		
+		/*
+		ctx.strokeStyle = 'red'
+		ctx.beginPath(mapX + mapW/2, mapY + mapH/2)
+		ctx.arc(mapX + mapW/2, mapY + mapH/2, 50, 0, Math.PI * 2);
+		ctx.stroke()
+		ctx.closePath();*/
+		
+		ctx.globalAlpha = 1;
+		pipeBox(-50, dataY+10, 700, 100);
 		//Selected character stats
-		ctx.fillText("Health: ", 10, h - 100);
-		ctx.fillStyle = '#DD0000'
-		ctx.fillRect(78, h - 112, 204, 14);
+		ctx.globalAlpha = 0.2
+		ctx.fillStyle = 'white'
+		ctx.fillRect(dataX-10, dataY+20,113,85)
+		ctx.globalAlpha = 1
+		creature[cS].drawIcon(dataX- 10, dataY+ 20, 113,85)
+		
+		
+		ctx.font = '6pt wallFont'
+		if(creature[cS].stats.type < 2) ctx.fillText("PROTOTYPE: '" + creature[cS].name2 + "' GENE-LINE: " + creature[cS].name, 110 + dataX, dataY + 40);
+		else ctx.fillText("EMPLOYEE: " + creature[cS].name, 110 + dataX, dataY + 40);
+		ctx.fillText("Vitals: ", 110 + dataX, dataY + 60);
+		ctx.fillStyle = '#AA0000'
+		ctx.fillRect(dataX + 198, dataY + 48, 204, 14);
 		ctx.fillStyle = '#FF0000'
-		ctx.fillRect(80, h - 110, 200 * creature[cS].stats.health/creature[cS].stats.maxHealth, 10);
+		ctx.fillRect(dataX + 200, dataY + 50, 200 * creature[cS].stats.health/creature[cS].stats.maxHealth, 10);
+		
+		ctx.fillStyle = 'white'
+		ctx.fillText("Level " + creature[cS].level, dataX + 110, dataY + 80);
+		ctx.fillStyle = '#00AAAA'
+		ctx.fillRect(dataX + 198, dataY + 68, 204, 14);
+		ctx.fillStyle = '#00FFFF'
+		ctx.fillRect(dataX + 200, dataY + 70, 200 * creature[cS].exp/(creature[cS].level*50), 10);
+		ctx.fillStyle = 'white'
+		ctx.fillText(creature[cS].exp + " / " + creature[cS].level*50, dataX + 300 - ctx.measureText(creature[cS].exp + " / " + creature[cS].level*10).width / 2, dataY + 80);
+		
+		ctx.fillText(creature[cS].stats.health + " / " + creature[cS].stats.maxHealth, dataX + 300 - ctx.measureText(creature[cS].stats.health + " / " + creature[cS].stats.maxHealth).width / 2, dataY + 60);
+		
+		if(creature[cS].stats.health < 0){
+			creature[cS].stats.health = 0;
+			
+			//Find a new character to focus on
+			var bestInd = cS
+			for(var i =0; i < creature.length;i++){
+				if(creature[i].stats.type == creature[cS].stats.type){
+					if(creature[i].stats.health > creature[bestInd].stats.health) bestInd = i;
+				
+				}
+			}
+			
+			if(creature[bestInd].stats.health > 0) cS = bestInd
+			else{
+				//player is dead
+				console.log("You are all dead.");
+				makePrompt("Dead", "You have failed to escape to freedom.  ~~The Insect Hive has won.");
+			}
+		}
 		//Available characters
 		
 		//Map contents
 		//Walls
 		ctx.globalAlpha = 1;
 		ctx.fillStyle = 'white'
-		for(var i=0; i < wall.length;i++) ctx.fillRect(wall[i].x/mapD + mapX, wall[i].y/mapD + mapY, (wall[i].width/100)*mapD-1,(wall[i].height/100)*mapD-1);
+		for(var i=0; i < wall.length;i++) ctx.fillRect(wall[i].x/mapD + mapX, wall[i].y/mapD + mapY, (wall[i].width/100)*mapD,(wall[i].height/100)*mapD);
 		
 		//ForeGRound for testing
 		ctx.fillStyle = 'blue'
@@ -3361,12 +5062,24 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		//Creatures
 		ctx.fillStyle = 'red'
 		for(var i=0; i < creature.length;i++) {
-			if(creature[i].stats.type != creature[cS].stats.type) ctx.fillStyle = 'red'
-			else if(i != cS) ctx.fillStyle = 'green'
-			else ctx.fillStyle = 'blue'
-			ctx.fillRect(creature[i].x/mapD + mapX, (creature[i].y + 100)/mapD + mapY, mapD-1,mapD-1);
-		
-		}
+			if(creature[i].stats.health > 0){
+				if(creature[i].stats.type != creature[cS].stats.type) ctx.fillStyle = 'red'
+				else if(i != cS) ctx.fillStyle = 'white'
+				else ctx.fillStyle = 'white'
+				//ctx.fillRect(creature[i].x/mapD + mapX, (creature[i].y + 100)/mapD + mapY, mapD-1,mapD-1);
+				mapAlpha = 1- (mapAni -(creature[i].y + 100)/mapD )/mapH;
+			
+				if(mapAlpha > 1) mapAlpha = 0;
+				ctx.globalAlpha = mapAlpha;
+			
+				ctx.beginPath((creature[i].x+100)/mapD + mapX, (creature[i].y + 100)/mapD + mapY);
+				for(var j =0; j < 5; j++){
+					ctx.arc((creature[i].x+100)/mapD + mapX, (creature[i].y + 100)/mapD + mapY, j + mapAlpha * 2, 0, Math.PI*2);
+					ctx.fill();
+				}
+				ctx.closePath();
+			}
+		}	
 		
 		ctx.globalAlpha = 0.3
 		ctx.fillStyle = 'black'
@@ -3374,7 +5087,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		ctx.globalAlpha = 1;
 		
 		//Player fire control
-		if(mDown){
+		if(mDown && !prompting){
 			if(mx > mapX && mx < mapX + mapW && my > mapY && my < mapY + mapH){
 				ctxOx = ((mx - mapX)/mapD)* -100 + w/2;
 				ctxOy = ((my - mapY)/mapD)* -100 + h/2;
@@ -3393,18 +5106,88 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			level[cLevel].endLevel()
 		}
 		
-		if(prompting){
+		if(prompting){//Main game
+			ctx.globalAlpha = 0.7
+			ctx.fillStyle = 'black'
+			ctx.fillRect(0,0,w,h);
+			ctx.globalAlpha = 1;
 			drawPromptBox();
 			ctx.font = '15pt wallFont'
 			ctx.fillStyle = 'white'
-			if(promptAni < 100) promptAni++
+			
+			if(promptAni < 100) promptAni+=5
+			if(aniFast < 10) aniFast++;
+			
+			//if(promptMessage[promptIndex].length < 50 || promptAni > 100) promptAni = 100;
 			
 			textBox(promptTitle[promptIndex], w/2 - ctx.measureText(promptTitle[promptIndex]).width/2, h/2 - 120, 380);
-			ctx.font = '8pt wallFont'
-			textBox(promptMessage[promptIndex].slice(0,Math.floor(promptAni/100*promptMessage[promptIndex].length)), w/2 -  280, h/2 - 90, 540);
+			ctx.font = '7pt wallFont'
+			if(promptCreature[promptIndex] == null) textBoxScroll(promptMessage[promptIndex].slice(0,Math.floor(promptAni/100*promptMessage[promptIndex].length)), w/2 -  270, h/2 - 90, 570, promptHeight);
+			else textBoxScroll(promptMessage[promptIndex].slice(0,Math.floor(promptAni/100*promptMessage[promptIndex].length)), w/2 -  270, h/2 - 90, 480, promptHeight);
 		
+			
+			if(promptLines > promptHeight/12){
+				ctx.fillStyle = '#BBBBBB'
+				ctx.fillRect(w/2 - 280, h/2 - 102, 5, promptHeight)
+				ctx.fillStyle = 'white';
+				ctx.fillRect(w/2 - 280, h/2 - 102+ promptScroll * (promptHeight/promptLines), 5, promptHeight *((promptHeight/12)/promptLines))
+			}
+			
+				
+			if(promptCreature[promptIndex] != null){
+				ctx.fillStyle = 'black'
+				ctx.fillRect(w/2 + 230+ ((10-aniFast)/10)*300,200, 259, 194)
+				
+				creature[promptCreature[promptIndex]].drawIcon(w/2 + 230+ ((10-aniFast)/10)*300,200, 259, 194);
+				ctx.fillStyle = 'white'
+				ctx.fillText(creature[promptCreature[promptIndex]].name2, w/2 + 250+ ((10-aniFast)/10)*300,380)
+				pipeBox(w/2 + 230 + ((10-aniFast)/10)*300,200, 259, 194);
+			}
 			OKButton.draw();
 		}
+		
+		
+		//Player control
+		for(var i=0; i < keys.length && !prompting; i++){
+			if(keys[i] == 38 || keys[i] == 87){
+			//up
+				ridingElevator = false;
+				for(var j=0;j<elevators.length;j++){
+					if(elevators[j].playerOn()) { //used to be inUse
+						elevators[j].goUp();
+						ridingElevator = true;
+					}
+				}
+				if(!ridingElevator) creature[cS].jump();
+			
+			}else if(keys[i] == 39 || keys[i] == 68){
+			//right
+	
+				creature[cS].state = 2
+				if(creature[cS].stats.wing > 0 && creature[cS].falling()&& creature[cS].sx < 8)creature[cS].sx+=1
+				else creature[cS].sx = creature[cS].stats.speed;
+			
+			}else if (keys[i]== 37 || keys[i] == 65){
+			//left
+				creature[cS].state = 3;
+				if(creature[cS].stats.wing > 0 && creature[cS].falling() && creature[cS].sx > -8)creature[cS].sx-=1
+				else creature[cS].sx =-1* creature[cS].stats.speed;
+			}else if(keys[i]==40 || keys[i] == 83){
+		//down
+				ridingElevator = false;
+				for(var j=0;j<elevators.length;j++){
+				
+					if(elevators[j].playerOn()) {//again, used to be inUse
+						elevators[j].goDown();
+						ridingElevator = true;
+					}
+				}
+			if(!ridingElevator &&  !creature[cS].falling() && creature[cS].sy == 0)creature[cS].state = 4;
+			
+			}
+		}
+		
+		
 		//End main game
 		}else if (screen == 6){
 		//level maker
@@ -3418,8 +5201,8 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		
 			//if(my > h - 20) ctxOy-= 100;
 			//else if (my < 20)ctxOy += 100;
-			ctx.fillStyle = 'white'
-			ctx.fillText("Offset: " + ctxOx + " " + ctxOy, 20,20);
+			ctx.font = '8pt wallFont'
+			ctx.fillStyle = 'red'
 			ctx.translate(ctxOx, ctxOy);
 		
 		
@@ -3438,19 +5221,30 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			}	
 			for(var i = 0; i < wall.length; i++) wall[i].draw();
 			for(var i=0; i < items.length; i++)items[i].draw();
-			for(var i = 0; i < creature.length; i++) if(creature[i].deathF != 10) creature[i].draw();
-			
-			for(var i = 0; i < elevators.length; i++) elevators[i].draw2();
 				
-			
-			
 			for(var i = 0; i < lamps.length; i++) lamps[i].draw()//ctx.drawImage(lampLit, lamps[i].x, lamps[i].y);
 			for(var i=0; i < rLights.length; i++)rLights[i].draw();
 			for(var i=0; i < dLights.length; i++)dLights[i].draw();
 			for(var i=0; i < pulseLights.length; i++)pulseLights[i].draw();
+			ctx.fillStyle = 'green'
+			for(var i = 0; i < creature.length; i++) if(creature[i].deathF != 10) {
+				creature[i].draw();
+				ctx.fillText(i, creature[i].x, creature[i].y);
+			}
+			
+			for(var i = 0; i < elevators.length; i++) elevators[i].draw2();
+				
+			
+		
 			for(var i=0; i < foreGround.length; i++)foreGround[i].draw();
 			
-			
+			for(var i=0; i < bloodSplatLarge.length;i++) bloodSplatLarge[i].draw();
+			for(var i=0; i < bloodSplatLarge.length;i++){
+				if(bloodSplatLarge[i].f > 4){
+					bloodSplatLarge.splice(i,1);
+					i--;
+				}
+			}
 	
 			ctx.restore()
 			if(lighting) shade()
@@ -3474,59 +5268,88 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 				}
 			}
 			
-			ctx.font = '8pt Orbitron'
-			ctx.fillStyle = 'white'
-			ctx.fillText("1 - Panels", w - 150, 50);
-			ctx.fillText("2 - Wall/Obstacles", w - 150, 60);
-			ctx.fillText("3 - Lamps / Lights", w - 150, 70);
-			ctx.fillText("4 - Items", w - 150, 80);
-			ctx.fillText("5 - Foreground Items", w - 150, 90);
-			ctx.fillText("6 - Creatures", w - 150, 100);
-			ctx.fillText("7 - Sounds Objects", w - 150, 110);
 			
-			ctx.globalAlpha = 0.5
-			ctx.fillRect(10,h - 110, 600, 120);
+			
+		
 			ctx.globalAlpha = 1;
-			ctx.fillStyle = 'white'
+			
+			
+			ctx.fillStyle = 'gray'
+			BSGBox(0,0, w,50);
+			BSGBox(0, 450, w, h - 450);
+			
+		
+			
+			
+			
 			config.draw();
+			gridToggle.draw();
 			lighter.draw();
 			rightSlide.draw();
 			leftSlide.draw();
+			loadEdit.draw();
 			
+			ctx.fillStyle = 'white'
+			ctx.fillText("Level / Cutscene Index: " + cLevel, 300,20);
+			ctx.fillText("Canvas Offset: " + ctxOx + "x" + ctxOy, 300,30);
+			ctx.fillText("Cursor: " + "(" + (mx -ctxOx) + "," + (my - ctxOy) + ")", 300,40);
+			ctx.font = '8pt Orbitron'
+			ctx.fillStyle = 'white'
+			ctx.fillText("1 - Panels", 600, 10);
+			ctx.fillText("2 - Wall/Obstacles", 600, 20);
+			ctx.fillText("3 - Lamps / Lights", 600, 30);
+			ctx.fillText("4 - Items", 600, 40);
+			ctx.fillText("5 - Foreground Items", 600, 50);
+			ctx.fillText("6 - Creatures", 750, 10);
+			ctx.fillText("7 - Sounds Objects", 750, 20);
+			ctx.fillText("8 - Biological", 750, 30);
+			ctx.fillText("9 - Animated Objects", 750, 40);
+			ctx.fillText("T - Test Level", 750, 50);
+		
 			if(selEdit == 1){
-				ctx.fillText("Panels", 20, h - 120);
+				ctx.fillText("Panels", 50, h - 120);
 				for(var i=0; i < bgOptions.length; i++) {
 					bgOptions[i].draw();
 				}
 			}else if (selEdit == 2){
-				ctx.fillText("Walls & Obstacles", 20, h - 120);
+				ctx.fillText("Walls & Obstacles", 50, h - 120);
 				for(var i=0; i < wOptions.length; i++) {
 					wOptions[i].draw();
 				}
 			}else if (selEdit == 3){
-				ctx.fillText("Lighting", 20, h - 120);
+				ctx.fillText("Lighting", 50, h - 120);
 				for(var i=0; i < lOptions.length; i++) {
 					lOptions[i].draw();
 				}
 			}else if (selEdit == 4){
-				ctx.fillText("Items", 20, h - 120);
+				ctx.fillText("Items", 50, h - 120);
 				for(var i=0; i < iOptions.length; i++) {
 					iOptions[i].draw();
 				}
 			}else if (selEdit == 5){
-				ctx.fillText("Foreground", 20, h - 120);
+				ctx.fillText("Foreground", 50, h - 120);
 				for(var i=0; i < fOptions.length; i++) {
 					fOptions[i].draw();
 				}
 			}else if (selEdit == 6){
-				ctx.fillText("Creatures", 20, h - 120);
+				ctx.fillText("Creatures", 50, h - 120);
 				for(var i=0; i < cOptions.length; i++) {
 					cOptions[i].draw();
 				}
 			}else if (selEdit == 7){
-				ctx.fillText("Sound Objects", 20, h - 120);
+				ctx.fillText("Sound Objects", 50, h - 120);
 				for(var i=0; i < sOptions.length; i++) {
 					sOptions[i].draw();
+				}
+			}else if (selEdit == 8){
+				ctx.fillText("Biological Objects", 50, h - 120);
+				for(var i=0; i < bOptions.length; i++) {
+					bOptions[i].draw();
+				}
+			}else if (selEdit == 9){
+				ctx.fillText("Animated Objects", 50, h - 120);
+				for(var i=0; i < aOptions.length; i++) {
+					aOptions[i].draw();
 				}
 			}
 			
@@ -3565,9 +5388,10 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			
 			
 		//Grid lines
+		if(gridLines){
 		ctx.strokeStyle = 'white'
 		ctx.globalAlpha = 0.2
-		for(var i=0; i < h; i+= 10){
+		for(var i=50; i < 450; i+= 10){
 			if(i%100 == 0) ctx.globalAlpha = 0.6
 			else ctx.globalAlpha = 0.2
 			ctx.beginPath();
@@ -3580,14 +5404,15 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			if(i%100 == 0) ctx.globalAlpha = 0.6
 			else ctx.globalAlpha = 0.2
 			ctx.beginPath();
-			ctx.moveTo(i, 0);
-			ctx.lineTo(i, h);
+			ctx.moveTo(i, 50);
+			ctx.lineTo(i, 450);
 			ctx.stroke();
 			ctx.closePath();
 		}
 		ctx.strokeStyle = 'black';
 		ctx.globalAlpha = 1;
 			
+		}
 		}
 		ani--;
 		if(ani < 0) ani = aniDelay;
@@ -3597,60 +5422,124 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		
 	}////////////////////////////////////////////////////////////////////////////////END PAINT/ GAME ENGINE
 	
-	
-	function shade(){
-		var minX = Math.abs(Math.floor(ctxOx/lightRes));
-		var minY = Math.abs(Math.floor(ctxOy/lightRes));
-
-		var Ox = Math.floor(ctxOx - Math.floor(ctxOx/lightRes)*lightRes)
-		var Oy = Math.floor(ctxOy - Math.floor(ctxOy/lightRes)*lightRes)
-		var t1, t2;
-		
-		ctx.fillStyle = 'black'
-		for(var i = -lightRes; i < w + lightRes; i+=lightRes){
-			for(var j = 0; j < h; j+=lightRes){
-				t1 = Math.floor(i/lightRes) + minX
-				t2 = Math.floor(j/lightRes) + minY
-				if(t1 >= 0 /*&& t1 < lightGrid.length*/ && t2 >= 0 /*&& t2 < lightGrid[0].length*/){
-					if(1- lightGrid[t1][t2] < 0) ctx.globalAlpha = 0
-					else ctx.globalAlpha = 1 - lightGrid[t1][t2]
-				
-					ctx.globalAlpha = ctx.globalAlpha * 0.85
-					lightGrid[t1][t2] = 0
-					ctx.fillRect(i + Ox,j + Oy,lightRes,lightRes);
-				}
-			}
+	function Shadow(x,y,p,shim){
+		this.x = x
+		this.y = y
+		this.pic = p
+		this.shimmer = shim;
+		this.draw = function(){
+			if(this.shimmer) ctx.drawImage(this.pic, this.x + shimmer, this.y)
+			else ctx.drawImage(this.pic, this.x, this.y)
 		}
-		
 	}
-	/*
-	function shade(){
-		var minX = Math.abs(Math.floor(ctxOx/lightRes));
-	//	var maxX = minX + Math.floor(w/10);
-		var minY = Math.abs(Math.floor(ctxOy/lightRes));
-	//	var maxY = minY + Math.floor(h/10);
+	
+	//var wBack1 = makePicture('Animations/Objects/waterBack1.png')
+	//var wBack2 = makePicture('Animations/Objects/waterBack2.png')
+	
+	function WaterLight(a,b, s, inte){
+	
+		this.x = a
+		this.y = b
+		this.size = s;
+		//this.waveAni = [];
+	//	this.intensity = inte;
+		this.lighting = Math.round(this.size/lightRes)
+		//this.picAni = 0
+	//	for(var i=0; i < this.size/40; i++) {
+			//this.waveAni.push(20*i + rand(2) + 10)
+			//this.x.push(a - 10 + rand(20));
+		//}
+		//this.slider = 0;
+		//this.sliderS = 10;
+		this.draw = function(){
+			lightRegion(this.x, this.y, this.lighting, 0.2 + Math.random()/10);
+		/*
 		
-		var Ox = ctxOx - Math.floor(ctxOx/lightRes)*lightRes
-		var Oy = ctxOy - Math.floor(ctxOy/lightRes)*lightRes
-		var t1, t2;
-		
-		ctx.fillStyle = 'black'
-		for(var i = -lightRes; i < w + lightRes; i+=lightRes){
-			for(var j = 0; j < h; j+=lightRes){
-				t1 = Math.floor(i/lightRes) + minX
-				t2 = Math.floor(j/lightRes) + minY
-				if(t1 >= 0 && t1 < lightGrid.length && t2 >= 0 && t2 < lightGrid[0].length){
-					if(1- lightGrid[t1][t2] < 0) ctx.globalAlpha = 0
-					else ctx.globalAlpha = 1 - lightGrid[t1][t2]
-				
-					ctx.globalAlpha = ctx.globalAlpha * 0.95
-					lightGrid[t1][t2] = 0
-					ctx.fillRect(i + Ox,j + Oy,lightRes,lightRes);
+			this.picAni += 1;
+			if(this.picAni > 9) this.picAni = 0;
+			//ctx.fillText(0.5 * Math.sin(this.picAni * Math.PI*2 / 10) + 0.5, 
+			/*ctx.globalAlpha = (0.5 * Math.sin(this.picAni * Math.PI*2 / 10) + 0.5)/2
+			ctx.drawImage(wBack1, this.x - 50, this.y - 100);
+			ctx.globalAlpha = (1- ctx.globalAlpha)/2
+			ctx.drawImage(wBack2, this.x - 50, this.y - 100);
+			
+			this.slider+= this.sliderS
+			if(this.slider > 20 || this.slider < -20) this.sliderS *= -1
+			//ctx.drawImage(wBack1, this.x - 50 + this.slider, this.y - 100);
+			//ctx.drawImage(wBack2, this.x - 50 - this.slider, this.y - 100);
+			
+			ctx.strokeStyle = 'white'
+			for(var j=0; j < this.waveAni.length; j++){
+				ctx.globalAlpha = (1-(this.waveAni[j]/this.size))/this.intensity;
+				for(var i=0; i < 5; i++){
+					ctx.beginPath()
+					ctx.lineWidth = i/2
+					//ctx.arc(this.x,this.y, i/2+ this.waveAni[j], Math.PI,0)
+					//ctx.arc(this.x,this.y, i/2+ this.waveAni[j], Math.PI + Math.random()*(Math.PI/4),-Math.random()*(Math.PI/4))
+					
+					//ctx.arc(this.x + this.waveAni[j], this.y, i, Math.PI, Math.PI/2);
+					ctx.stroke();
+					ctx.closePath();
+					/*
+					for(var k=0.25; k < 6.25; k++){
+					ctx.globalAlpha = Math.random()/10
+					ctx.beginPath()
+					ctx.lineWidth = i/2
+					ctx.arc(this.x,this.y, i/2+ this.waveAni[j], -(k+0.5)*Math.PI/6, -k*Math.PI/6 )
+					ctx.stroke();
+					ctx.closePath();
+					
+					}
 				}
+				this.waveAni[j] *= 1.1
+				if(this.waveAni[j] > this.size) this.waveAni[j] = 10+ rand(3)
+			}
+			ctx.globalAlpha = 1
+			*/
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	function shade(){	
+		var Ox = ctxOx % lightRes - Math.floor(lightRes/2)
+		var Oy = ctxOy % lightRes - Math.floor(lightRes/2)
+		var t1, t2;
+		var baseShade = 0.9//0.85
+		
+		var extraShade = heartTimer / heartDelay;
+		ctx.fillStyle = 'black'
+		
+		if(heartDelay < 8){
+			baseShade += extraShade*0.4
+			ctx.fillStyle = '#' + (Math.floor(extraShade * 128)).toString(16)+ '0000';
+		}
+
+		for(var i = 0; i < lightGrid.length; i++){
+			for(var j = 0; j < lightGrid[i].length; j++){
+				if(1- lightGrid[i][j] < 0) ctx.globalAlpha = 0
+				else ctx.globalAlpha = 1 - lightGrid[i][j]
+				
+				//ctx.fillStyle = lightGridC[i][j].getCol();
+				ctx.globalAlpha = ctx.globalAlpha * baseShade
+			
+				ctx.fillRect(i*lightRes + Ox,j*lightRes + Oy,lightRes,lightRes);
+				
+				
+				lightGrid[i][j] = 0
+				//lightGridC[i][j].r = 0
+				//lightGridC[i][j].g = 0
+				//lightGridC[i][j].b = 0
 			}
 		}
-		
-	}*/
+	}
+
 	/////////////////////
 	/////	CURSCENES
 	///////////////////
@@ -3679,6 +5568,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			ctx.fillText(this.frame + "/" + this.endFrame, 50,50);
 		}
 		this.load = function(){
+			
 			stopSound();
 			wallPanels = this.lev.wallPanels
 			wall = this.lev.wall
@@ -3691,6 +5581,17 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			elevators = this.lev.elevators
 			for(var i =0; i < elevators.length; i++) elevators[i].initialize();
 		resetMapGrid();
+		
+		
+		
+		
+		/*
+		for(var i=0; i < creature.length; i++){
+			creature[i].state = 0
+			creature[i].sx = 0
+		}*/
+		
+		
 		var tx = 0;
 		var ty = 0;
 		for(var i= 0 ; i < wallPanels.length; i++){
@@ -3710,6 +5611,16 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		}
 		this.endScene = function(){
 			loadLevel(this.nextLevel);
+			if(allies.length >0){	
+				for(var i=0; i < allies.length; i++){
+				//if(allies[i].stats.type == creature[cS].stats.type){
+					allies[i].x = level[this.nextLevel].start.x + i * 20;
+					allies[i].y = level[this.nextLevel].start.y;
+				//creature.push(allies[i])
+					//level[this.nextLevel].creature.push(allies[i]);
+				//}
+				}
+			}
 		}
 	}
 	
@@ -3767,13 +5678,15 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 	cutscene[0].lev.creature[2].aimer= {x:w/2 + 100, y: 280}
 	cutscene[0].lev.creature[2].taimer = cutscene[0].lev.creature[2].aimer
 	cutscene[0].lev.wallPanels.push(new wordWall(410,280, 'ROOM 21-B',5));
-cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
+	cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 
 	cutscene[0].draw = function(){
 	
 		
 		if(this.frame == 5){
+			creature[2].sw = 2
 			creature[1].speak("Monitor, begin recording.");
+			cutscene[0].lev.creature[0].taimer= {x:cutscene[0].lev.creature[1]+100, y: cutscene[0].lev.creature[1]+200}
 			cutscene[0].lev.creature[1].state = 2
 			cutscene[0].lev.creature[1].sx = 5
 		}else if(this.frame == 10) {
@@ -3917,12 +5830,23 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.stats.hair = rand(4) + 1;
 		result.stats.wing = 0;
 		result.speak("");
+		
+		if(t == 0){//insect
+			result.portStats.eyes = rand(3);
+		
+		}else if(t == 1){//reptile
+			result.portStats.eyes = rand(3);
+		
+		}
 	
+	result.portStats.nose = rand(4);
+	result.portStats.mouth = rand(4);
 		return result
 	}
 	
 	function Marine(x,y, t){
 		var result = createCreature(80,45,40,155);
+		result.name = ranks[rand(ranks.length)] + " " + HNames[rand(HNames.length)]
 		result.x = x
 		result.y = y
 		result.stats.health = 100
@@ -3946,16 +5870,27 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 				result.stats.torso = 3
 			}
 		}
+		result.portStats.mouth = rand(3)
+		result.portStats.eyebrow = rand(2)
+		result.portStats.nose = rand(4)
+		
+		
 		result.stats.type = t;
 		result.stats.abdomen = 0;
-		result.stats.legs= 0
-		result.stats.hair = 0;
+		temp = rand(4)
+		if(temp == 0) result.stats.legs= 0;
+		else if(temp == 1)result.stats.legs= 4;
+		else if(temp == 2)result.stats.legs= 5;
+		else if(temp == 3)result.stats.legs= 6;
+		
+		if(Math.random() < 0.5) result.stats.hair = 7
+		else result.stats.hair = 0;
 		result.stats.wing = 0;
 		result.speak("");
-		result.weapon.push(Punch0());
-		result.weapon.push(Punch0());
-		if(Math.random() > 0.5)result.giveGun(SMG(), 0);
-		else result.giveGun(RIFLE(), 0);
+		result.weapon.push(MarinePunch());
+		result.weapon.push(MarinePunch());
+		if(Math.random() > 0.5)result.giveGun(SMG(), 2);
+		else result.giveGun(RIFLE(), 2);
 		//result.weapon.push(PISTOL());
 		
 		result.giveGun(PISTOL(), 3);
@@ -3968,9 +5903,10 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		return result
 	}
 	
-	
+		
 	function Scientist(x,y, t){
 		var result = createCreature(80,45,40,155);
+		result.name = "Dr. " + HNames[rand(HNames.length)]
 		result.x = x
 		result.y = y
 		result.stats.health = 100
@@ -3992,6 +5928,9 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 			else if (temp == 1) result.stats.hair = 2;
 			else result.stats.hair = 6;
 		}
+		result.portStats.mouth = rand(3)
+		result.portStats.nose = rand(4)
+		result.portStats.eyebrow = rand(2)
 		result.stats.type = t;
 		result.stats.abdomen = 0;
 		result.stats.legs= 1
@@ -4000,14 +5939,56 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.speak("");
 		//result.giveGun(blank(), 0);
 		//result.weapon.push(PISTOL());
-		result.weapon.push(blank());
-		//result.giveGun(PISTOL(), 3);
+		result.weapon.push(blank()); //disarming the scientists
 		
-		//result.weapon.push(null);
-	//	if(t == 0) result.weapon.push(MarinePISTOL());
-	//	else result.weapon.push(MarinePISTOL());
+	
 
-	//result.weapon.push(RIFLE());
+		return result
+	}
+	
+	function ScientistArmed(x,y, t){
+		var result = createCreature(80,45,40,155);
+		result.name = "Dr. " + HNames[rand(HNames.length)]
+		result.x = x
+		result.y = y
+		result.stats.health = 100
+		result.sw = 0;
+		result.greets.push("Please no more!");
+		result.greets.push("We're sorry!");
+		result.greets.push("Please!");
+		var temp = 0
+		if(Math.random() < 0.5) {//male
+			result.stats.torso = 4
+			if(rand(2) == 0) result.stats.hair = 0;
+			else result.stats.hair = 8;
+		}else {//Female
+			temp = rand(3)
+			if(temp == 0) result.stats.torso = 5
+			else /*if(temp == 1)*/ result.stats.torso = 6
+			//else result.stats.torso = 7
+			
+			//if(result.stats.torso != 7){//has helmet
+				temp = rand(4)
+				if(temp == 0)result.stats.hair = 1;
+				else if (temp == 1) result.stats.hair = 2;
+				else if (temp == 2) result.stats.hair = 6;
+				else result.stats.hair = 8;
+			//} else result.stats.hair = 0;
+		}
+		result.portStats.mouth = rand(3)
+		result.portStats.nose = rand(4)
+		result.portStats.eyebrow = rand(2)
+		result.stats.type = t;
+		result.stats.abdomen = 0;
+		if(rand(3) == 0)result.stats.legs= 2
+		else result.stats.legs= 1
+		result.stats.wing = 0;
+		result.speak("");
+		//result.giveGun(blank(), 0);
+		//result.weapon.push(PISTOL());
+		temp = rand(2)
+		if(temp == 0) result.weapon.push(sciHammer()); 
+		else result.weapon.push(sciPunch()); 
 		return result
 	}
 	
@@ -4025,6 +6006,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		this.clip = 0;
 		this.ammo = 0;
 		this.capacity = 0;
+		this.maxCapacity = 0;
 		this.id = -1; 
 		this.result//no idea what this does?
 		this.stats = {damage:0, range:-1, coolDown:10, burst:1}
@@ -4098,7 +6080,8 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.firePic.push(rifleFlash[1]);
 		result.firePic.push(rifleFlash[2]);
 		result.stats = {damage:30, range:-1, coolDown:20, burst:3,singleHand:false}
-		result.ammo = 100;
+		result.ammo = 60;
+		result.maxCapacity = 150
 		result.capacity = 30;
 		result.clip = 15;
 		result.id = rifleID
@@ -4121,7 +6104,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.pic = SMGPic
 		result.firePic.push(SMGFlash[0]);
 		result.firePic.push(SMGFlash[1]);
-		result.stats = {damage:15, range:-1, coolDown:6, burst:2,singleHand:false}
+		result.stats = {damage:15, range:-1, coolDown:8, burst:2,singleHand:false}
 		result.ammo = 40;
 		result.capacity = 30;
 		result.clip = 5;
@@ -4131,13 +6114,14 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 			items.push(smgItem(a,b));
 			items[items.length-1].ammo = result.clip + result.ammo
 		}
+		result.maxCapacity = 200
 		result.sound = smgSound;
 		return result;
 	}
 	
 	function blank(){
 		var result = new Weapon();
-		result.name = "N/A";
+		result.name = "EMPTY";
 		result.useless = true;
 		result.oX = -10
 		result.oY = -10
@@ -4146,15 +6130,17 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.pic = blankPic
 		//result.firePic.push(SMGFlash[0]);
 		//result.firePic.push(SMGFlash[1]);
-		result.stats = {damage:15, range:-1, coolDown:6, burst:2,singleHand:false}
+		result.stats = {damage:0, range:-1, coolDown:6, burst:2,singleHand:false}
 		result.ammo = 40;
 		result.capacity = 30;
 		result.clip = 5;
-		result.id = SMGID
-		result.accuracy = 10
+		result.id = SMGID;
+		result.accuracy = 10;
 		return result;
 	}
 	
+
+
 
 	function PISTOL(){
 		var result = new Weapon();
@@ -4169,6 +6155,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.firePic.push(pistolFlash[1]);
 		result.stats = {damage:15, range:-1, coolDown:10, burst:1,singleHand:true}
 		result.ammo = 40;
+		result.maxCapacity = 80;
 		result.capacity = 10;
 		result.clip = 5;
 		result.accuracy = 10
@@ -4252,6 +6239,64 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		return result;
 	}
 	
+	function MarinePunch(){
+		var result = new Weapon();
+		result.name = "Fist";
+		result.oX = -10
+		result.oY = -10
+		result.type = 0;
+		result.pic = marinePunchPics[0]
+		result.firePic.push(marinePunchPics[1]);
+		result.firePic.push(marinePunchPics[2]);
+		result.firePic.push(marinePunchPics[3]);
+		result.firePic.push(marinePunchPics[2]);
+		result.stats = {damage:15, range:80, coolDown:20, burst:1,singleHand:false}
+		result.ammo = 0;
+		result.capacity = 0;
+		result.clip = 0;
+		result.id = 5
+		return result;
+	}
+	function sciHammer(){
+		var result = new Weapon();
+		result.name = "Sledge";
+		result.oX = -45
+		result.oY = -50
+		
+		result.type = 0;
+		result.pic = sciHammerPics[0]
+		result.firePic.push(sciHammerPics[1]);
+		result.firePic.push(sciHammerPics[2]);
+		result.firePic.push(sciHammerPics[3]);
+		result.firePic.push(sciHammerPics[4]);
+		result.firePic.push(sciHammerPics[4]);
+		result.firePic.push(sciHammerPics[2]);
+		result.firePic.push(sciHammerPics[1]);
+		result.stats = {damage:50, range:80, coolDown:10, burst:5,singleHand:false}
+		result.ammo = 0;
+		result.capacity = 0;
+		result.clip = 0;
+		result.id = 5
+		return result;
+	}
+	function sciPunch(){
+		var result = new Weapon();
+		result.name = "Bone Saw";
+		result.oX = -10
+		result.oY = -10
+		result.type = 0;
+		result.pic = sciPunchPics[0]
+		result.firePic.push(sciPunchPics[1]);
+		result.firePic.push(sciPunchPics[0]);
+		result.firePic.push(sciPunchPics[1]);
+		result.firePic.push(sciPunchPics[0]);
+		result.stats = {damage:30, range:80, coolDown:10, burst:1,singleHand:false}
+		result.ammo = 0;
+		result.capacity = 0;
+		result.clip = 0;
+		result.id = 5
+		return result;
+	}
 	
 	function Monster1Punch(){
 		var result = new Weapon();
@@ -4340,13 +6385,16 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 			return c.collidePoint(this.x,this.y) || c.collidePoint(this.x + 100,this.y) || c.collidePoint(this.x,this.y+ 30) || c.collidePoint(this.x + 100,this.y + 30)
 		}
 		this.collect = function(c){
-			if(c.stats.health + this.health < c.stats.maxHealth){
-				c.stats.health += this.health;
-				this.health = -1;
-			}else{
-				this.health -= c.stats.maxHealth - c.stats.health;
-				c.stats.health = c.stats.maxHealth;
+			if(this.health > 0){
+				if(c.stats.health + this.health < c.stats.maxHealth){
+					c.stats.health += this.health;
+					this.health = -1;
+				}else{
+					this.health -= c.stats.maxHealth - c.stats.health;
+					c.stats.health = c.stats.maxHealth;
+				}
 			}
+			
 			if(this.health < 0 && this.weapon == null) this.x = -1000
 
 			
@@ -4358,33 +6406,64 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 				else if(c.weapon[i].id == this.id) alreadyPresent = true;//Weapon is already present
 			}
 			
+		
+			if(alreadyPresent){
 			for(var i=0; i < c.weapon.length; i++){
 				
 				if(c.weapon[i] != null){
 					if(c.weapon[i].id == this.id) {
-						c.weapon[i].ammo += this.ammo
+					
+						var taking = c.weapon[i].maxCapacity - c.weapon[i].ammo - c.weapon[i].clip
+						var having = this.ammo 
+						if(this.weapon != null) having += this.weapon.clip + this.weapon.ammo
+						
+						if(taking < 0) taking = 0;
+						
+						//console.log("taking: " + taking + "    having: " + having);
+						
+						
+						if(taking > having) taking = having;
+						if(taking < 0) taking = 0;
+						c.weapon[i].ammo += taking
+						
 						if(this.weapon != null){//Has a weapon attached
-							if(this.weapon.clip + this.weapon.ammo + this.ammo > 0) c.speak((this.weapon.clip + this.weapon.ammo + this.ammo) + " " + this.weapon.name + " rounds.");
-							c.weapon[i].ammo += this.weapon.clip + this.weapon.ammo
-							this.weapon.clip = 0
-							this.weapon.ammo = 0
+							if(having > 0 && taking > 0) c.speak(taking + " " + this.weapon.name + " rounds.");
+							
 						}
 						
-						this.ammo = 0;
+						
+						this.ammo -= taking;
+						
+						if(this.ammo < 0) {
+							//console.log("ITem ammo stash spent, borrowing from item weapon object.");
+							this.weapon.ammo += this.ammo
+							this.ammo = 0
+							if(this.weapon.ammo > 0) {
+								//console.log("Weapon over borrowed, going for its clip now..");
+								this.weapon.clip += this.weapon.ammo
+								this.weapon.ammo = 0;
+								if(this.weapon.clip < 0) this.weapon.clip = 0;//console.log("Total math failure!");
+							}
+						}
+						
+						//console.log("Result for item.  Ammo: " +this.ammo + " " + this.weapon.clip + " " + this.weapon.ammo)
+						//Assuming that a negative ammo is okay as the weapon itself will have the shortfall
 						pickupWeapon = -1;//Ammo harvested, in matching weapon
 					}
 				}
 			}
-			
+			}
 			//Ammo not harvested
 			//empty slot is available
-		
+			//console.log(alreadyPresent + " " + pickupWeapon);
 			if(pickupWeapon != -1 && this.weapon != null && !alreadyPresent){
 				updateWeapon(this.weapon, c.stats.type);
 				c.weapon[pickupWeapon] = this.weapon;
 				c.speak("A " + this.weapon.name + "!");
 				if(c.sw == 0 || c.sw == 1) c.sw = pickupWeapon;
 				this.x = -1000
+			}else if(pickupWeapon == -1 && this.weapon != null && !alreadyPresent){
+				c.speak(this.weapon.name + " here.");
 			}
 				
 			
@@ -4480,40 +6559,135 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.message = mess
 		result.title = messt
 		result.collect = function(){
-			makePrompt(this.title, this.message);
+			makePrompt(this.title, this.message); 
 			this.x = -1000
 		}
 		
 		return result;
 	}
 	
+		
+	function rumbler(a,b,p, dur, perm){
+		var result = Trap(a,b,p, true);
+		result.dur = dur
+		
+		result.timer = 0;
+		
+		if(perm == 0){
+			result.collect = function(){
+				rumble = this.dur;
+				this.x = -1000
+			}
+		}else{
+			result.collect = function(){
+				/*if(this.timer == 0){
+					rumble = this.dur;
+					this.timer = 100;
+				}else this.timer--;*/
+				rumber = this.dur;
+				
+			}
+		
+		
+		}
+		
+		return result;
+	}
 	
-		function spawnTrap(a,b,p, type, lev){
+	
+	
+	function spawner(a,b, type, lev, r){
+		this.x = a
+		this.y = b
+		this.type = type
+		this.rate = r
+		this.counter = 0
+		this.spawnx = a;
+		this.spawny = b;
+		this.lev = lev;
+		
+		this.draw = function(){
+			this.counter++
+			if(screen == 6) this.counter = -1
+			if(this.counter >= this.rate){
+				this.counter = 0;
+				if(this.type == 0){//spawn insect
+					if(this.lev == 0)creature.push(LowInsect(this.spawnx - 120 + rand(40),this.spawny-100,0));
+					else if(this.lev == 1)creature.push(MedInsect(this.spawnx - 120 + rand(40),this.spawny-100,0));
+					else if(this.lev == 2)creature.push(HighInsect(this.spawnx - 120 + rand(40),this.spawny-100,0));
+					else if(this.lev == 3)creature.push(Bug(this.spawnx - 120 + rand(40),this.spawny-100,0));
+					else if(this.lev == 4)creature.push(Maggot(this.spawnx - 120 + rand(40),this.spawny-100,0));
+					else if(this.lev == 5)creature.push(BugSmall(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				}else if(this.type == 1){//spawn reptile
+					if(this.lev == 0)creature.push(LowReptile(this.spawnx - 120 + rand(40),this.spawny-100,1));
+					else if(this.lev == 1)creature.push(MedReptile(this.spawnx - 120 + rand(40),this.spawny-100,1));
+					else creature.push(HighReptile(this.spawnx - 100,this.spawny-120 + rand(40),1));
+				}else if(this.type == 2){//spawn scientist
+					if(this.lev == 0)creature.push(Scientist(this.spawnx - 120 + rand(40),this.spawny-100,2));
+					else if(this.lev == 1)creature.push(Scientist(this.spawnx - 120 + rand(40),this.spawny-100,2));
+					else creature.push(Scientist(this.spawnx - 100,this.spawny-120 + rand(40),2));
+				}else if(this.type == 3){//spawn marine
+					if(this.lev == 0)creature.push(Marine(this.spawnx - 120 + rand(40),this.spawny-100,2));
+					else if(this.lev == 1)creature.push(Marine(this.spawnx - 120 + rand(40),this.spawny-100,2));
+					else creature.push(Marine(this.spawnx - 120 + rand(40),this.spawny-100,2));
+				}
+			}
+		
+		}
+
+	}
+	
+	
+		function spawnTrap(a,b,p, type, lev, spawnloc){
 		var result = Trap(a,b,p, true);
 		result.message = ""
 		result.title = ""
 		result.pic = blankPic
 		result.type = type
 		result.lev = lev
+		
+		var spawnx = ""
+		var spawny = ""
+		var i =0;
+		while(i < spawnloc.length && spawnloc[i] != ','){
+			if(spawnloc[i] != ',') {
+				spawnx += spawnloc[i];
+			}
+			i++;
+		}
+		i++
+		while(i < spawnloc.length){
+			if(spawnloc[i] != ',')	spawny += spawnloc[i];
+			i++;
+		}
+		
+		result.spawnx = Number(spawnx);
+		result.spawny = Number(spawny);
+		
 		result.collect = function(){
+		
 			if(this.type == 0){//spawn insect
-				if(this.lev == 0)creature.push(LowInsect(this.x - 120 + rand(40),this.y-100,0));
-				else if(this.lev == 1)creature.push(MedInsect(this.x - 120 + rand(40),this.y-100,0));
-				else if(this.lev == 2)creature.push(HighInsect(this.x - 120 + rand(40),this.y-100,0));
-				else if(this.lev == 3)creature.push(Bug(this.x - 120 + rand(40),this.y-100,0));
-				else if(this.lev == 4)creature.push(Maggot(this.x - 120 + rand(40),this.y-100,0));
+				if(this.lev == 0)creature.push(LowInsect(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				else if(this.lev == 1)creature.push(MedInsect(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				else if(this.lev == 2)creature.push(HighInsect(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				else if(this.lev == 3)creature.push(Bug(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				else if(this.lev == 4)creature.push(Maggot(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				else if(this.lev == 5)creature.push(BugSmall(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				else if(this.lev == 6)creature.push(worm(this.spawnx - 120 + rand(40),this.spawny-100,0));
+		
 			}else if(this.type == 1){//spawn reptile
-				if(this.lev == 0)creature.push(LowReptile(this.x - 120 + rand(40),this.y-100,1));
-				else if(this.lev == 1)creature.push(MedReptile(this.x - 120 + rand(40),this.y-100,1));
-				else creature.push(HighReptile(this.x - 100,this.y-120 + rand(40),1));
+				if(this.lev == 0)creature.push(LowReptile(this.spawnx - 120 + rand(40),this.spawny-100,1));
+				else if(this.lev == 1)creature.push(MedReptile(this.spawnx - 120 + rand(40),this.spawny-100,1));
+				else creature.push(HighReptile(this.spawnx - 100,this.spawny-120 + rand(40),1));
 			}else if(this.type == 2){//spawn scientist
-				if(this.lev == 0)creature.push(Scientist(this.x - 120 + rand(40),this.y-100,2));
-				else if(this.lev == 1)creature.push(Scientist(this.x - 120 + rand(40),this.y-100,2));
-				else creature.push(Scientist(this.x - 100,this.y-120 + rand(40),2));
+				if(this.lev == 0)creature.push(Scientist(this.spawnx - 120 + rand(40),this.spawny-100,3));
+				else if(this.lev == 1)creature.push(ScientistArmed(this.spawnx - 120 + rand(40),this.spawny-100,3));
+				else creature.push(ScientistArmed(this.spawnx - 100,this.spawny-120 + rand(40),3));
 			}else if(this.type == 3){//spawn marine
-				if(this.lev == 0)creature.push(Marine(this.x - 120 + rand(40),this.y-100,2));
-				else if(this.lev == 1)creature.push(Marine(this.x - 120 + rand(40),this.y-100,2));
-				else creature.push(Marine(this.x - 120 + rand(40),this.y-100,2));
+				if(this.lev == 0)creature.push(Marine(this.spawnx - 120 + rand(40),this.spawny-100,3));
+				else if(this.lev == 1)creature.push(Marine(this.spawnx - 120 + rand(40),this.spawny-100,3));
+				else creature.push(Marine(this.spawnx - 120 + rand(40),this.spawny-100,3));
+			
 			}
 			this.x = -1000
 		}
@@ -4534,7 +6708,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.weapon.push(MaggotHead());
 		result.weapon.push(insectHeal());
 		result.stats.health = 100;
-		result.stats.torso = 4;
+		result.stats.torso = 5;
 		result.stats.legs= 2;
 		result.stats.abdomen = 1;
 		result.stats.hasArms = false;
@@ -4554,7 +6728,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.weapon.push(insectHeal());
 		result.stats.health = 50;
 		result.stats.maxHealth = 50;
-		result.stats.torso = 5;
+		result.stats.torso = 6;
 		
 			result.stats.legs= 2 + rand(1);
 			result.stats.abdomen = rand(3);
@@ -4569,6 +6743,314 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		return result
 	}
 	
+	
+	function worm(a,b,t){
+		var result = createCreature(-50,-25,100,60);
+		result.x = a;
+		result.y = b;
+		result.length = 10;
+		result.spacing = 10;
+		result.wiggleAni = 10;
+		result.fireAni=0;
+		result.hide = 0;
+		
+		result.aimer.x = a;
+		result.aimer.y = b;
+		
+		result.stats.health = 350
+		result.stats.maxHealth = 350
+		
+		result.draw = function (){
+			this.wiggleAni--
+			if(this.wiggleAni < 0) this.wiggleAni = 10;
+			var angle = -Math.PI/2
+
+			if(this.x != this.aimer.x) angle = Math.atan((this.y - this.aimer.y) / (this.x - this.aimer.x))
+
+			var dirx = Math.cos(angle)
+			var diry = Math.sin(angle)
+			var distance = dist(this.x, this.y, this.aimer.x, this.aimer.y);
+			
+			
+			if(this.x == this.aimer.x && this.y < this.aimer.y){
+				dirx = 0;
+				diry = 1;
+			}else if(this.x == this.aimer.x && this.y > this.aimer.y){
+				dirx = 0;
+				diry = -1;
+			}
+
+			if(this.x > this.aimer.x) {
+				dirx *= -1
+				diry *= -1
+			}
+			
+			
+			var targetID = -1
+			var bestD = w;
+			//targeting
+			
+			for(var i=0; i < creature.length;i++){
+				if(creature[i].stats.type != this.stats.type && creature[i].stats.health >0){
+					if(dist(this.x,this.y, creature[i].x + creature[i].hitBox.x + creature[i].hitBox.width/2, creature[i].y + creature[i].hitBox.y + creature[i].hitBox.height/2) < bestD){
+						bestD = dist(this.x,this.y, creature[i].x + creature[i].hitBox.x + creature[i].hitBox.width/2, creature[i].y + creature[i].hitBox.y + creature[i].hitBox.height/2)
+						targetID = i;
+					}
+				}
+			}
+			if(targetID == -1) this.taimer = {x:mx - ctxOx, y:my-ctxOy}
+			else this.taimer = {x:creature[targetID].x + creature[targetID].hitBox.x + creature[targetID].hitBox.width/2, y:creature[targetID].y + creature[targetID].hitBox.y + creature[targetID].hitBox.height/2}
+			
+			if(this.aimer.x < this.taimer.x -4) this.aimer.x+=4
+			else if(this.aimer.x > this.taimer.x+4) this.aimer.x-=4
+			
+			if(this.aimer.y < this.taimer.y-4) this.aimer.y+=4
+			else if(this.aimer.y > this.taimer.y+4) this.aimer.y-=4
+			
+			
+			//distance check
+			if(distance > this.length * this.spacing){
+				this.hide++;
+				if(this.hide > this.length) this.hide = this.length;
+				this.taimer.x = this.x + dirx * this.length * this.spacing
+				this.taimer.y = this.y + diry * this.length * this.spacing
+				distance = this.length * this.spacing;
+				this.fireAni = 0
+			}else if(this.stats.health > 0){//Fire! Damage is a go!.
+				this.hide--
+				if(this.hide <0)this.hide = 0;
+				this.stats.health += 1
+				if(this.stats.health > this.stats.maxHealth) this.stats.health = this.stats.maxHealth;
+				if(dist(this.taimer.x, this.taimer.y, this.aimer.x, this.aimer.y) < 30 && targetID >= 0) {
+					creature[targetID].stats.health-=5;
+					this.fireAni++
+					if(this.fireAni > 3) this.fireAni = 0
+				}
+			}
+			
+			for(var i=0; i < this.length - this.hide; i++)ctx.drawImage(wormBody[(i+Math.floor(this.wiggleAni/2))%4], i*2 + this.x + i* dirx* distance/this.spacing - 50, this.y + i * diry * distance/this.spacing + (this.spacing*(i/this.spacing)*Math.sin((this.wiggleAni + i)*this.length*this.spacing)) +i - 25, 100 - i * 4, 50 - i*2  );
+		
+			ctx.translate(this.x, this.y);
+			//ctx.rotate(headAngle)
+			if(this.stats.health > 0) ctx.drawImage(wormHead[this.fireAni], -50 + (this.length-this.hide)* dirx* distance/this.spacing, - 25 + i * diry * distance/this.spacing + ((this.length-this.hide)*Math.sin((this.wiggleAni + this.length)*(this.length-this.hide)*this.spacing)));
+			else ctx.drawImage(wormHead[4 + rand(3)], -50 + (this.length-this.hide)* dirx* distance/this.spacing, - 25 + i * diry * distance/this.spacing + ((this.length-this.hide)*Math.sin((this.wiggleAni + this.length)*(this.length-this.hide)*this.spacing)));
+			
+			//ctx.rotate(-headAngle);
+			ctx.translate(-this.x, -this.y);
+		}
+		result.drawIcon = function(){}
+		result.drawBody = function(){}
+		result.move = function(){}
+	
+		return result
+	}
+	
+	function EggLayer(a,b,t,l){
+		var result = createCreature(-50,-25,100,60);
+		result.x = a + 50;
+		result.y = b + 50;
+		result.length = 10;
+		result.spacing = 10;
+		result.wiggleAni = 10;
+		result.fireAni=0;
+		result.hide = 0;
+		result.spawnCount = 50;
+		result.aimer.x = a;
+		result.aimer.y = b;
+		result.ax = 0;
+		result.ay = 0;
+		result.stats.health = 350
+		result.stats.maxHealth = 350
+		result.spawnPts = [];
+		result.spawnIndex = 0;
+		for(var i=-3; i <= 1; i++) result.spawnPts.push(i * 50);
+		result.draw = function (){
+			
+			var angle = -Math.PI/2
+
+			if(this.x != this.aimer.x) angle = Math.atan((this.y - this.aimer.y) / (this.x - this.aimer.x))
+
+			var dirx = Math.cos(angle)
+			var diry = Math.sin(angle)
+			var distance = dist(this.x, this.y, this.aimer.x, this.aimer.y);
+			
+			
+			if(this.x == this.aimer.x && this.y < this.aimer.y){
+				dirx = 0;
+				diry = 1;
+			}else if(this.x == this.aimer.x && this.y > this.aimer.y){
+				dirx = 0;
+				diry = -1;
+			}
+
+			if(this.x > this.aimer.x) {
+				dirx *= -1
+				diry *= -1
+			}
+			
+			
+		
+		
+			
+			if(this.aimer.x < this.taimer.x -4) this.ax += 0.1//this.aimer.x+=4
+			else if(this.aimer.x > this.taimer.x+4) this.ax -= 0.1//this.aimer.x-=4
+			
+			if(this.aimer.y < this.taimer.y-4) this.ay += 0.1//this.aimer.y+=4
+			else if(this.aimer.y > this.taimer.y+4) this.ay -= 0.1 //this.aimer.y-=4
+			
+			if(this.ay > 2) this.ay = 2
+			else if(this.ay < -2) this.ay = -2
+			
+			if(this.ax > 2) this.ax = 2
+			else if(this.ax < -2) this.ax = -2
+			
+			this.aimer.x += this.ax
+			this.aimer.y += this.ay
+			
+			//distance check
+			if(distance > 150){//this.length * this.spacing){
+				this.hide++;
+				if(this.hide > this.length) this.hide = this.length;
+				this.taimer.x = this.x + dirx * this.length * this.spacing
+				this.taimer.y = this.y + diry * this.length * this.spacing
+				distance = this.length * this.spacing;
+				this.fireAni = 0
+			}else if(this.stats.health > 0){//Fire! Damage is a go!.
+				this.hide--
+				if(this.hide <0)this.hide = 0;
+				this.stats.health += 1
+				if(this.stats.health > this.stats.maxHealth) this.stats.health = this.stats.maxHealth;
+				if(dist(this.taimer.x, this.taimer.y, this.aimer.x, this.aimer.y) < 30) {
+					//insert code to lay an egg here
+					this.ax *=0.8
+					this.ay *= 0.8
+					if(this.spawnCount < 80){
+						this.wiggleAni--
+						if(this.wiggleAni < 0) this.wiggleAni = 10;
+					}
+					
+					if(this.spawnCount > 0) this.spawnCount--;
+					
+					if(this.spawnCount == 0){
+						this.spawnCount = 100;
+						
+						wallPanels.push(new Egg(this.x + this.spawnPts[this.spawnIndex], this.y + 50, 0,5));
+						
+						this.spawnIndex = rand(this.spawnPts.length)//+= 1
+						//if(this.spawnIndex >= this.spawnPts.length) this.spawnIndex = 0;
+						
+					}
+					this.fireAni++
+					if(this.fireAni > 3) this.fireAni = 0
+				}
+			}
+			if(this.spawnCount > 80) this.taimer = {x:this.x + this.spawnPts[this.spawnIndex], y:this.y}
+			else if(this.spawnCount > 0) this.taimer = {x:this.x + this.spawnPts[this.spawnIndex] + 50, y:this.y + 85}
+			
+			ctx.drawImage(eggBase, this.x-50, this.y-25);
+			var wig = 0
+			for(var i=0; i < this.length - this.hide; i++){
+				wig = Math.sin((this.wiggleAni + i)*this.length*this.spacing)
+				ctx.drawImage(eggBody[(i+Math.floor(this.wiggleAni/2))%4], i*2 + this.x + i* dirx* distance/this.spacing - 50 - wig, this.y + i * diry * distance/this.spacing + (this.spacing*(i/this.spacing)*wig) +i - 25, 100 - i * 4 + wig*2, 100 - i*2);
+		
+			}
+			ctx.translate(this.x, this.y);
+			//ctx.rotate(headAngle)
+			if(this.stats.health > 0) ctx.drawImage(eggHead[this.fireAni], -50 + (this.length-this.hide)* dirx* distance/this.spacing, - 25 + i * diry * distance/this.spacing + ((this.length-this.hide)*Math.sin((this.wiggleAni + this.length)*(this.length-this.hide)*this.spacing)));
+			else ctx.drawImage(eggHead[4 + rand(3)], -50 + (this.length-this.hide)* dirx* distance/this.spacing, - 25 + i * diry * distance/this.spacing + ((this.length-this.hide)*Math.sin((this.wiggleAni + this.length)*(this.length-this.hide)*this.spacing)));
+			
+			//ctx.rotate(-headAngle);
+			ctx.translate(-this.x, -this.y);
+		}
+		result.drawIcon = function(){}
+		result.drawBody = function(){}
+		result.move = function(){}
+	
+		return result
+	}
+	
+	function Egg(x,y,t,l){
+		this.x = x;
+		this.y = y;
+		this.type = t;
+		this.lev=l;
+		this.timer = 200;
+		this.spawnx = x;
+		this.spawny = y;
+		this.spawn = function (){
+				if(this.type == 0){//spawn insect
+				if(this.lev == 0)creature.push(LowInsect(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				else if(this.lev == 1)creature.push(MedInsect(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				else if(this.lev == 2)creature.push(HighInsect(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				else if(this.lev == 3)creature.push(Bug(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				else if(this.lev == 4)creature.push(Maggot(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				else if(this.lev == 5)creature.push(BugSmall(this.spawnx - 120 + rand(40),this.spawny-100,0));
+				else if(this.lev == 6)creature.push(worm(this.spawnx - 120 + rand(40),this.spawny-100,0));
+		
+			}else if(this.type == 1){//spawn reptile
+				if(this.lev == 0)creature.push(LowReptile(this.spawnx - 120 + rand(40),this.spawny-100,1));
+				else if(this.lev == 1)creature.push(MedReptile(this.spawnx - 120 + rand(40),this.spawny-100,1));
+				else creature.push(HighReptile(this.spawnx - 100,this.spawny-120 + rand(40),1));
+			}else if(this.type == 2){//spawn scientist
+				if(this.lev == 0)creature.push(Scientist(this.spawnx - 120 + rand(40),this.spawny-100,3));
+				else if(this.lev == 1)creature.push(ScientistArmed(this.spawnx - 120 + rand(40),this.spawny-100,3));
+				else creature.push(ScientistArmed(this.spawnx - 100,this.spawny-120 + rand(40),3));
+			}else if(this.type == 3){//spawn marine
+				if(this.lev == 0)creature.push(Marine(this.spawnx - 120 + rand(40),this.spawny-100,3));
+				else if(this.lev == 1)creature.push(Marine(this.spawnx - 120 + rand(40),this.spawny-100,3));
+				else creature.push(Marine(this.spawnx - 120 + rand(40),this.spawny-100,3));
+			}
+		}
+		this.draw = function(){
+		
+			if(this.timer == 0) {
+				this.spawn();
+				
+				for(var i=0; i < 3; i++) bloodSplatLarge.push(createBloodLarge(this.x + 30 + rand(40), this.y + 30 + rand(40)));
+				this.timer = -10
+			}else {
+				if(this.timer > 0) this.timer--;
+			}
+			if(this.timer > 0) ctx.drawImage(egg, this.x,this.y);
+			else ctx.drawImage(eggHatch, this.x,this.y);
+			
+		}
+	
+		
+	
+	}
+	function BugSmall(a,b,t){
+		var result = createCreature(50,140,100,60);
+		
+		//console.log(result.hitBox.width + " " + result.hitBox.height);
+		result.x = a;
+		result.y = b;
+		result.greeting = addSound('Sounds/bugGreeting.ogg');
+		result.weapon.push(MaggotHead());
+		result.weapon.push(insectHeal());
+		
+		result.weapon[0].pX += 20
+		result.weapon[0].pY += 110
+		
+		result.weapon[1].pX += 20
+		result.weapon[1].pY += 110
+		
+		result.stats.health = 50;
+		result.stats.maxHealth = 50;
+		result.stats.torso = 7;
+		
+		if(Math.random() > 0.5 ) result.stats.legs= 5;
+		else result.stats.legs= 6;
+		result.stats.abdomen = 0//rand(3);
+		
+		
+		result.stats.hasArms = false;
+		result.stats.wing = 0
+		result.stats.hair = -1
+		result.stats.type = t
+		result.sw = 0
+		return result
+	}
 	
 	function BugHigh(a,b,t){
 		var result = createCreature(80,45,40,155);
@@ -4606,6 +7088,8 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		if(Math.random() > 0.5) result.greeting = addSound('Sounds/greeting2.ogg');
 		else result.greeting = addSound('Sounds/greeting1.ogg')
 		
+		
+		
 		if(Math.random() < 0.5){
 			result.weapon.push(PunchInsect());
 			result.weapon.push(insectHeal());
@@ -4617,7 +7101,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.weapon.push(blank());
 		
 		//result.sw = 1
-		result.stats.health = 100;
+		//result.stats.health = 100;
 		result.stats.torso = rand(2);
 		result.stats.legs= rand(2);
 		result.stats.abdomen = 0;
@@ -4625,6 +7109,10 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.stats.wing = 0
 		result.stats.hair = rand(5)+1
 		result.stats.type = t
+		if(Math.random() > 0.5) for(var i=0; i < 2; i++) result.levelUP();
+		
+		result.portStats.eyes = rand(portInsectEyes.length)
+		
 		return result
 	}
 	
@@ -4635,22 +7123,12 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.greets.push("Time to die!");
 		result.greets.push("Kill it!");
 		result.greets.push("No More!");
+		
 		if(Math.random() > 0.5) result.greeting = addSound('Sounds/greeting2.ogg');
 		else result.greeting = addSound('Sounds/greeting1.ogg')
-	if(Math.random() > 0.5){	
-			result.weapon.push(PunchInsect());
-			result.weapon.push(insectHeal());
-			result.weapon.push(blank());
-		}else{
-			result.weapon.push(Punch0());
-			result.weapon.push(insectHeal());
-			if(Math.random() < 0.2) result.giveGun(SMG(), 2)
-			else result.giveGun(PISTOL(),2)
-			
-		}
 		
-		if(Math.random() > 0.95) result.stats.armorPlate = true
-		result.stats.health = 180;
+		
+		//result.stats.health = 180;
 		result.stats.torso = rand(2) + 1;
 		result.stats.legs= 2 + rand(2);
 		result.stats.abdomen = rand(2);
@@ -4658,12 +7136,39 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.stats.wing = rand(2)
 		result.stats.hair = rand(5) + 1
 		result.stats.type = t
+		result.portStats.eyes = rand(portInsectEyes.length)
 		
-		if(Math.random() < 0.2){
+		
+		var randType = Math.random();
+		
+	if(randType > 0.6){	//no weapon
+			result.weapon.push(PunchInsect());
+			result.weapon.push(insectHeal());
+			result.weapon.push(blank());
+		}else if(randType > 0.4){//Well armed
+			result.weapon.push(Punch0());
+			result.weapon.push(insectHeal());
+			if(Math.random() < 0.2) result.giveGun(SMG(), 2)
+			else result.giveGun(PISTOL(),2)
+			
+		}else {//proper twisted monster
+			
 			result.stats.torso = 4
 			result.stats.hair = 0
 			result.stats.armorPlate = false
+			randType = Math.random();
+			
+			if(randType > 0.7) result.weapon.push(PunchInsect());
+			else if(randType > 0.4) result.weapon.push(Monster1Punch());
+			else result.weapon.push(Monster2Punch());
+			result.weapon.push(insectHeal());
+		
 		}
+		
+		if(Math.random() > 0.95) result.stats.armorPlate = true
+		
+		for(var i=0; i < 5; i++) result.levelUP();
+		
 		return result
 	}
 	
@@ -4677,23 +7182,24 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		if(Math.random() > 0.5) result.greeting = addSound('Sounds/greeting2.ogg');
 		else result.greeting = addSound('Sounds/greeting1.ogg')
 		var randType = Math.random();
-		if(randType > 0.6){	
+		if(randType > 0.6){		
 			result.weapon.push(PunchInsect());
 			result.weapon.push(insectHeal());
 			result.weapon.push(blank());
+			for(var i=0; i < 8; i++) result.levelUP();
 		}else if(randType > 0.2){
 			result.weapon.push(Punch0());
 			result.weapon.push(insectHeal());
 			if(Math.random() < 0.5) result.giveGun(SMG(), 2)
 			else result.giveGun(RIFLE(),2)
-			
+			for(var i=0; i < 10; i++) result.levelUP();
 		}else{
 			result.weapon.push(Monster2Punch());
 			result.weapon.push(insectHeal());
-		
+			for(var i=0; i < 7; i++) result.levelUP();
 		}
 		result.weapon.push(blank());
-		result.stats.health = 250;
+		//result.stats.health = 250;
 		result.stats.torso = 3;
 		if(Math.random() < 0.5){
 			result.stats.legs= 2 + rand(2);
@@ -4705,6 +7211,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 			if(Math.random() > 0.8) result.stats.armorPlate = true
 			
 			
+		result.portStats.eyes = rand(portInsectEyes.length)
 			
 		result.stats.hasArms = true;
 		result.stats.wing = rand(2)
@@ -4734,7 +7241,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.sw = 0
 		result.weapon.push(blank());
 		
-		result.stats.health = 100;
+		//result.stats.health = 100;
 		result.stats.torso = rand(2);
 		result.stats.legs= 0;
 		result.stats.abdomen = 0;
@@ -4742,6 +7249,11 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.stats.wing = 0
 		result.stats.hair = rand(5)+1
 		result.stats.type = 1
+		
+		//result.portStats.mouth = rand(3)
+		result.portStats.eyes = rand(portReptileEyes.length)
+		
+		
 		return result
 	}
 	
@@ -4756,12 +7268,14 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.greets.push("Putrid creature!");
 		if(Math.random() < 0.4){
 			result.giveGun(SMG(), 2);
+			for(var i=0; i < 5; i++) result.levelUP();
 		}else{
 			result.giveGun(RIFLE(), 2);
+			for(var i=0; i < 6; i++) result.levelUP();
 		}
 		
 		result.sw = 0
-		result.stats.health = 150;
+		//result.stats.health = 150;
 		result.stats.torso = rand(2) + 1;
 		result.stats.legs= rand(2) + 1;
 		result.stats.abdomen = 0;
@@ -4771,6 +7285,10 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		result.stats.wing = rand(2)
 		result.stats.hair = rand(5)+1
 		result.stats.type = 1
+		
+		result.portStats.eyes = rand(portReptileEyes.length)
+		
+		
 		return result
 	}
 	
@@ -4786,16 +7304,18 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		if(Math.random() < 0.4){
 			result.giveGun(SMG(), 2);
 			result.giveGun(PISTOL(), 3);
+			for(var i=0; i < 8; i++) result.levelUP();
 		}else{
 			result.giveGun(RIFLE(), 2);
 			result.giveGun(SMG(), 3);
+			for(var i=0; i < 10; i++) result.levelUP();
 		}
 		
 		result.sw = 1 +rand(2)
-		result.stats.health = 200;
+		//result.stats.health = 200;
 		result.stats.torso = rand(2) + 1;
 		result.stats.legs= 4 + rand(2);
-		if(Math.random() > 0.65) {
+		if(Math.random() > 0.90) {//Snake tail!
 			result.stats.legs = 6;
 			result.stats.speed += 1
 		}
@@ -4808,10 +7328,16 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		else result.stats.wing = 0
 		result.stats.hair = rand(5)+1
 		result.stats.type = 1
+		
+		result.portStats.eyes = rand(portReptileEyes.length)
+		
+		
 		return result
 	}
 
+	function mutation(){
 	
+	}
 	
 	function hitWall(x,y){
 		var result = false;
@@ -4834,6 +7360,54 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 			sy:0,
 			state:0,
 			recoil:0,
+			level:1,
+			exp:0,
+			croucher:rand(2),
+			name:"T-" + (rand(80) + 10),
+			name2:PNames[rand(PNames.length)],
+			gainXP:function(n){
+				this.exp += n
+				if(this.exp >= this.level * 50){
+					this.exp -= this.level * 50;
+					this.levelUP();
+					
+				}
+			},
+			levelUP:function(){
+				this.level += 1;
+				this.stats.health += Math.floor(this.stats.maxHealth*0.1);
+				this.stats.maxHealth *= 1.1
+				this.stats.maxHealth = Math.floor(this.stats.maxHealth)
+				if(this.stats.health > this.stats.maxHealth) this.stats.health = this.stats.maxHealth;
+				
+				this.stats.health = Math.floor(this.stats.health)
+				
+				this.weapon[0].stats.damage *= 1.1
+				if(this.weapon[1] != null) {
+					this.weapon[1].stats.damage *= 1.1
+					this.weapon[1].stats.damage = Math.floor(this.weapon[1].stats.damage)
+				}
+				this.weapon[0].stats.damage = Math.floor(this.weapon[0].stats.damage)
+				
+				
+				//this.speak("Level Up!");
+				
+				
+				//try torso
+				//try legs
+				//try wings
+				if(this.stats.type == 1){//reptile
+					if(this.stats.torso < 3){
+						this.stats.torso++;
+						this.speak("My back itches.");
+					}else if(this.stats.legs < 5) {
+						this.stats.legs++;
+						this.speak("My legs feel weird.");
+					}
+					
+				}
+				
+			},
 			hasGun:true,
 			fireCool:0,
 			walkSpeed:5,
@@ -4847,8 +7421,8 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 			weapon:wArray, 
 			sw:0,
 			light:true,
-			aimer:{x:0,y:0},
-			taimer:{x:0,y:0},
+			aimer:{x:rand(w), y: rand(h)},//{x:a-200,y:b-100},
+			taimer: {x:rand(w), y: rand(h)},//{x:a - 200,y:b - 100},
 			aimerD:{x:rand(10) - 5,y: rand(10) - 5},
 			canFire:true,
 			deathF:0, //goes to 10
@@ -4864,7 +7438,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 			
 			},
 			enemies: eArray,
-			targeter:200,
+			targeter:16,
 			getEnemies: function(){
 				this.enemies = [];
 				for(var i=0; i < creature.length; i++) if(this.stats.type != creature[i].stats.type && creature[i].stats.health > 0) this.enemies.push(creature[i]);
@@ -4873,14 +7447,14 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 			
 				this.targeter++
 				
-				if(this.targeter > 200) {
+				if(this.targeter > 16) {
 					//console.log("Refreshing target list...");
 					this.getEnemies();
 					this.targeter = 0;
 					if(this.enemies.length > 0 && this.greeting != null){
 						this.greeting.play();
 					}
-					if(this.greets.length > 0) this.speak(this.greets[rand(this.greets.length)]);
+					if(this.greets.length > 0 && this.enemies.length > 0) this.speak(this.greets[rand(this.greets.length)]);
 				
 				}
 				
@@ -4928,21 +7502,21 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 					if(this.enemies[this.target].stats.health <= 0){
 						this.enemies.splice(this.target,1);
 						this.target = -1
-						this.speak("Target Down!");
+						//this.speak("Target Down!");
 						this.path = [];
 					}
 				}else this.target = -1;
 				
 				
-				
+				if(this.sw >= this.weapon.length) this.sw = 0
 				//If a useless character, stop targettting
 				if(this.weapon[this.sw].useless) this.target = -1;
 				
 				
 				if(this.target != -1){
 				//Target is valid
-					this.taimer.x = this.enemies[this.target].x + 100
-					this.taimer.y = this.enemies[this.target].y + 100
+					this.taimer.x = this.enemies[this.target].x + this.enemies[this.target].hitBox.x + this.enemies[this.target].hitBox.width/2
+					this.taimer.y = this.enemies[this.target].y + this.enemies[this.target].hitBox.y + this.enemies[this.target].hitBox.height/2
 					
 				
 					
@@ -4969,7 +7543,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 								var start = {x:Math.floor((this.x + 100)/50), y: Math.floor((this.y + 100)/50)}
 								var end = {x:Math.floor((this.enemies[this.target].x + 100)/50), y: Math.floor((this.enemies[this.target].y + 100)/50)}
 								
-								if(mapGrid[start.x][start.y].wall ) start = this.getCorner();
+								if(mapGrid[start.x][start.y].wall) start = this.getCorner();
 								if(mapGrid[end.x][end.y].wall ) end = this.enemies[this.target].getCorner();
 								
 								/*
@@ -5024,7 +7598,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 								}
 								
 							
-								if(dist(this.x + 100, this.y + 100, this.path[0].x*50 + 50, this.path[0].y*50 + 50) > 100){
+								if(dist(this.x + 100, this.y + 1100, this.path[0].x*50 + 50, this.path[0].y*50 + 50) > 100){
 									var start = {x:Math.floor((this.x + 100)/50), y: Math.floor((this.y + 100)/50)}
 									var end = {x:Math.floor((this.enemies[this.target].x + 100)/50), y: Math.floor((this.enemies[this.target].y + 100)/50)}
 								
@@ -5128,7 +7702,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 								this.sx = -this.stats.speed;
 								this.state = 3
 							}
-						}else if(dist(this.x, this.y, this.enemies[this.target].x, this.enemies[this.target].y) > 400 /*&& this.stats.type == this.creature[cS].stats.type*/){//too close
+						}else if(dist(this.x, this.y, this.enemies[this.target].x, this.enemies[this.target].y) > 400 /*&& this.stats.type == this.creature[cS].stats.type*/){//too far
 							if(this.enemies[this.target].x < this.x){
 							//target creature is on the left, so walk left
 								this.sx = -this.stats.speed;
@@ -5138,6 +7712,8 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 								this.sx = this.stats.speed;
 								this.state = 2
 							}
+						}else{//acceptable firing distance
+								if(this.state != 4) this.crouch();
 						}
 						
 						if(Math.abs(this.x - this.enemies[this.target].x) < 50 && Math.abs(this.y - this.enemies[this.target].y) > 250){
@@ -5203,7 +7779,8 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 					}
 					
 					//I near player and is of the same type, try to tag along
-					 if( this.stats.type == creature[cS].stats.type){
+					if(cS >=0 && cS < creature.length){
+					 if(this.stats.type == creature[cS].stats.type){
 						if(dist(creature[cS].x, creature[cS].y, this.x,this.y) < 250){	
 							if(this.x < creature[cS].x - this.homeRange){
 								this.sx = this.stats.speed;
@@ -5216,7 +7793,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 							this.taimer.y = creature[cS].aimer.y
 						}
 					}
-					
+					}
 				}
 				
 				if(!(this.x >= 0 && this.x < w*2) && this.stats.health > 0){
@@ -5244,9 +7821,79 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 			},
 			lGun:-1,
 			rGun:-1,
+			goggles:rand(2),
+			drawIcon:function(x,y, pw, ph){
+				
+				if(this.stats.type == 3){
+					if(this.stats.torso == 4 || this.stats.torso == 1 || this.stats.torso == 0) ctx.drawImage(mBase, x,y, pw,ph);
+					
+					else{
+						ctx.drawImage(fBase, x,y, pw,ph);
+						ctx.drawImage(portNoses[this.portStats.nose], x,y, pw,ph);
+						ctx.drawImage(portMouth[this.portStats.mouth], x,y, pw,ph);
+						ctx.drawImage(portEyeBrow[this.portStats.eyebrow], x,y, pw,ph);
+					}
+				}else {
+					
+				}
+				
+				if (this.stats.type == 0){//Insect
+					//ctx.drawImage(InsectTorso[this.stats.torso], 80,40,46,46, x,y, 46,46);
+					if(this.stats.torso == 6)ctx.drawImage(bugFace, x,y, pw,ph);//bug face
+					else if(this.stats.torso == 7 || this.stats.torso == 5)ctx.drawImage(maggotFace, x,y, pw,ph);//maggot face
+					else{
+						ctx.drawImage(fBase, x,y, pw,ph);
+						ctx.drawImage(portNoses[this.portStats.nose], x,y, pw,ph);
+						ctx.drawImage(portMouth[this.portStats.mouth], x,y, pw,ph);
+						ctx.drawImage(portEyeBrow[this.portStats.eyebrow], x,y, pw,ph);
+						ctx.drawImage(portInsectEyes[this.portStats.eyes], x,y, pw,ph);
+						if(this.level > 9) ctx.drawImage(portInsect[2], x,y, pw,ph);
+						else if(this.level > 6) ctx.drawImage(portInsect[1], x,y, pw,ph);
+						else if(this.level > 3) ctx.drawImage(portInsect[0], x,y, pw,ph);
+						ctx.drawImage(portBarcode[this.portStats.barcode], x,y, pw,ph);
+					}
+				}else if(this.stats.type == 1){//Reptile
+					//ctx.drawImage(ReptileTorso[this.stats.torso], 80,40,46,46, x,y, 46,46);
+					ctx.drawImage(fBase, x,y, pw,ph);
+					ctx.drawImage(portNoses[this.portStats.nose], x,y, pw,ph);
+					ctx.drawImage(portMouth[this.portStats.mouth], x,y, pw,ph);
+					ctx.drawImage(portEyeBrow[this.portStats.eyebrow], x,y, pw,ph);
+					ctx.drawImage(portReptileEyes[this.portStats.eyes], x,y, pw,ph);
+					ctx.drawImage(portBarcode[this.portStats.barcode], x,y, pw,ph);
+					if(this.level > 9) ctx.drawImage(portReptile[2], x,y, pw,ph);
+					else if(this.level > 6) ctx.drawImage(portReptile[1], x,y, pw,ph);
+					else if(this.level > 3) ctx.drawImage(portReptile[0], x,y, pw,ph);
+				}else if(this.stats.type == 2){//Human
+					//ctx.drawImage(HumanTorso[this.stats.torso], 80,40,46,46, x,y, 46,46);
+					ctx.drawImage(portEyes[this.portStats.eyes], x,y, pw,ph);
+				}else if(this.stats.type == 3){//Human
+					//ctx.drawImage(HumanTorso[this.stats.torso], 80,40,46,46, x,y, 46,46);
+					ctx.drawImage(portEyes[this.portStats.eyes], x,y, pw,ph);
+					if(this.stats.torso <= 3){//marine
+						
+						ctx.drawImage(marineBase, x,y, pw,ph);
+						if(this.stats.torso == 1 || this.stats.torso==2) ctx.drawImage(marineFace, x,y, pw,ph);
+					
+						if(this.stats.torso == 2 || this.stats.torso==3) ctx.drawImage(portHair[1], x,y, pw,ph);
+						
+					}else{//scientist
+						if(this.stats.torso == 6){
+							ctx.drawImage(mask[0], x,y, pw,ph);
+					
+						}
+						 ctx.drawImage(doctorClothes, x,y, pw,ph);
+						
+					}
+				}
+				//if(this.stats.hair >= 0) ctx.drawImage(hair[this.stats.hair], 80,40,46,46, x,y, 46,46);
+				
+				if(this.stats.hair >= 0) ctx.drawImage(portHair[this.stats.hair], x,y, pw,ph);
+			},
+			portStats:{nose: rand(portNoses.length), eyes:rand(portEyes.length), mouth:rand(portMouth.length), eyebrow:rand(portEyeBrow.length), barcode:rand(portBarcode.length)},
 			drawBody:function(fNum, x,y){
 				var off = 0;
 				if(this.state != 0) off = 10;
+			
 				
 				if(this.stats.type == 0){	//Insect
 					if(this.stats.health > 0){
@@ -5261,7 +7908,8 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 						}
 						ctx.rotate(-degRad(35));
 						ctx.translate(-x - 100, -120 - y - off)
-					
+						
+						
 						if(this.weapon[this.sw].stats.singleHand && this.stats.hasArms) ctx.drawImage(leftArm[0], fNum*200, 0, 200,200, x, y, 200,200);
 						ctx.drawImage(InsectTorso[this.stats.torso], fNum*200, 0, 200,200, x, y, 200,200);
 						if(this.stats.hair != -1) ctx.drawImage(hair[this.stats.hair], fNum*200, 0, 200,200, x, y, 200,200);
@@ -5281,11 +7929,12 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 								ctx.drawImage(InsectWing[0], fNum*200, 0, 200,200, x, y, 200,200);
 							}
 						}else{
-							ctx.drawImage(InsectLeg[this.stats.legs], fNum*200, 0, 200,200, x, y, 200,200);
+							ctx.drawImage(InsectLeg[this.stats.legs], fNum*200, 0, 200,200,x, y, 200,200);
 							if(this.stats.armorPlate) ctx.drawImage(HumanArmor, fNum*200, 0, 200,200, x, y, 200,200);
 						
 							if(this.stats.abdomen > 0) ctx.drawImage(InsectAb[this.stats.abdomen], fNum*200, 0, 200,200, x, y, 200,200);
 						}
+						
 						if (this.weapon[this.sw].pic == null) ctx.drawImage(this.weapon[0].pic, x+ 95 + this.weapon[0].pX + this.weapon[0].oX,y+80 + this.weapon[0].pY + this.weapon[0].oY + off)//ctx.drawImage(this.weapon[0].pic, x+ 85 + this.weapon[0].oX,y+80 + this.weapon[0].oY + off)
 						//hip guns!
 						//Is always 3 and 4
@@ -5300,34 +7949,50 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 						ctx.rotate(-degRad(30));
 						ctx.translate(-x - 100, -120 - y - off)
 					}else{
-						ctx.globalAlpha = (10-this.deathF)/10
-						//ctx.save();
-						ctx.translate(x+100,y+100+ this.deathF*9);
-						ctx.rotate(degRad(-90 * this.deathF/10));
-						ctx.drawImage(InsectTorso[this.stats.torso], 3*200, 0, 200,200,-100,-100, 200,200);
-						ctx.drawImage(InsectLeg[this.stats.legs], 3*200, 0, 200,200, -100, -100, 200,200);
-						if(this.stats.armorPlate) ctx.drawImage(HumanArmor, 600, 0, 200,200, x, y, 200,200);
+						if(this.deathF < 10){
+							ctx.globalAlpha = (10-this.deathF)/10
+							ctx.translate(x+100,y+100+ this.deathF*9);
+							ctx.rotate(degRad(-90 * this.deathF/10));
 						
-						if(this.stats.abdomen > 0) ctx.drawImage(InsectAb[this.stats.abdomen], 3*200, 0, 200,200, -100, -100, 200,200);
-						if(this.stats.hair != -1)ctx.drawImage(hair[this.stats.hair/*this.stats.torso*/], 3*200, 0, 200,200, -100, -100, 200,200);
-						if(this.stats.wing >0) ctx.drawImage(InsectWing[0], 3*200, 0, 200,200, -100, -100, 200,200);
+							ctx.drawImage(InsectTorso[this.stats.torso], 3*200, 0, 200,200,-100,-100, 200,200);
+							ctx.drawImage(InsectLeg[this.stats.legs], 3*200, 0, 200,200, -100, -100, 200,200);
+							if(this.stats.armorPlate) ctx.drawImage(HumanArmor, 600, 0, 200,200, x, y, 200,200);
 						
-						if(this.weapon[this.sw].pic != null) ctx.drawImage(this.weapon[this.sw].pic, 0,0,150,40,this.weapon[this.sw].oX, this.weapon[this.sw].oY - 5, 150,40)
-						else ctx.drawImage(this.weapon[0].pic, 0,0,150,40,this.weapon[0].oX, this.weapon[0].oY - 5, 150,40)
+							if(this.stats.abdomen > 0) ctx.drawImage(InsectAb[this.stats.abdomen], 3*200, 0, 200,200, -100, -100, 200,200);
+							if(this.stats.hair != -1)ctx.drawImage(hair[this.stats.hair/*this.stats.torso*/], 3*200, 0, 200,200, -100, -100, 200,200);
+							if(this.stats.wing >0) ctx.drawImage(InsectWing[0], 3*200, 0, 200,200, -100, -100, 200,200);
 						
-						ctx.rotate(degRad(90 * this.deathF/10));
-						ctx.translate(-x-100,-y-100- this.deathF*9);
+							if(this.weapon[this.sw].pic != null) ctx.drawImage(this.weapon[this.sw].pic, 0,0,150,40,this.weapon[this.sw].oX + this.weapon[this.sw].pX, this.weapon[this.sw].oY - 5 + this.weapon[this.sw].pY, 150,40)
+							else ctx.drawImage(this.weapon[0].pic, 0,0,150,40,this.weapon[0].oX + this.weapon[0].pX, this.weapon[0].pY + this.weapon[0].oY - 5, 150,40)
 						
-						//ctx.restore();
+						
+							ctx.rotate(degRad(90 * this.deathF/10));
+							ctx.translate(-x-100,-y-100- this.deathF*9);
+						}else {
+							
+							ctx.globalAlpha = 1
+							ctx.translate(x+100,y+100);
+							ctx.drawImage(InsectTorso[this.stats.torso], 12*200, 0, 200,200,-100,-100, 200,200);
+							ctx.drawImage(InsectLeg[this.stats.legs], 12*200, 0, 200,200, -100, -100, 200,200);
+							//if(this.stats.armorPlate) ctx.drawImage(HumanArmor, 600, 0, 200,200, x, y, 200,200);
+						
+							if(this.stats.abdomen > 0) ctx.drawImage(InsectAb[this.stats.abdomen], 12*200, 0, 200,200, -100, -100, 200,200);
+							if(this.stats.hair != -1)ctx.drawImage(hair[this.stats.hair/*this.stats.torso*/], 12*200, 0, 200,200, -100, -100, 200,200);
+							if(this.stats.wing >0) ctx.drawImage(InsectWing[0], 12*200, 0, 200,200, -100, -100, 200,200);
+						
+							ctx.translate(-x-100,-y-100);
+						}
 						if(ani == 0)this.deathF += 2;
-						if(this.deathF > 10) {
+						if(this.deathF >= 10) {
 							this.deathF = 10;
 							this.stats.health = 0;
+							
 						}else{//Extra blood splatters for death sequence, not working quite right yet
-							//bloodSplat.push(createBlood(this.x  +this.hitBox.x + rand(this.hitBox.width), this.y + this.hitBox.y + rand(this.hitBox.height) + this.deathF*9));
+							 bloodSplat.push(createBlood(this.x  +this.hitBox.x + rand(this.hitBox.width), this.y + this.hitBox.y + rand(this.hitBox.height) + this.deathF*9));
 						
 						}
 						ctx.globalAlpha = 1;
+						
 					}
 				}else if (this.stats.type == 1){	//Reptile
 					if(this.stats.health > 0){
@@ -5379,6 +8044,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 						if (this.weapon[this.sw].pic == null) ctx.drawImage(this.weapon[0].pic, x+ 85,y+70 + off)
 						
 					}else{
+						if(this.deathF < 10){
 						ctx.globalAlpha = (10-this.deathF)/10
 						//ctx.save();
 						ctx.translate(x+100,y+100+ this.deathF*9);
@@ -5398,10 +8064,19 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 						
 						ctx.rotate(degRad(90 * this.deathF/10));
 						ctx.translate(-x-100,-y-100- this.deathF*9);
-						
+						}else{
+							ctx.translate(x+100,y+100);
+							ctx.drawImage(ReptileTorso[this.stats.torso], 12*200, 0, 200,200,-100,-100, 200,200);
+							ctx.drawImage(ReptileLeg[this.stats.legs], 12*200, 0, 200,200, -100, -100, 200,200);
+						//if(this.stats.armorPlate) ctx.drawImage(HumanArmor, 600, 0, 200,200, x, y, 200,200);
+							if(this.stats.hair != -1)ctx.drawImage(hair[this.stats.hair], 12*200, 0, 200,200, -100, -100, 200,200);
+							//if(this.stats.wing >0) ctx.drawImage(ReptileWing[0], 3*200, 0, 200,200, -100, -100, 200,200);
+							
+							ctx.translate(-x-100,-y-100);
+						}
 						//ctx.restore();
 						if(ani == 0) this.deathF += 2;
-						if(this.deathF > 10) {
+						if(this.deathF >= 10) {
 							this.deathF = 10;
 							this.stats.health = 0;
 						}else{//Extra blood splatters for death sequence, not working quite right yet
@@ -5425,23 +8100,24 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 						ctx.rotate(-degRad(35));
 						ctx.translate(-x - 100, -120 - y - off)
 					
+						
 						if(this.weapon[this.sw].stats.singleHand && this.stats.hasArms) ctx.drawImage(leftArm[1], fNum*200, 0, 200,200, x, y, 200,200);
+						
 						ctx.drawImage(HumanTorso[this.stats.torso], fNum*200, 0, 200,200, x, y, 200,200);
 						
 						if(this.stats.hair != -1) ctx.drawImage(hair[this.stats.hair], fNum*200, 0, 200,200, x, y, 200,200);
 
 						if(this.stats.wing > 0) {
 							if(this.falling() ){	
-								ctx.drawImage(HumanLeg[this.stats.legs], (10+this.aniFrame%2)*200, 0, 200,200, x, y, 200,200);
-								//if(this.stats.abdomen > 0) ctx.drawImage(InsectAb[this.stats.abdomen], (10+this.aniFrame%2)*200, 0, 200,200, x, y, 200,200);
-								//ctx.drawImage(InsectWing[0], (this.aniFrame+9)*200, 0, 200,200, x, y, 200,200);
+								if(this.weapon[this.sw].useless ||this.stats.torso < 4)ctx.drawImage(HumanLeg[this.stats.legs], (10+this.aniFrame%2)*200, 0, 200,200, x, y, 200,200);
+								else ctx.drawImage(HumanLeg[this.stats.legs + 1], (10+this.aniFrame%2)*200, 0, 200,200, x, y, 200,200);
 							}else {
-								ctx.drawImage(HumanLeg[this.stats.legs], fNum*200, 0, 200,200, x, y, 200,200);
-								//if(this.stats.abdomen > 0) ctx.drawImage(InsectAb[this.stats.abdomen], fNum*200, 0, 200,200, x, y, 200,200);
-								//ctx.drawImage(InsectWing[0], fNum*200, 0, 200,200, x, y, 200,200);
+								if(this.weapon[this.sw].useless||this.stats.torso < 4)ctx.drawImage(HumanLeg[this.stats.legs], fNum*200, 0, 200,200, x, y, 200,200);
+								else ctx.drawImage(HumanLeg[this.stats.legs+1], fNum*200, 0, 200,200, x, y, 200,200);
 							}
 						}else{
-							ctx.drawImage(HumanLeg[this.stats.legs], fNum*200, 0, 200,200, x, y, 200,200);
+							if(this.weapon[this.sw].useless||this.stats.torso < 4)ctx.drawImage(HumanLeg[this.stats.legs], fNum*200, 0, 200,200, x, y, 200,200);
+							else ctx.drawImage(HumanLeg[this.stats.legs + 1], fNum*200, 0, 200,200, x, y, 200,200);
 							//if(this.stats.abdomen > 0) ctx.drawImage(InsectAb[this.stats.abdomen], fNum*200, 0, 200,200, x, y, 200,200);
 						}
 						if (this.weapon[this.sw].pic == null) ctx.drawImage(this.weapon[0].pic, x+ 85,y+70 + off)
@@ -5458,28 +8134,34 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 						ctx.rotate(-degRad(30));
 						ctx.translate(-x - 100, -120 - y - off)
 					}else{
-						ctx.globalAlpha = (10-this.deathF)/10
-						//ctx.save();
-						ctx.translate(x+100,y+100+ this.deathF*9);
-						ctx.rotate(degRad(-90 * this.deathF/10));
-						ctx.drawImage(HumanTorso[this.stats.torso], 3*200, 0, 200,200,-100,-100, 200,200);
-						ctx.drawImage(HumanLeg[this.stats.legs], 3*200, 0, 200,200, -100, -100, 200,200);
-						//if(this.stats.abdomen > 0) ctx.drawImage(InsectAb[this.stats.abdomen], 3*200, 0, 200,200, -100, -100, 200,200);
-						if(this.stats.hair != -1)ctx.drawImage(hair[this.stats.hair/*this.stats.torso*/], 3*200, 0, 200,200, -100, -100, 200,200);
-						//if(this.stats.wing >0) ctx.drawImage(InsectWing[0], 3*200, 0, 200,200, -100, -100, 200,200);
+						if(this.deathF < 10){
+							ctx.globalAlpha = (10-this.deathF)/10
 						
-						if(this.weapon[this.sw].pic != null) ctx.drawImage(this.weapon[this.sw].pic, 0,0,150,40,this.weapon[this.sw].oX, this.weapon[this.sw].oY - 5, 150,40)
-						else ctx.drawImage(this.weapon[0].pic, 0,0,150,40,this.weapon[0].oX, this.weapon[0].oY - 5, 150,40)
+							ctx.translate(x+100,y+100+ this.deathF*9);
+							ctx.rotate(degRad(-90 * this.deathF/10));
+							ctx.drawImage(HumanTorso[this.stats.torso], 3*200, 0, 200,200,-100,-100, 200,200);
+							ctx.drawImage(HumanLeg[this.stats.legs], 3*200, 0, 200,200, -100, -100, 200,200);
+							//if(this.stats.abdomen > 0) ctx.drawImage(InsectAb[this.stats.abdomen], 3*200, 0, 200,200, -100, -100, 200,200);
+							if(this.stats.hair != -1)ctx.drawImage(hair[this.stats.hair/*this.stats.torso*/], 3*200, 0, 200,200, -100, -100, 200,200);
+							//if(this.stats.wing >0) ctx.drawImage(InsectWing[0], 3*200, 0, 200,200, -100, -100, 200,200);
 						
+							if(this.weapon[this.sw].pic != null) ctx.drawImage(this.weapon[this.sw].pic, 0,0,150,40,this.weapon[this.sw].oX, this.weapon[this.sw].oY - 5, 150,40)
+							else ctx.drawImage(this.weapon[0].pic, 0,0,150,40,this.weapon[0].oX, this.weapon[0].oY - 5, 150,40)
+
+							ctx.rotate(degRad(90 * this.deathF/10));
+							ctx.translate(-x-100,-y-100- this.deathF*9);
+						}else{
+							ctx.translate(x+100,y+100);
 						
-						
-					
-						ctx.rotate(degRad(90 * this.deathF/10));
-						ctx.translate(-x-100,-y-100- this.deathF*9);
-						
+							ctx.drawImage(HumanTorso[this.stats.torso], 12*200, 0, 200,200,-100,-100, 200,200);
+							ctx.drawImage(HumanLeg[this.stats.legs], 12*200, 0, 200,200, -100, -100, 200,200);
+							if(this.stats.hair != -1)ctx.drawImage(hair[this.stats.hair/*this.stats.torso*/], 12*200, 0, 200,200, -100, -100, 200,200);
+							//if(this.stats.wing >0) ctx.drawImage(InsectWing[0], 3*200, 0, 200,200, -100, -100, 200,200);
+							ctx.translate(-x-100,-y-100);	
+						}
 						//ctx.restore();
 						if(ani == 0)this.deathF += 2;
-						if(this.deathF > 10) {
+						if(this.deathF >= 10) {
 							this.deathF = 10;
 							this.stats.health = 0;
 						}else{//Extra blood splatters for death sequence, not working quite right yet
@@ -5489,9 +8171,33 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 						ctx.globalAlpha = 1;
 					}
 				}
+				//ctx.rotate(-fAngle);
+				//ctx.translate(-this.weapon[this.sW].pX, -this.weapon[this.sW].pY);
+				/*
+				ctx.translate(x + 100, y + 100)
+				ctx.rotate(-degRad(45))
+				ctx.translate(-x-100, -y-100);*/
 			},
+			died:false,
 			die:function(){
-				for(var i=2; i < this.weapon.length; i++) this.dropWeapon(i);
+				if(!this.died){
+					for(var i=2; i < this.weapon.length; i++) this.dropWeapon(i);
+					this.died = true;
+					if(this.stats.type == 0) playInsectDeathSound(this.x, this.y);
+				
+				/*
+					if(this.stats.type != creature[cS].stats.type) {
+						for(var i=0; i < creature.length; i++){
+							if(creature[i].stats.type == creature[cS].stats.type) creature[i].gainXP(this.level * 5);
+						}
+					}*/
+					
+					this.weapon[0] = blank();
+					this.weapon[1] = blank();
+				
+					this.fire = function(){};
+					this.move = function(){};
+				}
 			},
 			dropWeapon:function(i){
 				if(i >= 2 && i < this.weapon.length && this.weapon[i] != null){
@@ -5507,18 +8213,19 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 			sayWords:function(){
 				//Speech
 				if(this.speech != ""){
+					speechBubble(this.x - ctx.measureText(this.speech).width/2 + 90, this.y + 28, ctx.measureText(this.speech).width + 20, 25);
 					ctx.fillStyle = 'white'
 					if(this.speakAni < this.speech.length && this.speakAni > 0) {
 						ctx.fillStyle = 'black'
 						ctx.fillText(this.speech.slice(0,this.speakAni), this.x + 99 - ctx.measureText(this.speech.slice(0,this.speakAni)).width/2, this.y+ 46)
-						ctx.fillStyle = 'white'
-						ctx.fillText(this.speech.slice(0,this.speakAni), this.x + 100 - ctx.measureText(this.speech.slice(0,this.speakAni)).width/2, this.y+ 45)
+						//ctx.fillStyle = 'white'
+						//ctx.fillText(this.speech.slice(0,this.speakAni), this.x + 100 - ctx.measureText(this.speech.slice(0,this.speakAni)).width/2, this.y+ 45)
 				
 					}else if(this.speakAni >= this.speech.length) {
 						ctx.fillStyle = 'black'
-					ctx.fillText(this.speech, this.x + 100 - ctx.measureText(this.speech).width/2 - 1, this.y+ 46)
-						ctx.fillStyle = 'white'
-						ctx.fillText(this.speech, this.x + 100 - ctx.measureText(this.speech).width/2, this.y+ 45)
+						ctx.fillText(this.speech, this.x + 100 - ctx.measureText(this.speech).width/2 - 1, this.y+ 46)
+						//ctx.fillStyle = 'white'
+						//ctx.fillText(this.speech, this.x + 100 - ctx.measureText(this.speech).width/2, this.y+ 45)
 					}
 					if(ani == 0) this.speakAni+=2;
 				
@@ -5532,7 +8239,30 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 			},
 			fall:false,
 			stepped:false,
+			aniSpeed:2,
+			aniCount:0,
+			crouch:function(){
+				if(this.state != 4) {
+					this.state = 4
+					this.sx = 0
+				}
+				else this.state = 0;
+			},
 			draw:function(){
+			
+				var oldState = {x:this.x, y:this.y, sx:this.sx, sy:this.sy, aF:this.aniFrame}
+			
+				var fAngle = 0
+				if(this.sx != 0) fAngle = -0.5* Math.atan(this.sy/this.sx)/Math.PI;
+				
+			
+				var oDx = this.x
+				var oDy = this.y
+				ctx.translate(oDx + 100, oDy + 100)
+				ctx.rotate(fAngle)
+				ctx.translate(-oDx-100, -oDy-100);
+			
+			
 				//ctx.fillStyle = 'yellow'
 				//ctx.fillText(this.weapon[this.sw].clip + " / " + this.weapon[this.sw].ammo, this.x, this.y);
 				//ctx.fillText(this.weapon[this.sw].name + " " + this.sw, this.x, this.y);
@@ -5540,20 +8270,15 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 				fall = this.falling();
 				this.stepped = false;
 				//Check horizontals
-				//ctx.fillStyle = 'green'
-				//ctx.fillRect(this.x + this.hitBox.x, this.y + this.hitBox.y, this.hitBox.width, this.hitBox.height);
 				for(var i=0; i < wall.length; i++) {
-					//if(wall[i].collidePoint(this.x +this.hitBox.x + this.sx, this.y +this.hitBox.y + this.hitBox.height - 5) ||wall[i].collidePoint(this.x +this.hitBox.x+ this.sx, this.y +this.hitBox.y + 5) || wall[i].collidePoint(this.x +this.hitBox.x + this.sx, this.y +this.hitBox.y + this.hitBox.height /2)){
 					if(this.collideLeft(wall[i])){
 					//left side has hit a wall.
-						
 						//Check for stairs
-						if(!wall[i].collidePoint(this.x +this.hitBox.x + this.sx, this.y +this.hitBox.y + this.hitBox.height - 35) && !fall){
+						if(!wall[i].collidePoint(this.x +this.hitBox.x + this.sx, this.y +this.hitBox.y + this.hitBox.height - 40) && wall[i].collidePoint(this.x +this.hitBox.x + this.sx, this.y +this.hitBox.y + this.hitBox.height)&& !fall){
 							this.sy = 0;
 							this.x += this.sx
-							this.falling();
-							if(!hitWall(this.x + this.hitBox.x, this.cFloor + this.hitBox.y)){
-								this.y = this.cFloor;
+							if(!hitWall(this.x + this.hitBox.x, wall[i].y - this.hitBox.height)){//this.cFloor - this.hitBox.y)){
+								this.y = wall[i].y - 200;
 								this.stepped = true;
 							}else{
 								this.x -= this.sx
@@ -5562,19 +8287,22 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 							}
 						}else{
 							this.x += Math.abs((wall[i].x + wall[i].width) - (this.x + this.hitBox.x)) + 1
+							//this.x = wall[i].x + wall[i].width - this.hitBox.x + 40
+
 							this.sx = 0;
 						}
 					//}else if(wall[i].collidePoint(this.x +this.hitBox.x + this.hitBox.width+ this.sx, this.y +this.hitBox.y + this.hitBox.height - 5) || wall[i].collidePoint(this.x +this.hitBox.x + this.hitBox.width+ this.sx, this.y +this.hitBox.y + 5) || wall[i].collidePoint(this.x +this.hitBox.x + this.hitBox.width+ this.sx, this.y +this.hitBox.y + this.hitBox.height /2)){
 					}else if(this.collideRight(wall[i])){
 					//right wall collision
-						
 						//Check for stair step
-						if(!wall[i].collidePoint(this.x +this.hitBox.x + this.hitBox.width+ this.sx, this.y +this.hitBox.y + this.hitBox.height - 35) && !fall){
+						if(!wall[i].collidePoint(this.x +this.hitBox.x + this.hitBox.width+ this.sx, this.y +this.hitBox.y + this.hitBox.height - 40)&&wall[i].collidePoint(this.x +this.hitBox.x + this.hitBox.width+ this.sx, this.y +this.hitBox.y + this.hitBox.height) && !fall){
 							this.sy = 0;
 							this.x += this.sx
-							this.falling();
-							if(!hitWall(this.x + this.hitBox.x + this.hitBox.width, this.cFloor + this.hitBox.y)){
-								this.y = this.cFloor;
+							//this.falling();
+						
+							if(!hitWall(this.x + this.hitBox.x + this.hitBox.width, wall[i].y - this.hitBox.height)){
+								//this.y = this.cFloor;
+								this.y = wall[i].y - 200
 								this.stepped = true;
 							}else{
 								this.x -= this.sx
@@ -5608,15 +8336,24 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 				else this.aimer.y = this.taimer.y
 				
 				
+				if(this.sw >= this.weapon.length) this.sw = 0;
 				//if(this.aimer.x >= this.x + 100){
-				if((this.aimer.x > (90+this.weapon[this.sw].pX+this.x))){
-					//facing right
-					this.facing = 0
+				if(this.weapon.length > 0){
+					if((this.aimer.x > (90+this.weapon[this.sw].pX+this.x))){//facing right
+						this.facing = 0
+					}else{//facing left
+						ctx.translate(this.x,this.y);
+						ctx.scale(-1,1);
+						this.facing = 1;
+					}
 				}else{
-					//facing left
-					ctx.translate(this.x,this.y);
-					ctx.scale(-1,1);
-					this.facing = 1;
+					if((this.aimer.x > (90+this.x))){//facing right
+						this.facing = 0
+					}else{//facing left
+						ctx.translate(this.x,this.y);
+						ctx.scale(-1,1);
+						this.facing = 1;
+					}
 				}
 				
 		
@@ -5625,21 +8362,21 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 					this.sy += 2;
 					this.state = 1;
 					
-					if(this.stats.wing > 0){
+					if(this.stats.wing > 0){//reduced gravity for flight
 						//This is the reptile wing
 						this.sy -= 1;
 					}
 					
-					if(this.y > h*2 - 300) {
+					if(this.y > h*2 - 200) {//Stop falling at bottom of level
 						this.sy = 0;
-						this.y = h*2 - 300;
+						this.y = h*2 - 200;
 					}
 				}
 				
 				
 				if(this.state == 1 && !this.falling()) {//Airborne, collision with ground detected
-					this.hitBox.y = 45
-					this.hitBox.height = 155
+					//this.hitBox.y =45
+					//this.hitBox.height = 155
 				
 					if(this.sy > 0){
 						this.state = 0;
@@ -5672,15 +8409,15 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 					}
 					this.sx = 0;
 					this.aimArm(0);
-					this.hitBox.y = 45
-					this.hitBox.height = 155
+					//this.hitBox.y = 45
+					//this.hitBox.height = 155
 				}else if(this.state == 1){//Jumping 
 					if(this.facing == 0) this.drawBody(10, this.x,this.y);
 					else this.drawBody(10, -200, 0);
 					
 					this.aimArm(-1)
-					this.hitBox.y = 45 //aborting jump hitbox resize
-					this.hitBox.height = 155
+					//this.hitBox.y = 45 //aborting jump hitbox resize
+					//this.hitBox.height = 155
 					if(ani == 0)this.aniFrame++;
 					if(this.aniFrame > 2) this.aniFrame = 0;
 				}else if(this.state == 2){//walking right
@@ -5691,8 +8428,8 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 					}
 					
 					this.aimArm(2);
-					this.hitBox.y = 45
-					this.hitBox.height = 155
+					//this.hitBox.y = 45
+					//this.hitBox.height = 155
 					if(ani == 0)this.aniFrame++;
 					if(this.aniFrame > 8) this.aniFrame = 1;
 					
@@ -5708,8 +8445,8 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 					}else {
 						this.drawBody(this.aniFrame, -200, 0);
 					}
-					this.hitBox.y = 45
-					this.hitBox.height = 155
+					//this.hitBox.y = 45
+					//this.hitBox.height = 155
 					this.aimArm(2);
 					if(ani == 0) this.aniFrame++;
 					if(this.aniFrame > 8) this.aniFrame = 1;
@@ -5722,8 +8459,8 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 							this.drawBody(9, -200, 25);
 						}
 				//be sure to fix the hair, a regular hair from frame 1 (The second frame) has the same hair height as the jump frame
-					this.hitBox.y = 80
-					this.hitBox.height = 120
+					//this.hitBox.y = 80
+					//this.hitBox.height = 120
 					this.aimArm(0);
 					this.sx = 0;
 				}else if(this.state == 5){
@@ -5735,10 +8472,19 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 						this.drawBody(9, -200, 0);
 					}
 				}else{//Just in case something crazy happens
-					this.hitBox.y = 45
-					this.hitBox.height = 155
+					//this.hitBox.y = 45
+					//this.hitBox.height = 155
 				}
 		
+		/*
+				if(this.stats.health <= 0){
+					if(this.facing == 0) {
+						this.drawBody(12, this.x,this.y);
+					}else {
+						this.drawBody(12, -200, 0);
+					}
+		
+				}*/
 				ctx.restore();
 				
 				
@@ -5755,7 +8501,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 					//ctx.fillRect(this.x + 40, this.y + 60 - this.stats.health/10, 2, this.stats.health/10)
 				}else {
 					this.state = 0;
-					this.die()
+					if(!this.died) this.die()
 				}
 				
 				//Cool lights!
@@ -5790,9 +8536,27 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 				ctx.stroke()
 				ctx.closePath();
 				ctx.strokeStyle = 'black'*/
+				ctx.translate(oDx + 100, oDy + 100)
+				ctx.rotate(-fAngle)
+				ctx.translate(-oDx-100, -oDy-100);
+				
+				/*
+				this.aniCount++
+				if(this.aniCount >= this.aniSpeed) this.aniCount = 0
+				else{
+					this.x = oldState.x
+					this.y = oldState.y
+					this.sx = oldState.sx
+					this.sy = oldState.sy
+					this.aniFrame = oldState.aF
+				
+				}*/
+				
+				
 				
 			},
 			aimArm:function(x){
+			
 				var angle = Math.atan((this.aimer.y - (this.y + 80 + this.weapon[this.sw].pY)) / (this.aimer.x-(90+this.weapon[this.sw].pX+this.x)))
 				var off = 0 
 				
@@ -5818,6 +8582,8 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 					this.fireCool = 0;
 					
 				}
+				
+				if(this.reloading >= 0) this.canFire = false;
 				if(this.stats.health >0){
 				//ctx.save();
 				
@@ -5831,6 +8597,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 					if(this.weapon[this.sw].firePic[this.recoil-1] == null){
 						this.recoil = 1
 					}
+					
 					if(this.weapon[this.sw].type == 1 && this.light) directedLight(50, 0, 100);
 					if(this.weapon[this.sw].firePic.length > 0)ctx.drawImage(this.weapon[this.sw].firePic[this.recoil - 1], this.weapon[this.sw].oX - 1, this.weapon[this.sw].oY)
 					
@@ -5840,14 +8607,16 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 				}else {
 				
 					if(this.reloading == -1) {
+						
 						if(this.weapon[this.sw].type == 1 &&this.light)directedLight(50, 0, 100);
-						if(this.weapon[this.sw].pic != null) ctx.drawImage(this.weapon[this.sw].pic, 0,0,150,40,this.weapon[this.sw].oX, this.weapon[this.sw].oY, 150,40)
-						//if (this.weapon[this.sw].type == 3)ctx.drawImage(this.weapon[0].pic, 0,0,150,40,this.weapon[0].oX-13, this.weapon[0].oY+10, 150,40)
+						if(this.weapon[this.sw].pic != null) {
+							if(this.weapon[this.sw].type == 1) ctx.drawImage(this.weapon[this.sw].pic, 0,0,150,40,this.weapon[this.sw].oX, this.weapon[this.sw].oY, 150,40)
+							else ctx.drawImage(this.weapon[this.sw].pic, this.weapon[this.sw].oX, this.weapon[this.sw].oY)
+						}
 					}else{
 						if(this.weapon[this.sw].type == 1 && this.light)directedLight(50, 0, 100);
 						if(this.weapon[this.sw].pic!= null) ctx.drawImage(this.weapon[this.sw].pic, 0,this.reloading * 40 + 40,150,40,this.weapon[this.sw].oX, this.weapon[this.sw].oY, 150,40)
-						//if (this.weapon[this.sw].type == 3) ctx.drawImage(this.weapon[0].pic, 0,this.reloading * 40 + 40,150,40,this.weapon[0].oX -13, this.weapon[0].oY+10, 150,40)
-					
+						
 						if(ani == 0) this.reloading += 1;
 						if(this.reloading > 2) this.reloading = -1;
 					}
@@ -5911,6 +8680,8 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 				else if(obj.collidePoint(this.x + this.hitBox.x, this.y + this.hitBox.y + this.hitBox.height)) result = true;
 				else if(obj.collidePoint(this.x + this.hitBox.x + this.hitBox.width, this.y + this.hitBox.y + this.hitBox.height)) result = true;
 				
+				if(this.collideLeft(obj) || this.collideRight(obj)) result = true
+				
 				return result;
 			},
 			collideBottom:function(obj){
@@ -5924,9 +8695,17 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 				
 				//if(obj.collidePoint(this.x + this.hitBox.x, this.y + this.hitBox.y)) result = true;
 				//else if(obj.collidePoint(this.x + this.hitBox.x + this.hitBox.width, this.y + this.hitBox.y)) result = true;
-				if(obj.collidePoint(this.x + this.hitBox.x, this.y + this.hitBox.y + this.hitBox.height + this.sy)) result = true;
-				else if(obj.collidePoint(this.x + this.hitBox.x + this.hitBox.width/2, this.y + this.sy + this.hitBox.y + this.hitBox.height)) result = true;
-				else if(obj.collidePoint(this.x + this.hitBox.x + this.hitBox.width, this.y + this.sy + this.hitBox.y + this.hitBox.height)) result = true;
+			//	if(obj.collidePoint(this.x + this.hitBox.x, this.y + this.hitBox.y + this.hitBox.height + this.sy)) result = true;
+			//	else if(obj.collidePoint(this.x + this.hitBox.x + this.hitBox.width/2, this.y + this.sy + this.hitBox.y + this.hitBox.height)) result = true;
+			//	else if(obj.collidePoint(this.x + this.hitBox.x + this.hitBox.width, this.y + this.sy + this.hitBox.y + this.hitBox.height)) result = true;
+				
+				for(var i=this.x + this.hitBox.x; i <= this.x + this.hitBox.x + this.hitBox.width; i+= 10){
+					if(obj.collidePoint(i, this.y + this.sy + this.hitBox.y + this.hitBox.height)) {
+						result = true;
+						break;
+					}
+				}
+				
 				
 				return result;
 			},
@@ -5978,10 +8757,26 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 				return result;
 			},
 			td:0,//Used for distance sound calculations
+			reload: function(){
+				var savedAmmo = this.weapon[this.sw].clip
+				if(this.weapon[this.sw].ammo >= this.weapon[this.sw].capacity){
+					this.weapon[this.sw].ammo -= this.weapon[this.sw].capacity;
+					this.weapon[this.sw].clip = this.weapon[this.sw].capacity;
+					this.reloading = 0;
+					this.weapon[this.sw].ammo += savedAmmo;
+				}else if(this.weapon[this.sw].ammo > 0){
+					this.weapon[this.sw].clip = this.weapon[this.sw].ammo;
+					this.weapon[this.sw].ammo = 0;
+					this.reloading = 0;
+					this.weapon[this.sw].ammo += savedAmmo;
+				}
+				
+				if(this.weapon[this.sw].ammo <= 0) this.speak("Out of ammo!");
+			},
 			fire:function(){ //x and y are the destination of the projectile
 				if(this.weapon[this.sw].sound != null){
 					this.td = dist(this.x+100, this.y +100, -ctxOx + w/2, -ctxOy + h/2)
-					if(this.td < 500){
+					if(this.td < 500 && this.weapon[this.sw].clip > 0){
 						for(var i=0; i < this.weapon[this.sw].sound.length; i++){
 							if(this.weapon[this.sw].sound[i].soundVar.currentTime == 0){
 							
@@ -6078,15 +8873,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 				}else{
 				if(this.weapon[this.sw].clip <= 0){ //Magazine has no ammo
 					results = [];
-					if(this.weapon[this.sw].ammo >= this.weapon[this.sw].capacity){
-						this.weapon[this.sw].ammo -= this.weapon[this.sw].capacity;
-						this.weapon[this.sw].clip = this.weapon[this.sw].capacity;
-						this.reloading = 0;
-					}else if(this.weapon[this.sw].ammo > 0){
-						this.weapon[this.sw].clip = this.weapon[this.sw].ammo;
-						this.weapon[this.sw].ammo = 0;
-						this.reloading = 0;
-					}
+					this.reload();
 				
 				}else if(this.fireCool <= 0) {
 					this.weapon[this.sw].clip--;
@@ -6112,15 +8899,17 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 						results[bestI].x = creature[results[bestI].t].x + creature[results[bestI].t].hitBox.x + rand(creature[results[bestI].t].hitBox.width)
 						
 						
-						if(creature[results[bestI].t].stats.armorPlate) creature[results[bestI].t].stats.health -= this.weapon[this.sw].stats.damage * (Math.random() /10 + 0.5);
-						else creature[results[bestI].t].stats.health -= this.weapon[this.sw].stats.damage;
+						if(creature[results[bestI].t].stats.armorPlate) creature[results[bestI].t].stats.health -= Math.round(this.weapon[this.sw].stats.damage * (Math.random() /10 + 0.5));
+						else creature[results[bestI].t].stats.health -= Math.round(this.weapon[this.sw].stats.damage);
 						
 						//Make creature just hit target this one
 						
-						
+						this.gainXP(Math.round(this.weapon[this.sw].stats.damage / 5));
 						creature[results[bestI].t].enemies[0] = this
 						creature[results[bestI].t].target = 0
-						
+						if(creature[results[bestI].t].stats.type == 3){
+							if(creature[results[bestI].t].weapon[creature[results[bestI].t].sw].useless) creature[results[bestI].t].sw = 1;
+						}
 						
 						bloodSplat.push(createBlood(results[bestI].x,results[bestI].y));
 						if(this.weapon[this.sw].stats.burst > 1) bloodSplat.push(createBlood(results[bestI].x - rand(14) + 7,results[bestI].y - rand(14) + 7));
@@ -6149,8 +8938,18 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 					
 					for(var i=0; i < results.length;i++){
 						if(results[i].t >= 0) {
-							creature[results[i].t].stats.health -= this.weapon[this.sw].stats.damage
-							if(this.weapon[this.sw].type == 3) this.stats.health += this.weapon[this.sw].stats.damage
+							creature[results[i].t].stats.health -= Math.round(this.weapon[this.sw].stats.damage)
+							if(this.weapon[this.sw].type == 3) {
+								this.stats.health += Math.round(this.weapon[this.sw].stats.damage)
+								if(this.stats.health > this.stats.maxHealth) this.stats.health = this.stats.maxHealth;
+							}
+							this.gainXP(Math.round(this.weapon[this.sw].stats.damage / 5));	
+							creature[results[i].t].enemies[0] = this
+							creature[results[i].t].target = 0
+							if(creature[results[i].t].stats.type == 3){
+								if(creature[results[i].t].weapon[creature[results[i].t].sw].useless) creature[results[i].t].sw = 1;
+							}
+						
 						}
 					}
 					
@@ -6479,8 +9278,8 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 				lightRegion(this.x+5, this.y+5, 4, 0.5);
 			}else roundLight(this.x+5,this.y+10, 20, 0.5);
 	
-			directedAngleLight(this.x+5,this.y+10,this.CSize, this.angle)
-			directedAngleLight(this.x+5,this.y+10,this.CSize* -1, this.angle)
+			//directedAngleLight(this.x+5,this.y+10,this.CSize, this.angle)
+			//directedAngleLight(this.x+5,this.y+10,this.CSize* -1, this.angle)
 			
 			lightRegion(this.x - this.CSize, this.y + 10, 4, 0.2);
 			lightRegion(this.x +this.CSize, this.y + 10, 4, 0.2);
@@ -6518,6 +9317,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		ctx.globalAplha = 0.1 * intensity;
 		ctx.fillStyle = 'white'
 		lightRegion(x,y, 8, 0.2 + Math.random()/50);
+		//lightRegion(x,y, 8, 0.2 + Math.random()/50, {r:0,g:100,b:100});
 		for(var i=0 ; i < size; i+=size/40){
 				ctx.globalAlpha = ((size - i)/size)/10 * intensity;
 				ctx.beginPath();
@@ -6623,22 +9423,68 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 	
 	
 	function lightRegion(x,y,r,intensity){
-	
-		gX = Math.floor(x/lightRes)
-		gY = Math.floor(y/lightRes)
+		gX = Math.floor((x + ctxOx - ctxOx%lightRes)/lightRes) + 1
+		gY = Math.floor((y + ctxOy - ctxOy%lightRes)/lightRes) + 1
+		var bOffx = gX - r;
+		var bOffy = gY - r;
+		if(brushes[r] == null) brushes[r] = new Brush(r*2 + 1);
 		
-		for(var i = gX - r; i <= gX+r; i++){
-			for(var j = gY - r; j <= gY+r; j++){
-				if(i >= 0 && i < lightGrid.length && j >= 0 && j < lightGrid[0].length && dist(i,j, gX,gY) <= r){
-				//lightGrid[i][j]+= intensity * r/(dist(gX,gY, i,j)*lightRes/10)
-				lightGrid[i][j]+= intensity *(r/(dist(gX,gY, i,j)) -1)
+		if(gX + r < lightGrid.length || gX - r >= 0 || gY + r < lightGrid[0].length || gY -r >= 0){
+			for(var i = gX - r; i <= gX+r; i++){
+				for(var j = gY - r; j <= gY+r; j++){
+					if(i >= 0 && i < lightGrid.length && j >= 0 && j < lightGrid[0].length && brushes[r].row[i-bOffx][j-bOffy] <= r){
+						lightGrid[i][j]+= intensity *(r/(brushes[r].row[i-bOffx][j-bOffy]) -1)
+					}
 				}
 			}
 		}
-	
-	
 	}
 	
+		function lightRegionCol(x,y,r,intensity, col){
+		gX = Math.floor((x + ctxOx - ctxOx%lightRes)/lightRes) + 1
+		gY = Math.floor((y + ctxOy - ctxOy%lightRes)/lightRes) + 1
+		var bOffx = gX - r;
+		var bOffy = gY - r;
+		if(brushes[r] == null) brushes[r] = new Brush(r*2 + 1);
+		var tempVal = 0
+		if(gX + r < lightGrid.length || gX - r >= 0 || gY + r < lightGrid[0].length || gY -r >= 0){
+			for(var i = gX - r; i <= gX+r; i++){
+				for(var j = gY - r; j <= gY+r; j++){
+					if(i >= 0 && i < lightGrid.length && j >= 0 && j < lightGrid[0].length && brushes[r].row[i-bOffx][j-bOffy] <= r){
+						if(brushes[r].row[i-bOffx][j-bOffy] > 0) tempVal = intensity *(r/(brushes[r].row[i-bOffx][j-bOffy]) -1)
+						else tempVal = 1
+						lightGrid[i][j]+= tempVal
+						lightGridC[i][j].r += col.r * tempVal
+						lightGridC[i][j].g += col.g * tempVal
+						lightGridC[i][j].b += col.b * tempVal
+					
+						if(lightGridC[i][j].r > 255) lightGridC[i][j].r = 255
+						if(lightGridC[i][j].g > 255) lightGridC[i][j].g = 255
+						if(lightGridC[i][j].b > 255) lightGridC[i][j].b = 255
+					}
+				}
+			}
+		}
+	}
+	
+	function lightRegionSlow(x,y,r,intensity){
+		//var ts = Date.now();
+		gX = Math.floor((x + ctxOx)/lightRes) + 1
+		gY = Math.floor((y + ctxOy)/lightRes) + 1
+		if(gX + r < lightGrid.length || gX - r >= 0 || gY + r < lightGrid[0].length || gY -r >= 0){
+			for(var i = gX - r; i <= gX+r; i++){
+				for(var j = gY - r; j <= gY+r; j++){
+					if(i >= 0 && i < lightGrid.length && j >= 0 && j < lightGrid[0].length && dist(i,j, gX,gY) <= r){
+						lightGrid[i][j]+= intensity *(r/(dist(gX,gY, i,j)) -1)
+					}
+				}
+			}
+		}
+		
+	//	alert("Radius: " + r + " Time: " + (Date.now() - ts));
+	}
+	
+
 	function lightStrip(x,y,size,intensity){
 	
 		gX = Math.floor(x/lightRes)
@@ -6650,7 +9496,6 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		for(var i = gX; i <= gX+ mgX; i++){
 			for(var j = gY; j <= gY+mgY; j++){
 				if(i >= 0 && i < lightGrid.length && j >= 0 && j < lightGrid[0].length){
-				//lightGrid[i][j]+= intensity * r/(dist(gX,gY, i,j)*lightRes/10)
 				lightGrid[i][j]+= intensity 
 				}
 			}
@@ -6671,7 +9516,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		
 		ctx.translate(x,y);
 		ctx.rotate(degRad(angle));
-		for(var i=0 ; i < size; i+=size/40){
+		for(var i=0 ; i < size; i+=size/20){
 				ctx.globalAlpha = 0.15//((size - i)/size)/10;
 				ctx.beginPath();
 			
@@ -6708,7 +9553,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 					
 					if(this.sound!= null){
 						this.sound.play();
-						this.sound.setVolume ((1-this.distance / 200)/2); //has a 50% drop in volume
+						this.sound.setVolume (1-this.distance / 200); //has a 50% drop in volume
 						if(this.sound.soundVar.currentTime > this.sound.soundVar.duration - 0.5) this.sound.soundVar.currentTime = 0.1
 					}
 				}else {
@@ -6721,6 +9566,37 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		}
 		this.sound = steamSound[rand(steamSound.length)]
 	}
+	
+	
+	
+	
+	function getNextAlly(){
+		var typeGet = creature[cS].stats.type;
+	
+		
+		for(var i= cS + 1; i < creature.length; i++){
+			if(creature[i].stats.type == typeGet) {
+				cS = i;
+				creature[cS].state = 0
+				creature[cS].sx = 0
+				break;
+			}
+		}
+		
+	}
+	
+	function getPrevAlly(){
+	
+	for(var i= cS - 1; i >= 0; i--){
+			if(creature[i].stats.type == creature[cS].stats.type) {
+				cS = i;
+				creature[cS].state = 0
+				creature[cS].sx = 0
+				break;
+			}
+		}
+	}
+	
 	
 	
 	////////////////////////////////////////////////////////
@@ -6738,25 +9614,26 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 	
 	
 	canvas.addEventListener('click', function (evt){
-	
 		if(screen == 1){
 			if(!prompting){
 				for(var i=0; i < mainMenuButtons.length; i++) if(mainMenuButtons[i].isMouseOver()) mainMenuButtons[i].job();
 			}else {
-				if(OKButton.isMouseOver()) OKButton.job();
-				else promptAni = 100;
+					if(promptAni < 100) promptAni = 100;
+					else if(OKButton.isMouseOver()) OKButton.job();
+				
 			}
 		}else if(screen == 5){
 			if(prompting){
-				if(OKButton.isMouseOver()) OKButton.job();
-				else promptAni = 100;
+				if(promptAni < 100) promptAni = 100;
+				else if(OKButton.isMouseOver()) OKButton.job();
 			}else{
 			
 			}
 		}else if(screen == 6){
 			if(lighter.isMouseOver()) lighter.job();
 			
-			
+			if(gridToggle.isMouseOver()) gridToggle.job();
+			if(loadEdit.isMouseOver())loadEdit.job();
 			if(leftSlide.isMouseOver())leftSlide.job();
 			if(rightSlide.isMouseOver())rightSlide.job();
 			
@@ -6905,6 +9782,47 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 						if(sOptions[i].selected) sOptions[i].job();
 					}
 				}
+			}else if(selEdit == 8){//Bio stuffs
+				var btnd = false;
+				for(var i=0; i < bOptions.length; i++){
+					if(bOptions[i].b.isMouseOver()) {
+						btnd = true;
+						for(var j=0; j <bOptions.length; j++) bOptions[j].selected = false;
+						bOptions[i].selected = true;
+					}
+				}
+				if(config.isMouseOver()){
+					
+					for(var i=0; i < bOptions.length; i++){
+						if(bOptions[i].selected) bOptions[i].config();
+					}
+					btnd = true;
+				}
+				if(!btnd && my < h - 150&& my > 50){//We have clicked on the screen to place something
+					for(var i=0; i < bOptions.length; i++){
+						if(bOptions[i].selected) bOptions[i].job();
+					}
+				}
+			}else if(selEdit == 9){//Animated Items
+				var btnd = false;
+				for(var i=0; i < aOptions.length; i++){
+					if(aOptions[i].b.isMouseOver()) {
+						btnd = true;
+						for(var j=0; j <aOptions.length; j++) aOptions[j].selected = false;
+						aOptions[i].selected = true;
+					}
+				}
+				if(config.isMouseOver()){
+					for(var i=0; i < aOptions.length; i++){
+						if(aOptions[i].selected) aOptions[i].config();
+					}
+					btnd = true;
+				}
+				if(!btnd && my < h - 150&& my > 50){//We have clicked on the screen to place something
+					for(var i=0; i < aOptions.length; i++){
+						if(aOptions[i].selected) aOptions[i].job();
+					}
+				}
 			}
 	      
 		}
@@ -6928,6 +9846,13 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 	canvas.addEventListener ('mouseout', function(){pause = true;}, false);
 	canvas.addEventListener ('mouseover', function(){pause = false;}, false);
 
+	function updateMouse(){
+	//Set player aiming
+			if(screen == 5) creature[cS].taimer = {x:mx - ctxOx,y:my - ctxOy};
+		
+	
+	}
+	
       	canvas.addEventListener('mousemove', function(evt) {
         	var mousePos = getMousePos(canvas, evt);
 
@@ -6935,9 +9860,7 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 		my = mousePos.y;
 
 		
-		//Set player aiming
-			if(screen == 5) creature[cS].taimer = {x:mx - ctxOx,y:my - ctxOy};
-		
+		updateMouse();
 		
       	}, false);
 
@@ -6959,41 +9882,59 @@ cutscene[0].lev.wallPanels.push(new wordWall(410,270, 'EXAM',5));
 	////////	KEY BOARD INPUT
 	////////////////////////////////
 
-
+	
+	var keys = []
+	function inKeys(v){
+		var result = false
+		for(var i=0; i < keys.length; i++){
+			if(v == keys[i])result =  true;
+		}
+		return result;
+	}
+	
+	function clearKeys(v){
+		for(var i=0; i < keys.length; i++){
+			if(keys[i] == v){
+				keys.splice(i,1);		
+				break;
+			}
+		}
+	}
 	
 window.addEventListener('keyup', function(evt){
 		var key = evt.keyCode;
-		
+		clearKeys(key);
 	//p 80
 	//r 82
 	//1 49
 	//2 50
 	//3 51
-		if(key == 38){
+	
+		if(key == 38 || key == 87){
 		//up
 			
-		}else if(key == 39){
+		}else if(key == 39 || key == 68){
 		//stop right
 			if(screen == 5){
 				creature[cS].state =0;
 				creature[cS].aniFrame = 3;
 			}
-		}else if (key== 37){
+		}else if (key== 37 || key == 65){
 			//left
 			if(screen == 5){
 				creature[cS].state = 0;
 				creature[cS].aniFrame = 5;
 			}
-		}else if(key==40){
+		}else if(key==40|| key == 83){
 		//down
 			if(screen == 5) creature[cS].state = 0;
 		}
-		//alert(key)
+		
 	}, false);
 	
 	window.addEventListener('keydown', function(evt){
 		var key = evt.keyCode;
-	
+		if(!inKeys(key))keys.push(key);
 	//p 80
 	//r 82
 	//1 49
@@ -7001,44 +9942,59 @@ window.addEventListener('keyup', function(evt){
 	//3 51
 	
 	
+	//w 87
+	//a 65
+	//s 83
+	//d 68
+	
+	//alert(key)
+	//219 back
+	//221 forward
 		if(key == 38){
 		//up
-			if(screen == 5){
-				ridingElevator = false;
+			if(screen == 5 && false){
+				/*ridingElevator = false;
 				for(var i=0;i<elevators.length;i++){
 					if(elevators[i].inUse) {
 						elevators[i].goUp();
 						ridingElevator = true;
 					}
 				}
-				if(!ridingElevator) creature[cS].jump();
+				if(!ridingElevator) creature[cS].jump();*/
 			}else if(screen == 6) ctxOy += 100
+			
+			if(prompting && promptScroll > 0) promptScroll--;
+			
 		}else if(key == 39){
 		//right
-			if(screen == 5){
-				creature[cS].state = 2
-				creature[cS].sx = creature[cS].stats.speed;
+			if(screen == 5 && false){
+				/*creature[cS].state = 2
+				if(creature[cS].stats.wing > 0 && creature[cS].falling()&& creature[cS].sx < 8)creature[cS].sx+=1
+				else creature[cS].sx = creature[cS].stats.speed;*/
 			}else if (screen == 6) ctxOx-=100
 		}else if (key== 37){
 			//left
-			if(screen == 5){
-				creature[cS].state = 3;
-				creature[cS].sx =-1* creature[cS].stats.speed;
+			if(screen == 5 && false){
+			/*	creature[cS].state = 3;
+				if(creature[cS].stats.wing > 0 && creature[cS].falling() && creature[cS].sx > -8)creature[cS].sx-=1
+				else creature[cS].sx =-1* creature[cS].stats.speed;*/
 			}else if(screen == 6) ctxOx += 100
 		}else if(key==40 ){
 		//down
-			if(screen == 5){
-				ridingElevator = false;
+			if(screen == 5 && false){
+				/*ridingElevator = false;
 				for(var i=0;i<elevators.length;i++){
 					if(elevators[i].inUse) {
 						elevators[i].goDown();
 						ridingElevator = true;
 					}
-				}
+				}*/
 			}
 				
-			if(!ridingElevator && screen == 5 && !creature[cS].falling() && creature[cS].sy == 0)creature[cS].state = 4;
+			//if(false && !ridingElevator && screen == 5 && !creature[cS].falling() && creature[cS].sy == 0)creature[cS].state = 4;
 			else if(screen == 6) ctxOy -= 100;
+			if(prompting && promptScroll < promptLines - 220/12)promptScroll++;
+			
 		}else if(key == 49) {
 			if(screen == 5 && !creature[cS].weapon[0].useless && creature[cS].weapon[0] != null)creature[cS].sw = 0;
 			else if (screen == 6) selEdit = 1;
@@ -7061,6 +10017,44 @@ window.addEventListener('keyup', function(evt){
 			if (screen == 6) selEdit = 6;
 		}else if (key == 55){
 			if (screen == 6) selEdit = 7;
+		}else if (key == 56){
+			if (screen == 6) selEdit = 8;
+		}else if (key == 57){
+			if (screen == 6) selEdit = 9;
+		}else if (key == 219){//backselect
+			if (screen == 5) getPrevAlly()
+		}else if (key == 221){//forward selct
+			if (screen == 5) getNextAlly();
+		}else if (key == 69){//swap weapons
+			if(w1 != null && w2 != null && screen == 5){
+				creature[cS].dropWeapon(creature[cS].sw);
+				w1.collect(creature[cS]);
+			}
+		}else if (key == 82){//reload
+			if(screen == 5){
+				creature[cS].reload();
+			}
+		}else if(key == 84){
+			if(screen == 6) {
+				if(creature.length > 0){
+					if(prompt("Are you sure you want to test this level live? Y / N","") == "Y"){
+						screen = 5;
+						cS = creature.length-1
+					}
+				}else alert("You can't run this level without at least 1 creature in it!  Put in a creature and try again.");
+			}else if(screen == 5){
+				if(prompt("Are you sure you want to go to the editor? Y / N","") == "Y"){
+					screen = 6;
+					ctxOx = 0
+					ctxOy = 0
+					for(var i=0; i < creature.length;i++) {
+						creature[i].sx = 0
+						creature[i].sy = 0
+						creature[i].state = 0;
+					}
+				}
+			
+			}
 		}else if(key == 32){
 			if(screen == 4) cutscene[scene].frame = cutscene[scene].endFrame
 		
@@ -7110,7 +10104,8 @@ window.addEventListener('keyup', function(evt){
 		//Enter key
 			if(screen == 5){
 				if(prompting){
-					OKButton.job();
+					if(promptAni < 100) promptAni = 100;
+					else OKButton.job();
 				}else{
 				//Transition to another level
 					for(var i=0; i < exits.length; i++){
@@ -7153,12 +10148,32 @@ window.addEventListener('keyup', function(evt){
 	}
 	
 	var bloodSplat = [];
+	var bloodSplatLarge = [];
 	var bloodPics = [];
 	bloodPics.push(makePicture('Animations/Sparks/blood1.png'))
 	bloodPics.push(makePicture('Animations/Sparks/blood2.png'))
 	
+	var bloodPicsLarge = [];
+	bloodPicsLarge.push(makePicture('Animations/Sparks/bigSplat2.png'))
+	bloodPicsLarge.push(makePicture('Animations/Sparks/bigSplat3.png'))
+	bloodPicsLarge.push(makePicture('Animations/Sparks/bigSplat4.png'))
+	
 	function createBlood(a,b){
-		if(Math.random() > 0.7) wallPanels.push(new Panel( a + rand(40), b + rand(40),BloodSmear[rand(BloodSmear.length)], 0, 2))
+		if(Math.random() > 0.7) {
+			//check if on a door
+			//check for smear == null
+			var result = false;
+			for(var i=0; i < wallPanels.length; i++){
+				if(a > wallPanels[i].x  && a < wallPanels[i].x + 140 && b > wallPanels[i].y  && b < wallPanels[i].y + 200){
+					if(wallPanels[i].smears != null){
+						result = true;
+						wallPanels[i].addSmear();
+					}
+				}
+			}
+			if(!result) wallPanels.push(new Panel( a + rand(40), b + rand(40),BloodSmear[rand(BloodSmear.length)], 0, 2))
+		}
+		
 		return {x:a,
 			y:b,
 			f:0 - rand(5),
@@ -7169,6 +10184,22 @@ window.addEventListener('keyup', function(evt){
 			}
 		}
 	}
+	
+	
+	function createBloodLarge(a,b){
+		
+		return {x:a,
+			y:b,
+			f:0,
+			pIndex:rand(bloodPicsLarge.length),
+			draw:function(){
+				//ctx.drawImage(bloodPics[this.pIndex], this.f* 20, 0, 20,20, this.x-10,this.y-10, 20,20);
+				ctx.drawImage(bloodPicsLarge[this.pIndex], this.f * 100,0, 100,100, this.x - 50, this.y-50, 100,100);
+				this.f++;
+			}
+		}
+	}
+	
 	
 	
 	var sparkler = []
@@ -7267,6 +10298,69 @@ window.addEventListener('keyup', function(evt){
 			}
 		}
 	}
+	
+	
+	
+	function Fire(a,b){
+		this.x = a
+		this.y = b
+		
+		this.particles = []
+		for(var i=0; i < 10; i++) this.particles.push({x:a + rand(20) - 10, y:b, radius: rand(2) + 1, sy:rand(3) + 1});
+		
+		this.draw = function(){
+			
+			ctx.fillStyle = 'white'
+			
+			
+			//Particles
+			for(var i=0; i < this.particles.length; i++){
+			
+				this.particles[i].y -= this.particles[i].sy;
+				if(Math.random() < 0.4) this.particles[i].radius *= 0.7;
+				
+				if(this.particles[i].y < this.y - 80){
+					this.particles[i].y = this.y + rand(2);
+					this.particles[i].x = this.x + rand(20) - 10;
+					this.particles[i].radius = rand(3) + 1;
+					this.particles[i].sy = 2 + rand(5);
+				}
+				ctx.beginPath();
+				ctx.arc(this.particles[i].x, this.particles[i].y, this.particles[i].radius, 0 , Math.PI *2);
+				ctx.fill();
+				ctx.closePath();
+			
+			}
+			
+			
+			//Base flame
+			/*
+			for(var i=0; i < 10; i++){
+				ctx.globalAlpha = Math.random();
+				ctx.beginPath();
+				ctx.arc(this.x + rand(20), this.y - rand(10) + i, 1 + rand(i), 0, Math.PI *2);
+				ctx.fill();
+				ctx.closePath();
+			
+			}*/
+			
+			for(var j=0; j < 3;j++){
+				for(var i=0; i < 5 + j; i++){
+					ctx.globalAlpha = (1-i/5)/2;
+					ctx.beginPath();
+					ctx.arc(this.x + rand(i) + (rand(j*2) - j)*3, this.y - rand(2) - i *5, 6 -i, 0, Math.PI *2);
+					ctx.fill();
+					ctx.closePath();
+				}
+			}
+			
+			ctx.globalAlpha = 1;
+
+			lightRegion(this.x + rand(20) - 10, this.y, 2 + rand(5), 0.5);
+		}
+	
+	}
+	
 	function createWall(x,y,wi,he, p){
 	
 		var newObject = {
@@ -7316,7 +10410,50 @@ window.addEventListener('keyup', function(evt){
 		return newObject;
 	}
 
+function BSGBox(x,y,W,H){
+	ctx.strokeStyle = ctx.fillStyle;
+	ctx.beginPath();
+	ctx.moveTo(x + 5, y)
+	ctx.lineTo(x + W - 5, y)
+	ctx.lineTo(x + W , y + 5 )
+	ctx.lineTo(x+W , y + H-5)
+	ctx.lineTo(x + W - 5 , y + H )
+	ctx.lineTo(x + 5, y + H)
+	ctx.lineTo(x , y + H-5 )
+	ctx.lineTo(x , y + 5 )
+	ctx.lineTo(x +5, y)
+	ctx.globalAlpha = 0.5;
+	ctx.fill();
+	ctx.globalAlpha = 1
+	ctx.stroke();
+	ctx.closePath();
+}
 
+function speechBubble(x,y,W,H){
+	ctx.strokeStyle = 'black';
+	ctx.lineWidth = 2;
+	ctx.fillStyle = 'white'
+	ctx.beginPath();
+	ctx.moveTo(x + 5, y)
+	ctx.lineTo(x + W - 5, y)
+	ctx.lineTo(x + W , y + 5 )
+	ctx.lineTo(x+W , y + H-5)
+	ctx.lineTo(x + W - 5 , y + H )
+	
+	ctx.lineTo(x + W/2 - 10, y + H);
+	ctx.lineTo(x + W/2 - 10, y + H + 10);
+	ctx.lineTo(x + W/2 - 20, y + H);
+	
+	ctx.lineTo(x + 5, y + H)
+	ctx.lineTo(x , y + H-5 )
+	ctx.lineTo(x , y + 5 )
+	ctx.lineTo(x + 5, y)
+	ctx.globalAlpha = 0.8;
+	ctx.fill();
+	ctx.globalAlpha = 1
+	ctx.stroke();
+	ctx.closePath();
+}
 	function ButtonGraphic(a,b,c,d, t){
 		this.x = a
 		this.y = b
@@ -7368,16 +10505,16 @@ window.addEventListener('keyup', function(evt){
 		this.height = d
 		this.text = t
 		this.draw = function(){
-			ctx.fillStyle = 'red'
-			ctx.fillRect(this.x,this.y, this.width, this.height);
+			ctx.fillStyle = 'white'
+			BSGBox(this.x,this.y, this.width, this.height);
 			
 			if(this.isMouseOver()){
 				ctx.fillStyle = 'white'
 			}else {
 				ctx.fillStyle = 'black'
 			}
-			ctx.font = "10pt Courier"
-			ctx.fillText(this.text, this.x, this.y + 12);
+			ctx.font = "5pt wallFont"
+			ctx.fillText(this.text, this.x + this.width/2 - ctx.measureText(this.text).width/2, this.y + 12);
 		}
 		this.isMouseOver = function (){
 			return mx > this.x && mx  <this.x + this.width && my > this.y && my < this.y + this.height
@@ -7401,13 +10538,24 @@ window.addEventListener('keyup', function(evt){
 		}	
 		this.spec = 0;
 		this.spec2 = 0;
+		this.isMouseOver = function(){
+			return mx >= this.b.x && mx <= this.b.x + this.b.width && my >= this.b.y && my <= this.b.y + this.b.height;
+		}
 		this.draw = function(){
 			ctx.globalAlpha = 1
-			if(this.selected)ctx.fillStyle ='green'
-			else ctx.fillStyle = 'red'
-			ctx.fillRect(this.b.x-5, this.b.y - 5, 60,60);
-			ctx.fillStyle = 'black'
-			ctx.fillRect(this.b.x - 2, this.b.y - 2, 56, 56);
+			if(this.selected){
+				ctx.fillStyle ='white'
+				ctx.fillText("Current Selection", 230, 460);
+				ctx.fillText("Config Value 1: " + this.spec, 240, 470);
+				ctx.fillText("Config Value 2:" + this.spec2, 240, 480);
+				if(this.spec3 != null) ctx.fillText("Config Value 3:" + this.spec3, 240, 490);
+			}else if(this.isMouseOver()){
+				ctx.fillStyle = 'white'
+			}else ctx.fillStyle = 'gray'
+			
+			
+			BSGBox(this.b.x, this.b.y, this.b.width, this.b.height);
+			ctx.fillStyle = '#111111'
 			ctx.globalAlpha = 1;
 			
 			if(this.pic!= null){
@@ -7415,6 +10563,11 @@ window.addEventListener('keyup', function(evt){
 			
 				if(this.pic.width <= 100)	ctx.drawImage(this.pic, this.b.x,this.b.y, this.pic.width/2,this.pic.height/2);
 				else ctx.drawImage(this.pic, this.b.x,this.b.y, 50,50);
+				
+				ctx.font = "4pt wallFont"
+				ctx.fillStyle = 'yellow'
+				textBox(this.name, this.b.x, this.b.y + 25, 50);
+				ctx.fillText(this.pic.width + "x" + this.pic.height, this.b.x, this.b.y + 15);
 			}else{
 				if(this.selected) {
 					ctx.fillStyle = 'green'
@@ -7422,13 +10575,17 @@ window.addEventListener('keyup', function(evt){
 					ctx.fillRect(Math.floor((mx) / snapSize)*snapSize,Math.floor((my) / snapSize)*snapSize, 10,10);
 					ctx.globalAlpha = 1;
 				}
-				ctx.fillStyle = 'white'
-				ctx.fillRect(this.b.x,this.b.y, 50,50);
-				ctx.fillStyle = 'green'
-				ctx.fillText(this.name, this.b.x, this.b.y + 25);
-				ctx.fillText(this.spec, this.b.x, this.b.y + 35);
-				ctx.fillText(this.spec2, this.b.x, this.b.y + 45);
+				//ctx.fillStyle = '#555555'
+				//ctx.fillRect(this.b.x,this.b.y, 50,50);
+				ctx.fillStyle = 'yellow'
+				
+				ctx.fillText("S1: " + this.spec, this.b.x, this.b.y + 35);
+				ctx.fillText("S2: " + this.spec2, this.b.x, this.b.y + 45);
+				ctx.font = "4pt wallFont"
+				ctx.fillStyle = 'yellow'
+				textBox(this.name, this.b.x, this.b.y + 15, 50);
 			}
+			
 		}
 		this.job = function(){
 			this.insert()
@@ -7680,15 +10837,83 @@ window.addEventListener('keyup', function(evt){
 		ctx.font = cFont;
 	}
 
+
+
+function textBoxScroll(message, x, y, width, height){
+		var line = 0;
+		var cursor = 0;
+		var part = "";
+		var cWord = "";
+		var cFont = ctx.font;
+		var bolding = false;
+		
+		var numLines = Math.floor(height/12)
+		
+		var lines = [];
+		
+		for(var a = cursor; a < message.length; a++){
+
+			if (message[a] != '@' && message[a] != '~' &&message[a] != '^')
+			{
+				
+				cWord += message[a];
+			}
+			
+			
+			if(message[a] == "^") bolding = !bolding	
+			
+			if(bolding) ctx.font = "bold " + cFont
+			else ctx.font = cFont
+			
+			
+			cursor += 1;
+
+			if (ctx.measureText(part + cWord).width >= width){
+				
+				//ctx.fillText(part, x, y + (line * 12));
+				//line++;
+				lines.push(part);
+				part = "";
+			}
+			
+			if (message[a] == '^' || message[a] == ' ' || message[a] == '~' || message[a] == '@'|| cursor == message.length){part += cWord; cWord = "";}
+			
+			if (message[a] == '@'){
+				//ctx.fillText(part, x, y + (line * 12));
+				//line += 2;
+				lines.push(part)
+				lines.push("");
+				part = "";
+			}else if (message[a] == '~'){
+				//ctx.fillText(part, x, y + (line * 12));
+				//line += 1;
+				lines.push(part);
+				part = "";
+			}
+			
+		}
+		lines.push(part)
+		var beginLine = promptScroll
+		var endline = numLines + beginLine
+		for(var i=promptScroll; i < lines.length && i < promptScroll + numLines; i++) ctx.fillText(lines[i], x,y + (i-promptScroll) * 12);
+		
+		promptLines = lines.length;
+		//ctx.fillText(part, x, y + (line * 12));
+		ctx.font = cFont;
+	}
 	
 	
 	
-	
-	
-	
-	
-	
-	
+	function roundRect(x,y,W,H){
+		var r = 10
+		ctx.beginPath()
+		ctx.moveTo(x + r, y)
+		ctx.lineTo(x + W - r, y)
+		ctx.quadraticCurveTo(x + W - r, y, x + W, y + r);
+		ctx.strokeStyle = 'red'
+		ctx.stroke();
+		ctx.closePath();
+	}
 	
 	
 	
@@ -8442,11 +11667,11 @@ level[1].wallPanels.push(new Panel(300,300, panelHall[0], 2,0.7));
 level[1].wallPanels.push(new Panel(500,300, panelHall[0], 2,0.7));
 //level[1].wallPanels.push(new ForeGround(500,200, door[0], '', 0.5));
 level[1].wallPanels.push(new AniDoor(500,200, 0,1));
-level[1].wallPanels.push(new ForeGround(220,200, wallFeatures[14]));
+level[1].wallPanels.push(new ForeGround(220,200, wallFeatures[52]));
 level[1].wallPanels.push(new ForeGround(440,350, wallFeatures[15]));
 level[1].wallPanels.push(new ForeGround(520,270, wallFeatures[16]));
 	
-	level[1].wall.push(createWall(170,300, 30,100,sideWall[2]));
+level[1].wall.push(createWall(170,300, 30,100,sideWall[2]));
 level[1].wall.push(createWall(170,200, 30,100,sideWall[2]));
 level[1].wall.push(createWall(700,200, 30,100,sideWall[2]));
 level[1].wall.push(createWall(700,300, 30,100,sideWall[2]));
@@ -8479,15 +11704,17 @@ level[1].creature[0].speak("I haven't heard anything for hours.");
 level[1].exits.push(new Exit(600,300, 2,true, 450, 210));
 level[1].nextScene = 1
 	
-
+level[1].items.push(messageTrap(320,300, blankPic, 'Its quiet.', "They were supposed to come for me today... they've never been late before. ~~The door is unlocked, but I'm not allowed outside when I'm alone...$0"));
 	
 	
 level.push(new Level('Alone'))
+
+
 level[2].start = {x:460, y:200};
 level[2].dLights.push(new steamJet(1150,300));
 level[2].items.push(messageTrap(330,310, recorder, 'RESEARCH LOG', 'Prototype T-927 ~~LOG 37.2 ~~Subject has continued to display serious emotional instability despite increased mental focus and high aptitude for problem solving.  ~~The insect gene base appears to be increasing attention span and mental focus at the expense of interpersonal skills and tolerance to other subjects. ~~END LOG'));
 level[2].nextScene = 2;
-level[2].items.push(messageTrap(1300,260, recorder, 'REMINDER', 'Note to all emplyees:~~ This message is to remind all personel that contact with the prototypes is extremely off limits.  ~~Observe all safety precautions when handling expired test subjects and related materials.'));
+level[2].items.push(messageTrap(1300,260, recorder, 'REMINDER', 'Note to all employees:~~ This message is to remind all personel that contact with the prototypes is extremely off limits.  ~~Observe all safety precautions when handling expired test subjects and related materials.'));
 
 level[2].wallPanels.push(new Panel(200,100, panelHall[1], 1,0.8));
 level[2].wallPanels.push(new Panel(300,100, panelHall[1], 1,0.8));
@@ -8743,7 +11970,7 @@ level[2].exits.push(new Exit(1400, 310, 3, true, 350, 300));
 	level[3].start = {x:400, y:300};
 	level[3].dLights.push(new steamJet(1050,400));
 level[3].dLights.push(new steamJet(650,700));
-	level[3].items.push(messageTrap(1650,920, blankPic, 'Hello?', "I know you have no reason to help me.. but theres creatures that hate us both in the next room. ~~They've already killed the others.. but one of us had a gun.  ~~If you put down those monsters you can have the gun... just leave me out of this."));
+	level[3].items.push(messageTrap(1650,920, blankPic, 'Hello?', "I know you have no reason to help me.. but theres creatures that hate us both in the next room. ~~They've already killed the others.. but one of us had a gun.  ~~If you put down those monsters you can have the gun... just leave me out of this. $0"));
 level[3].wallPanels.push(new Panel(300,300, panelHall[1], 0,1));
 level[3].wallPanels.push(new Panel(400,300, panelHall[1], 0,1));
 level[3].wallPanels.push(new Panel(500,300, panelHall[1], 0,1));
@@ -8791,26 +12018,6 @@ level[3].wallPanels.push(new Panel(700,100, panelHall[0], 1,1));
 level[3].wallPanels.push(new Panel(300,100, panelHall[0], 1,1));
 level[3].wallPanels.push(new Panel(400,100, panelHall[0], 1,1));
 level[3].wallPanels.push(new Panel(500,100, panelHall[0], 1,1));
-
-level[3].wall.push(createWall(300,500, 100,30,floor[0]));
-level[3].wall.push(createWall(400,500, 100,30,floor[0]));
-level[3].wall.push(createWall(500,500, 100,30,floor[0]));
-level[3].wall.push(createWall(600,500, 100,30,floor[0]));
-level[3].wall.push(createWall(700,500, 100,30,floor[0]));
-level[3].wall.push(createWall(800,500, 100,30,floor[0]));
-level[3].wall.push(createWall(900,500, 100,30,floor[0]));
-level[3].wall.push(createWall(1000,500, 100,30,floor[0]));
-level[3].wall.push(createWall(1100,500, 100,30,floor[0]));
-level[3].wall.push(createWall(1200,500, 100,30,floor[0]));
-level[3].wall.push(createWall(1300,500, 100,30,floor[0]));
-level[3].wall.push(createWall(1400,500, 100,30,floor[0]));
-level[3].wall.push(createWall(270,400, 30,100,sideWall[2]));
-level[3].wall.push(createWall(270,300, 30,100,sideWall[2]));
-level[3].wall.push(createWall(270,200, 30,100,sideWall[2]));
-level[3].wall.push(createWall(270,100, 30,100,sideWall[2]));
-level[3].wall.push(createWall(270,500, 30,100,sideWall[2]));
-level[3].wall.push(createWall(300,500, 30,100,sideWall[5]));
-level[3].wall.push(createWall(270,500, 30,100,sideWall[6]));
 
 
 level[3].wallPanels.push(new ForeGround(600,400, wallFeatures[12]));
@@ -9043,36 +12250,6 @@ level[3].foreGround.push(new ForeGround(1030,730, wallFeatures[12]));
 level[3].foreGround.push(new ForeGround(930,730, wallFeatures[12]));
 level[3].wallPanels.push(new ForeGround(350,600, wallFeatures[18]));
 
-level[3].wall.push(createWall(300,800, 100,30,floor[0]));
-level[3].wall.push(createWall(400,800, 100,30,floor[0]));
-level[3].wall.push(createWall(500,800, 100,30,floor[0]));level[3].wall.push(createWall(700,800, 100,30,floor[0]));
-level[3].wall.push(createWall(800,800, 100,30,floor[0]));
-level[3].wall.push(createWall(900,800, 100,30,floor[0]));
-level[3].wall.push(createWall(1000,800, 100,30,floor[0]));
-level[3].wall.push(createWall(1100,800, 100,30,floor[0]));
-level[3].wall.push(createWall(1200,800, 100,30,floor[0]));
-level[3].wall.push(createWall(1300,800, 100,30,floor[0]));
-level[3].wall.push(createWall(1400,800, 100,30,floor[0]));
-level[3].wall.push(createWall(1500,800, 100,30,floor[0]));
-level[3].wall.push(createWall(1600,800, 100,30,floor[0]));
-level[3].wall.push(createWall(1600,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(1500,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(1400,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(1300,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(1200,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(1100,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(1000,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(700,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(800,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(900,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(300,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(400,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(500,830, 100,50,ceiling[0]));
-
-level[3].wall.push(createWall(1900,500, 30,100,sideWall[1]));
-level[3].wall.push(createWall(1900,600, 30,100,sideWall[1]));
-level[3].wall.push(createWall(1900,700, 30,100,sideWall[1]));
-level[3].wall.push(createWall(1900,800, 30,100,sideWall[1]));
 level[3].wallPanels.push(new Panel(1700,700, panelHall[1], 2,0.8));
 level[3].wallPanels.push(new Panel(1800,700, panelHall[1], 2,0.8));
 level[3].wallPanels.push(new Panel(1700,600, panelHall[1], 0,0.9));
@@ -9086,21 +12263,8 @@ level[3].wall.push(createWall(1700,800, 100,30,floor[0]));
 level[3].wall.push(createWall(1800,800, 100,30,floor[0]));
 level[3].wall.push(createWall(1700,830, 100,50,ceiling[0]));
 level[3].wall.push(createWall(1800,830, 100,50,ceiling[0]));
-level[3].wall.push(createWall(270,600, 30,100,sideWall[2]));
-level[3].wall.push(createWall(270,700, 30,100,sideWall[2]));
-level[3].wall.push(createWall(270,800, 30,100,sideWall[2]));
-level[3].wall.push(createWall(300,800, 30,100,sideWall[5]));
-level[3].wall.push(createWall(270,800, 30,100,sideWall[6]));
-level[3].wall.push(createWall(1700,400, 30,100,sideWall[1]));
-level[3].wall.push(createWall(1700,300, 30,100,sideWall[1]));
-level[3].wall.push(createWall(1700,100, 30,100,sideWall[1]));
-level[3].wall.push(createWall(1700,200, 30,100,sideWall[1]));
 level[3].wall.push(createWall(1700,500, 100,30,floor[0]));
 level[3].wall.push(createWall(1800,500, 100,30,floor[0]));
-level[3].wall.push(createWall(1700,500, 30,100,sideWall[6]));
-level[3].wall.push(createWall(1900,500, 30,100,sideWall[6]));
-level[3].wall.push(createWall(1900,800, 30,100,sideWall[6]));
-level[3].wall.push(createWall(1900,830, 30,100,sideWall[5]));
 
 level[3].wallPanels.push(new Panel(600,800, panelHall[0], 1,0.7));
 level[3].wallPanels.push(new Panel(700,800, panelHall[0], 1,0.7));
@@ -9175,29 +12339,7 @@ level[3].wallPanels.push(new Panel(600,950, panelHall[1], 2,0.8));
 level[3].wallPanels.push(new Panel(500,950, panelHall[1], 2,0.8));
 level[3].wallPanels.push(new Panel(400,950, panelHall[1], 2,0.8));
 level[3].wallPanels.push(new Panel(300,950, panelHall[1], 2,0.8));
-level[3].wall.push(createWall(270,900, 30,100,sideWall[2]));
-level[3].wall.push(createWall(270,980, 30,100,sideWall[2]));
-level[3].wall.push(createWall(300,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(400,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(500,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(600,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(700,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(800,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(900,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(1000,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(1100,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(1200,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(1300,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(1400,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(1500,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(1600,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(1700,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(1800,1050, 100,30,floor[0]));
-level[3].wall.push(createWall(1900,900, 30,100,sideWall[1]));
-level[3].wall.push(createWall(1900,980, 30,100,sideWall[1]));
-level[3].wall.push(createWall(1870,1050, 30,100,sideWall[6]));
-level[3].wall.push(createWall(300,1050, 30,100,sideWall[6]));
-level[3].wall.push(createWall(270,1050, 30,100,sideWall[5]));level[3].wallPanels.push(new ForeGround(1500,950, wallFeatures[12]));
+level[3].wallPanels.push(new ForeGround(1500,950, wallFeatures[12]));
 level[3].wallPanels.push(new ForeGround(1500,850, wallFeatures[12]));
 level[3].wallPanels.push(new ForeGround(1600,850, wallFeatures[12]));
 level[3].wallPanels.push(new ForeGround(1600,950, wallFeatures[12]));
@@ -9282,6 +12424,41 @@ level[3].wallPanels.push(new wordWall(510,330, 'CONTAINMENT',4));
 level[3].wallPanels.push(new Alarm(1020,920));
 level[3].wallPanels.push(new Alarm(610,360));
 
+level[3].wall.push(createWall(300,500, 100,30,floor[5]));
+level[3].wall.push(createWall(800,500, 100,30,floor[5]));
+level[3].wall.push(createWall(1000,500, 100,30,floor[5]));
+
+level[3].wall.push(createWall(300,800, 100,30,floor[0]));
+level[3].wall.push(createWall(400,800, 100,30,floor[0]));
+level[3].wall.push(createWall(500,800, 100,30,floor[0]));
+level[3].wall.push(createWall(700,800, 100,30,floor[0]));
+
+level[3].wall.push(createWall(800,800, 100,30,floor[5]));
+level[3].wall.push(createWall(1300,800, 100,30,floor[5]));
+level[3].wall.push(createWall(300,1050, 100,30,floor[5]));
+level[3].wall.push(createWall(800,1050, 100,30,floor[5]));
+level[3].wall.push(createWall(1300,1050, 100,30,floor[5]));
+level[3].wall.push(createWall(1400,1050, 100,30,floor[5]));
+level[3].wall.push(createWall(700,830, 100,30,floor[6]));
+level[3].wall.push(createWall(1200,830, 100,30,floor[6]));
+level[3].wall.push(createWall(500,830, 100,50,ceiling[0]));
+level[3].wall.push(createWall(400,830, 100,50,ceiling[0]));
+level[3].wall.push(createWall(300,830, 100,50,ceiling[0]));
+
+level[3].wall.push(createWall(300,100, 30,100,sideWall[9]));
+level[3].wall.push(createWall(300,500, 30,100,sideWall[9]));
+level[3].wall.push(createWall(300,680, 30,100,sideWall[9]));
+level[3].wall.push(createWall(1900,500, 30,100,sideWall[9]));
+level[3].wall.push(createWall(1900,680, 30,100,sideWall[9]));
+level[3].wall.push(createWall(1700,100, 30,100,sideWall[9]));
+level[3].wall.push(createWall(1900,500, 30,100,sideWall[6]));
+level[3].wall.push(createWall(1900,800, 30,100,sideWall[6]));
+level[3].wall.push(createWall(1900,1050, 30,100,sideWall[6]));
+level[3].wall.push(createWall(300,1050, 30,100,sideWall[6]));
+level[3].wall.push(createWall(300,800, 30,100,sideWall[6]));
+level[3].wall.push(createWall(300,500, 30,100,sideWall[6]));
+
+
 
 
 level[4] = new Level('Cell 3')
@@ -9300,7 +12477,7 @@ level[4].lamps.push(new FlickerLamp(420,220));
 level[4].lamps.push(new deadLamp(470,220));
 level[4].wallPanels.push(new ForeGround(520,270, wallFeatures[16]));
 level[4].wallPanels.push(new ForeGround(440,350, wallFeatures[15]));
-level[4].wallPanels.push(new ForeGround(220,200, wallFeatures[14]));
+level[4].wallPanels.push(new ForeGround(220,200, wallFeatures[52]));
 level[4].wall.push(createWall(200,400, 100,30,floor[0]));
 level[4].wall.push(createWall(300,400, 100,30,floor[0]));
 level[4].wall.push(createWall(400,400, 100,30,floor[0]));
@@ -9352,6 +12529,12 @@ cutscene[3].endFrame = 60;
 	
 level[5] = new Level('Encounter')
 level[5].start = {x:270, y:400};
+
+level[5].items.push(messageTrap(350,500, blankPic, 'Not right', 'Hello? $3'));
+level[5].items.push(messageTrap(350,500, blankPic, 'Not right', "Who is that! ~~You don't smell right to me... ~~ I bet you taste like easy prey meat! $2"));
+level[5].items.push(messageTrap(350,500, blankPic, 'Not right', 'Prey meat!?  ~~Come over here and say that! $3'));
+
+
 level[5].wallPanels.push(new Panel(300,100, panelHall[1], 1,0.9));
 level[5].wallPanels.push(new Panel(200,100, panelHall[1], 1,0.9));
 level[5].wallPanels.push(new Panel(400,100, panelHall[1], 1,0.9));
@@ -9407,67 +12590,9 @@ level[5].wallPanels.push(new Panel(1000,500, panelHall[1], 2,0.9));
 level[5].wallPanels.push(new Panel(1100,500, panelHall[1], 2,0.9));
 level[5].wallPanels.push(new Panel(1200,500, panelHall[1], 2,0.9));
 level[5].wallPanels.push(new Panel(700,500, panelHall[2], 2,0.9));
-	
-	level[5].wall.push(createWall(200,600, 100,30,floor[0]));
-level[5].wall.push(createWall(300,600, 100,30,floor[0]));
-level[5].wall.push(createWall(400,600, 100,30,floor[0]));
-level[5].wall.push(createWall(500,600, 100,30,floor[0]));
-level[5].wall.push(createWall(600,600, 100,30,floor[0]));
-level[5].wall.push(createWall(700,600, 100,30,floor[0]));
-level[5].wall.push(createWall(800,600, 100,30,floor[0]));
-//level[5].wall.push(createWall(900,600, 100,30,floor[0]));
-level[5].wall.push(createWall(1000,600, 100,30,floor[0]));
-level[5].wall.push(createWall(1100,600, 100,30,floor[0]));
-level[5].wall.push(createWall(1200,600, 100,30,floor[0]));
-level[5].wall.push(createWall(1200,370, 100,30,floor[0]));
-level[5].wall.push(createWall(1100,370, 100,30,floor[0]));
-level[5].wall.push(createWall(1000,370, 100,30,floor[0]));
-level[5].wall.push(createWall(800,370, 100,30,floor[0]));
-level[5].wall.push(createWall(700,370, 100,30,floor[0]));
-level[5].wall.push(createWall(600,370, 100,30,floor[0]));
-level[5].wall.push(createWall(500,370, 100,30,floor[0]));
-level[5].wall.push(createWall(400,370, 100,30,floor[0]));
-level[5].wall.push(createWall(370,300, 30,100,sideWall[1]));
-level[5].wall.push(createWall(370,200, 30,100,sideWall[1]));
-level[5].wall.push(createWall(370,370, 30,100,sideWall[6]));
-level[5].wall.push(createWall(170,500, 30,100,sideWall[2]));
-level[5].wall.push(createWall(170,400, 30,100,sideWall[2]));
-level[5].wall.push(createWall(170,300, 30,100,sideWall[2]));
-level[5].wall.push(createWall(170,200, 30,100,sideWall[2]));
-level[5].wall.push(createWall(170,100, 30,100,sideWall[2]));
-level[5].wall.push(createWall(170,600, 30,100,sideWall[5]));
-level[5].wall.push(createWall(200,600, 30,100,sideWall[6]));
-level[5].wall.push(createWall(870,370, 30,100,sideWall[6]));
-level[5].wall.push(createWall(1000,370, 30,100,sideWall[6]));
-level[5].wall.push(createWall(1300,500, 30,100,sideWall[2]));
-level[5].wall.push(createWall(1300,400, 30,100,sideWall[2]));
-level[5].wall.push(createWall(1300,300, 30,100,sideWall[2]));
-level[5].wall.push(createWall(1300,200, 30,100,sideWall[2]));
-level[5].wall.push(createWall(1300,100, 30,100,sideWall[2]));
-level[5].wall.push(createWall(700,100, 100,30,floor[3]));
-level[5].wall.push(createWall(800,100, 100,50,ceiling[0]));
-level[5].wall.push(createWall(900,100, 100,50,ceiling[0]));
-level[5].wall.push(createWall(1000,100, 100,50,ceiling[0]));
-level[5].wall.push(createWall(1100,100, 100,50,ceiling[0]));
-level[5].wall.push(createWall(1200,100, 100,50,ceiling[0]));
-level[5].wall.push(createWall(600,100, 100,50,ceiling[0]));
-level[5].wall.push(createWall(370,170, 30,100,sideWall[5]));
-
-level[5].wall.push(createWall(500,100, 100,50,ceiling[0]));
-level[5].wall.push(createWall(400,100, 100,50,ceiling[0]));
-level[5].wall.push(createWall(300,100, 100,50,ceiling[0]));
-level[5].wall.push(createWall(200,100, 100,50,ceiling[0]));
-level[5].wall.push(createWall(170,100, 30,100,sideWall[6]));
-level[5].wall.push(createWall(1180,270, 100,30,floor[1]));
-level[5].wall.push(createWall(1080,270, 100,30,floor[1]));
-level[5].wall.push(createWall(1050,340, 100,30,floor[2]));
-level[5].wall.push(createWall(1130,240, 100,30,floor[2]));
-level[5].wall.push(createWall(1200,170, 100,30,floor[1]));
-level[5].wall.push(createWall(1270,140, 100,30,floor[2]));
-level[5].wall.push(createWall(1240,140, 100,30,floor[2]));
-level[5].wall.push(createWall(1140,210, 100,30,floor[2]));
-level[5].wall.push(createWall(1300,600, 30,100,sideWall[5]));
-level[5].wall.push(createWall(1270,600, 30,100,sideWall[6]));
+level[5].wallPanels.push(new ForeGround(1050,400, bioPic[17]));
+level[5].wallPanels.push(new ForeGround(750,400, bioPic[18]));
+level[5].wallPanels.push(new ForeGround(1220,540, bioPic[7]));
 level[5].wallPanels.push(new ForeGround(250,400, door[0], '', 0.5));
 level[5].wallPanels.push(new ForeGround(700,500, wallFeatures[12]));
 level[5].wallPanels.push(new ForeGround(700,400, wallFeatures[12]));
@@ -9636,6 +12761,7 @@ level[5].wall.push(createWall(1000,600, 30,100,sideWall[1]));
 level[5].wall.push(createWall(1000,700, 30,100,sideWall[1]));
 level[5].foreGround.push(new ForeGround(900,600, wallFeatures[0]));
 level[5].foreGround.push(new ForeGround(900,700, wallFeatures[0]));level[5].wall.push(createWall(900,1000, 100,30,floor[0]));
+/*
 level[5].wall.push(createWall(1000,1000, 100,30,floor[0]));
 level[5].wall.push(createWall(1100,1000, 100,30,floor[0]));
 level[5].wall.push(createWall(1200,1000, 100,30,floor[0]));
@@ -9660,7 +12786,7 @@ level[5].wall.push(createWall(1900,1000, 30,100,sideWall[5]));
 level[5].wall.push(createWall(1900,790, 30,100,sideWall[5]));
 level[5].wall.push(createWall(1870,1000, 30,100,sideWall[6]));
 level[5].wall.push(createWall(1000,760, 30,100,sideWall[5]));
-
+*/
 level[5].wallPanels.push(new Panel(1000,800, panelHall[1], 1,0.5));
 level[5].wallPanels.push(new Panel(1100,800, panelHall[1], 1,0.5));
 level[5].wallPanels.push(new Panel(1200,800, panelHall[1], 1,0.5));
@@ -9728,6 +12854,7 @@ level[5].lamps.push(new BigLamp(210,830));
 level[5].wallPanels.push(new wordTicker(200,810, 'OPEN'));
 level[5].lamps.push(new Lamp(310,810));
 level[5].lamps.push(new Lamp(180,810));
+/*
 level[5].wall.push(createWall(800,1000, 100,30,floor[0]));
 level[5].wall.push(createWall(700,1000, 100,30,floor[0]));
 level[5].wall.push(createWall(600,1000, 100,30,floor[0]));
@@ -9750,7 +12877,7 @@ level[5].wall.push(createWall(70,1000, 30,100,sideWall[5]));
 level[5].wall.push(createWall(70,790, 30,100,sideWall[5]));
 level[5].wall.push(createWall(100,1000, 30,100,sideWall[6]));
 level[5].wall.push(createWall(870,760, 30,100,sideWall[5]));
-
+*/
 level[5].items.push(medItem(970,340));
 level[5].items.push(medItem(1000,310));
 level[5].items.push(pistolItem(420,270));
@@ -9761,15 +12888,15 @@ level[5].wallPanels.push(new ForeGround(100,900, wallFeatures[9]));
 level[5].wallPanels.push(new ForeGround(800,900, wallFeatures[9]));
 level[5].wallPanels.push(new ForeGround(1600,900, wallFeatures[9]));
 
-level[5].items.push(spawnTrap(1350,900, recorder, '1', '0'));
-level[5].items.push(spawnTrap(1550,900, recorder, '1', '0'));
-level[5].items.push(spawnTrap(1750,900, recorder, '1', '0'));
-level[5].items.push(spawnTrap(450,900, recorder, '0', '3'));
+level[5].items.push(spawnTrap(1350,900, recorder, '1', '0', '1350,900'));
+level[5].items.push(spawnTrap(1550,900, recorder, '1', '0', '1550,900'));
+level[5].items.push(spawnTrap(1750,900, recorder, '1', '0', '1750,900'));
+level[5].items.push(spawnTrap(450,900, recorder, '0', '3', '450,900'));
 
-level[5].items.push(messageTrap(1050,900, blankPic, 'Voices', 'There is something about this place... I can almost hear voices.  I think they are friendly, I think they need my help.'));
-level[5].items.push(messageTrap(750,900, blankPic, 'This hallway...', "I don't like the smell in this place, it smells like the person who attacked me upstairs. ~~I should move cautiously here... these rooms feel wrong somehow."));
+level[5].items.push(messageTrap(1050,900, blankPic, 'Voices', 'There is something about this place... I can almost hear voices.  I think they are friendly, I think they need my help. $3'));
+level[5].items.push(messageTrap(750,900, blankPic, 'This hallway...', "I don't like the smell in this place, it smells like the person who attacked me upstairs. ~~I should move cautiously here... these rooms feel wrong somehow. $3"));
 
-level[5].items.push(messageTrap(1350,900, blankPic, 'Help!', "Nobody came for me today, it's been a long time since anyone came to check on us. ~~I think theres two more of us in the next two cells.  ~~Maybe we can work together to find out what's going on.. I've heard horrible things outsdie my door."));
+level[5].items.push(messageTrap(1350,900, blankPic, 'Help!', "Nobody came for me today, it's been a long time since anyone came to check on us. ~~I think theres two more of us in the next two cells.  ~~Maybe we can work together to find out what's going on.. I've heard horrible things outside my door. $4"));
 level[5].exits.push(new Exit(250,900, 6, true, 1600, 900));
 
 
@@ -9779,6 +12906,46 @@ level[5].wallPanels.push(new fan(320,920, 0.2,0,1));
 level[5].wallPanels.push(new fan(1820,920, 0.2,0,1));
 level[5].wallPanels.push(new fan(1220,920, 0.2,0,1));
 
+level[5].wall.push(createWall(370,300, 30,100,sideWall[0]));
+level[5].wall.push(createWall(370,200, 30,100,sideWall[0]));
+level[5].wall.push(createWall(370,100, 30,100,sideWall[0]));
+level[5].wall.push(createWall(400,370, 100,30,floor[7]));
+level[5].wall.push(createWall(370,370, 30,100,sideWall[5]));
+level[5].wall.push(createWall(1000,370, 100,30,floor[4]));
+level[5].wall.push(createWall(1100,370, 100,30,floor[4]));
+level[5].wall.push(createWall(1200,370, 100,30,floor[4]));
+level[5].wall.push(createWall(200,600, 100,30,floor[5]));
+level[5].wall.push(createWall(1000,600, 100,30,floor[0]));
+level[5].wall.push(createWall(1100,600, 100,30,floor[0]));
+level[5].wall.push(createWall(1200,600, 100,30,floor[0]));
+level[5].wall.push(createWall(700,600, 100,30,floor[0]));
+level[5].wall.push(createWall(800,600, 100,30,floor[0]));
+level[5].wall.push(createWall(100,1000, 100,30,floor[5]));
+level[5].wall.push(createWall(100,1000, 100,30,floor[5]));
+level[5].wall.push(createWall(600,1000, 100,30,floor[5]));
+level[5].wall.push(createWall(1100,1000, 100,30,floor[5]));
+level[5].wall.push(createWall(1400,1000, 100,30,floor[5]));level[5].wall.push(createWall(1400,790, 100,30,floor[6]));
+level[5].wall.push(createWall(1000,790, 100,30,floor[6]));
+level[5].wall.push(createWall(400,790, 100,30,floor[6]));
+level[5].wall.push(createWall(100,790, 100,30,floor[6]));
+level[5].wall.push(createWall(70,900, 30,100,sideWall[2]));
+level[5].wall.push(createWall(70,800, 30,100,sideWall[2]));
+level[5].wall.push(createWall(1900,800, 30,100,sideWall[2]));
+level[5].wall.push(createWall(1900,900, 30,100,sideWall[2]));
+level[5].wall.push(createWall(1900,1000, 30,100,sideWall[5]));
+level[5].wall.push(createWall(1900,790, 30,100,sideWall[5]));
+level[5].wall.push(createWall(70,1000, 30,100,sideWall[5]));
+level[5].wall.push(createWall(70,790, 30,100,sideWall[5]));
+level[5].wall.push(createWall(870,770, 30,100,sideWall[6]));
+level[5].wall.push(createWall(1000,770, 30,100,sideWall[6]));
+level[5].wall.push(createWall(870,600, 30,100,sideWall[6]));
+level[5].wall.push(createWall(1000,600, 30,100,sideWall[6]));
+level[5].wall.push(createWall(1300,200, 30,100,sideWall[8]));
+level[5].wall.push(createWall(1300,100, 30,100,sideWall[1]));
+level[5].wall.push(createWall(1300,600, 30,100,sideWall[5]));
+level[5].wall.push(createWall(170,100, 30,100,sideWall[8]));
+level[5].wall.push(createWall(170,500, 30,100,sideWall[1]));
+level[5].wall.push(createWall(170,600, 30,100,sideWall[5]));
 
 
 level[6] = new Level('Observation')
@@ -10071,7 +13238,17 @@ level[6].exits.push(new Exit(1700,1000, 5, true, 160, 800));
 level[6].exits.push(new Exit(200,700, 7, true, 1600,100))
 
 
+level[6].wallPanels.push(new Fire(1500,1100, 'test'));
+level[6].wallPanels.push(new Fire(1520,1100, 'test'));
+level[6].wallPanels.push(new Fire(1510,1100, 'test'));
+level[6].wallPanels.push(new Fire(1580,1100, 'test'));
+
+
 level[7] = new Level('Enroute to Cafeteria.')
+
+level[7].creature.push(BugSmall(260,100,0));
+level[7].creature.push(BugSmall(360,100,0));
+
 level[7].wallPanels.push(new Panel(1700,100, panelHall[1], 1,0.4));
 level[7].wallPanels.push(new Panel(1600,100, panelHall[1], 1,0.4));
 level[7].wallPanels.push(new Panel(1500,100, panelHall[2], 1,0.4));
@@ -10462,7 +13639,7 @@ level[8].wallPanels.push(new wordTicker(1600,110, 'OPEN'));
 level[8].wallPanels.push(new ForeGround(1400,200, wallFeatures[12]));
 level[8].wallPanels.push(new ForeGround(1400,100, wallFeatures[12]));
 level[8].creature.push(MedReptile(1410,110,1));
-level[8].items.push(messageTrap(1590,210, blankPic, 'PLEASE!', "Don't shoot!~~ I'm like you!.. I mean I used to be. ~~My legs started to change, now theyre like this.  ~~Please don't leave here like this.  Please?"));
+level[8].items.push(messageTrap(1590,210, blankPic, 'PLEASE!', "Don't shoot!~~ I'm like you!.. I mean I used to be. ~~My legs started to change, now they're like this.  ~~Please don't leave me here...  Please? $0"));
 
 level[8].lamps.push(new Lamp(870,520));
 level[8].lamps.push(new FlickerLamp(470,520));
@@ -10505,7 +13682,7 @@ level[8].lamps.push(new deadLamp(1320,170));
 level[8].lamps.push(new deadLamp(1370,170));
 
 level[8].exits.push(new Exit(1650,200, 7, true, 100,100))
-
+level[8].exits.push(new Exit(250,600, 9, true, 800,900))
 
 level[9] = new Level('Cafeteria')
 level[9].wallPanels.push(new Panel(800,1000, panelHall[1], 2,0.7));
@@ -10688,57 +13865,20 @@ level[9].lamps.push(new Lamp(420,920));
 level[9].lamps.push(new Lamp(120,930));
 level[9].lamps.push(new deadLamp(270,930));
 level[9].lamps.push(new sparker(270,940));
-level[9].wall.push(createWall(1900,1000, 30,100,sideWall[2]));
-level[9].wall.push(createWall(1900,900, 30,100,sideWall[0]));
-level[9].wall.push(createWall(1900,990, 30,100,sideWall[6]));
-level[9].wall.push(createWall(1900,800, 30,100,sideWall[0]));
-level[9].wall.push(createWall(1900,700, 30,100,sideWall[0]));
-level[9].wall.push(createWall(70,1000, 30,100,sideWall[2]));
-level[9].wall.push(createWall(70,900, 30,100,sideWall[2]));
-level[9].wall.push(createWall(70,800, 30,100,sideWall[2]));
-level[9].wall.push(createWall(70,700, 30,100,sideWall[2]));
-level[9].wall.push(createWall(200,700, 100,30,floor[3]));
-level[9].wall.push(createWall(100,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(300,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(400,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(500,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(600,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(700,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(800,700, 100,30,floor[3]));
-level[9].wall.push(createWall(900,700, 100,30,floor[3]));
-level[9].wall.push(createWall(1000,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(1100,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(1200,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(1300,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(1400,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(1500,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(1600,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(1700,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(1800,700, 100,50,ceiling[0]));
-level[9].wall.push(createWall(1900,700, 30,100,sideWall[5]));
-level[9].wall.push(createWall(70,700, 30,100,sideWall[5]));
+level[9].wall.push(createWall(1900,700, 30,100,sideWall[8]));
+level[9].wall.push(createWall(70,700, 30,100,sideWall[8]));
+level[9].wall.push(createWall(100,690, 100,30,floor[6]));
+level[9].wall.push(createWall(600,690, 100,30,floor[6]));
+level[9].wall.push(createWall(1100,690, 100,30,floor[6]));
+level[9].wall.push(createWall(1400,690, 100,30,floor[6]));
+level[9].wall.push(createWall(1900,690, 30,100,sideWall[5]));
+level[9].wall.push(createWall(70,690, 30,100,sideWall[5]));
+level[9].wall.push(createWall(100,1100, 100,30,floor[5]));
 level[9].wall.push(createWall(70,1100, 30,100,sideWall[5]));
-level[9].wall.push(createWall(100,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(200,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(300,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(400,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(500,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(600,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(700,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(800,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(900,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(1000,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(1100,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(1200,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(1300,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(1400,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(1500,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(1600,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(1700,1100, 100,30,floor[0]));
-level[9].wall.push(createWall(1800,1100, 100,30,floor[0]));
+level[9].wall.push(createWall(600,1100, 100,30,floor[5]));
+level[9].wall.push(createWall(1100,1100, 100,30,floor[5]));
+level[9].wall.push(createWall(1400,1100, 100,30,floor[5]));
 level[9].wall.push(createWall(1900,1100, 30,100,sideWall[5]));
-level[9].wall.push(createWall(1870,1100, 30,100,sideWall[6]));
-level[9].wall.push(createWall(100,1100, 30,100,sideWall[6]));
 
 level[9].creature.push(MedInsect(400,900,0));
 level[9].creature.push(Bug(550,900,0));
@@ -10750,6 +13890,6671 @@ level[9].wallPanels.push(new ForeGround(950,900, wallFeatures[3]));
 level[9].wallPanels.push(new ForeGround(1450,980, wallFeatures[3]));
 level[9].wallPanels.push(new ForeGround(1550,980, wallFeatures[3]));
 level[9].wallPanels.push(new ForeGround(1650,980, wallFeatures[3]));
+level[9].foreGround.push(new ForeGround(1630,1000, wallFeatures[46]));
+level[9].foreGround.push(new ForeGround(1700,1000, wallFeatures[49]));
+level[9].foreGround.push(new ForeGround(1600,1000, wallFeatures[47]));
+level[9].wallPanels.push(new ForeGround(920,830, bioPic[19]));
+level[9].wallPanels.push(new ForeGround(390,900, bioPic[15]));
+level[9].wallPanels.push(new ForeGround(1110,900, bioPic[18]));
+level[9].wallPanels.push(new ForeGround(750,1000, bioPic[8]));
+level[9].wallPanels.push(new ForeGround(640,860, bioPic[12]));
+level[9].wallPanels.push(new ForeGround(1190,1000, bioPic[9]));
+level[9].wallPanels.push(new ForeGround(1430,970, bioPic[7]));
+level[9].wallPanels.push(new ForeGround(1360,950, bioPic[6]));
+level[9].wallPanels.push(new ForeGround(310,920, bioPic[13]));
+level[9].wallPanels.push(new ForeGround(760,900, bioPic[4]));
+level[9].wallPanels.push(new ForeGround(290,990, bioPic[2]));
+level[9].wallPanels.push(new ForeGround(1450,930, bioPic[5]));
+
+
+
+level[9].creature.push(BugSmall(1160,900,0));
+level[9].creature.push(BugSmall(1320,900,0));
+level[9].creature.push(BugSmall(1490,900,0));
+level[9].creature.push(BugSmall(520,900,0));
+level[9].creature.push(BugSmall(270,900,0));
+level[9].creature.push(BugSmall(130,900,0));
+
+
+level[9].exits.push(new Exit(900,1000, 7, true, 300,550))
+level[9].exits.push(new Exit(200,1000, 10, true, 1700,100))
+
+
+level[10] = new Level('Security Checkpoint')
+level[10].start = {x:1700, y:100}
+level[10].wallPanels.push(new ForeGround(1500,0, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(1500,100, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(1500,200, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(1500,300, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(1400,0, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(1400,100, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(1400,200, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(1400,300, wallFeatures[12]));level[10].wallPanels.push(new Panel(1700,100, panelHall[1], 1,0.7));
+level[10].wallPanels.push(new Panel(1800,100, panelHall[1], 1,0.7));
+level[10].wallPanels.push(new Panel(1700,200, panelHall[1], 2,0.7));
+level[10].wallPanels.push(new Panel(1800,200, panelHall[1], 2,0.7));
+level[10].wallPanels.push(new AniDoor(1700,100, 1,1));level[10].wallPanels.push(new wordWall(1770,140, 'cafeteria',4));
+level[10].wall.push(createWall(1800,300, 100,30,floor[0]));
+level[10].wall.push(createWall(1700,300, 100,30,floor[0]));
+level[10].wall.push(createWall(1600,300, 100,30,floor[4]));
+level[10].wall.push(createWall(1500,300, 100,30,floor[4]));
+level[10].wall.push(createWall(1400,300, 100,30,floor[4]));
+level[10].wall.push(createWall(1300,300, 100,30,floor[4]));
+level[10].wall.push(createWall(1200,300, 100,30,floor[4]));
+level[10].wall.push(createWall(1900,200, 30,100,sideWall[1]));
+level[10].wall.push(createWall(1900,100, 30,100,sideWall[1]));
+level[10].wall.push(createWall(1900,300, 30,100,sideWall[5]));
+level[10].wall.push(createWall(1870,300, 30,100,sideWall[6]));
+level[10].wallPanels.push(new ForeGround(1700,200, wallFeatures[35]));
+level[10].wallPanels.push(new ForeGround(1700,100, wallFeatures[35]));
+level[10].wallPanels.push(new ForeGround(1600,200, wallFeatures[33]));
+level[10].wallPanels.push(new ForeGround(1500,200, wallFeatures[33]));
+level[10].wallPanels.push(new ForeGround(1400,200, wallFeatures[33]));
+level[10].wallPanels.push(new ForeGround(1300,200, wallFeatures[33]));
+level[10].wallPanels.push(new ForeGround(1200,200, wallFeatures[33]));
+level[10].wall.push(createWall(1800,100, 100,50,ceiling[0]));
+level[10].wall.push(createWall(1700,100, 100,50,ceiling[0]));
+level[10].foreGround.push(new ForeGround(1290,200, sideWall[3]));
+level[10].foreGround.push(new ForeGround(1590,200, sideWall[3]));
+level[10].foreGround.push(new ForeGround(1590,100, sideWall[4]));
+level[10].foreGround.push(new ForeGround(1290,100, sideWall[4]));
+level[10].foreGround.push(new ForeGround(1590,0, sideWall[3]));
+level[10].foreGround.push(new ForeGround(1290,0, sideWall[3]));
+level[10].dLights.push(new spinLight(1300,280,50,0));
+level[10].dLights.push(new spinLight(1600,280,50,0));
+level[10].wall.push(createWall(1100,300, 100,30,floor[4]));
+level[10].wall.push(createWall(1000,300, 100,30,floor[4]));
+level[10].wall.push(createWall(900,300, 100,30,floor[0]));
+level[10].wall.push(createWall(800,300, 100,30,floor[0]));
+level[10].wall.push(createWall(700,300, 100,30,floor[0]));
+level[10].wall.push(createWall(600,300, 100,30,floor[0]));level[10].wallPanels.push(new Panel(600,200, panelHall[0], 2,0.7));
+level[10].wallPanels.push(new Panel(700,200, panelHall[0], 2,0.7));
+level[10].wallPanels.push(new Panel(800,200, panelHall[0], 2,0.7));
+level[10].wallPanels.push(new Panel(900,200, panelHall[0], 2,0.7));
+level[10].wallPanels.push(new Panel(600,0, panelHall[1], 1,0.7));
+level[10].wallPanels.push(new Panel(700,0, panelHall[1], 1,0.7));
+level[10].wallPanels.push(new Panel(800,0, panelHall[1], 1,0.7));
+level[10].wallPanels.push(new Panel(900,0, panelHall[1], 1,0.7));
+level[10].wallPanels.push(new Panel(600,100, panelHall[1], 0,0.7));
+level[10].wallPanels.push(new Panel(900,100, panelHall[1], 0,0.7));level[10].wallPanels.push(new Panel(700,100, panelHall[1], 0,0.2));
+level[10].wallPanels.push(new Panel(800,100, panelHall[1], 0,0.2));
+
+level[10].wallPanels.push(new ForeGround(1100,200, wallFeatures[33]));
+level[10].wallPanels.push(new ForeGround(1000,200, wallFeatures[33]));
+level[10].wallPanels.push(new ForeGround(900,200, wallFeatures[34]));
+level[10].wallPanels.push(new ForeGround(900,100, wallFeatures[34]));
+level[10].wallPanels.push(new ForeGround(900,0, wallFeatures[34]));
+level[10].wallPanels.push(new wordWall(910,150, 'security',5));
+level[10].wallPanels.push(new wordWall(910,160, 'checkpoint',4));level[10].wallPanels.push(new ForeGround(940,100, wallFeatures[3]));
+level[10].wallPanels.push(new wordWall(910,180, '7-B',8));
+level[10].lamps.push(new UpLamp(970,270));
+level[10].lamps.push(new UpLamp(870,270));
+level[10].lamps.push(new UpLamp(770,270));
+level[10].lamps.push(new UpLamp(670,270));
+level[10].items.push(armorItem(720,120));
+level[10].items.push(armorItem(760,120));
+level[10].items.push(rifleItem(800,120));
+level[10].items.push(pistolItem(780,150));
+level[10].items.push(pistolItem(820,150));level[10].foreGround.push(new ForeGround(700,200, wallFeatures[0]));
+level[10].foreGround.push(new ForeGround(700,100, wallFeatures[0]));
+level[10].foreGround.push(new ForeGround(800,100, wallFeatures[0]));
+level[10].foreGround.push(new ForeGround(800,200, wallFeatures[0]));
+level[10].foreGround.push(new ForeGround(600,200, wallFeatures[2]));
+level[10].foreGround.push(new ForeGround(600,100, wallFeatures[2]));
+level[10].foreGround.push(new ForeGround(890,200, wallFeatures[1]));
+level[10].foreGround.push(new ForeGround(890,100, wallFeatures[1]));
+level[10].wallPanels.push(new Monitor(600,100, 'NO weapons beyond this point',0));
+level[10].wallPanels.push(new ForeGround(600,200, wallFeatures[35]));
+level[10].wallPanels.push(new ForeGround(600,100, wallFeatures[35]));
+level[10].wallPanels.push(new ForeGround(600,0, wallFeatures[35]));
+level[10].wallPanels.push(new ForeGround(1400,400, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(1500,400, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(1400,500, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(1500,500, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(1400,600, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(1500,600, wallFeatures[12]));
+
+level[10].wall.push(createWall(570,300, 30,100,sideWall[5]));
+level[10].wall.push(createWall(540,330, 30,100,sideWall[5]));
+level[10].wall.push(createWall(510,360, 30,100,sideWall[5]));
+level[10].wall.push(createWall(480,390, 30,100,sideWall[5]));level[10].wall.push(createWall(380,390, 100,30,floor[0]));
+level[10].wall.push(createWall(280,390, 100,30,floor[0]));
+level[10].wall.push(createWall(180,390, 100,30,floor[0]));
+level[10].wall.push(createWall(80,390, 100,30,floor[0]));
+level[10].wall.push(createWall(50,300, 30,100,sideWall[2]));
+level[10].wall.push(createWall(50,200, 30,100,sideWall[2]));
+level[10].wall.push(createWall(50,100, 30,100,sideWall[2]));
+level[10].wall.push(createWall(50,0, 30,100,sideWall[2]));
+level[10].wall.push(createWall(50,390, 30,100,sideWall[5]));
+level[10].wall.push(createWall(80,390, 30,100,sideWall[6]));level[10].wallPanels.push(new Panel(500,300, panelHall[3], 2,0.9));
+level[10].wallPanels.push(new Panel(400,300, panelHall[3], 2,0.9));
+level[10].wallPanels.push(new Panel(300,300, panelHall[3], 2,0.9));
+level[10].wallPanels.push(new Panel(200,300, panelHall[3], 2,0.9));
+level[10].wallPanels.push(new Panel(100,300, panelHall[3], 2,0.9));
+level[10].wallPanels.push(new Panel(50,300, panelHall[3], 2,0.9));
+level[10].wallPanels.push(new Panel(500,200, panelHall[3], 0,0.9));
+level[10].wallPanels.push(new Panel(400,200, panelHall[3], 0,0.9));
+level[10].wallPanels.push(new Panel(300,200, panelHall[3], 0,0.9));
+level[10].wallPanels.push(new Panel(200,200, panelHall[3], 0,0.9));
+level[10].wallPanels.push(new Panel(100,200, panelHall[3], 0,0.9));
+level[10].wallPanels.push(new Panel(70,200, panelHall[3], 0,0.9));
+level[10].wallPanels.push(new Panel(500,100, panelHall[3], 0,0.9));
+level[10].wallPanels.push(new Panel(400,100, panelHall[3], 0,0.9));
+level[10].wallPanels.push(new Panel(300,100, panelHall[3], 0,0.9));
+level[10].wallPanels.push(new Panel(200,100, panelHall[3], 0,0.9));
+level[10].wallPanels.push(new Panel(100,100, panelHall[3], 0,0.9));
+level[10].wallPanels.push(new Panel(80,100, panelHall[3], 0,0.9));
+level[10].wallPanels.push(new Panel(500,0, panelHall[3], 1,0.9));
+level[10].wallPanels.push(new Panel(400,0, panelHall[3], 1,0.9));
+level[10].wallPanels.push(new Panel(300,0, panelHall[3], 1,0.9));
+level[10].wallPanels.push(new Panel(200,0, panelHall[3], 1,0.9));
+level[10].wallPanels.push(new Panel(100,0, panelHall[3], 1,0.9));
+level[10].wallPanels.push(new Panel(80,0, panelHall[3], 1,0.9));level[10].wallPanels.push(new Panel(600,300, panelHall[2], 1,0.3));
+level[10].wallPanels.push(new Panel(700,300, panelHall[2], 1,0.3));
+level[10].wallPanels.push(new Panel(800,300, panelHall[2], 1,0.3));
+level[10].wallPanels.push(new Panel(900,300, panelHall[2], 1,0.3));
+level[10].wallPanels.push(new Panel(900,400, panelHall[2], 0,0.2));
+level[10].wallPanels.push(new Panel(800,400, panelHall[2], 0,0.2));
+level[10].wallPanels.push(new Panel(700,400, panelHall[2], 0,0.2));
+level[10].wallPanels.push(new Panel(600,400, panelHall[2], 0,0.2));
+level[10].wallPanels.push(new Panel(600,500, panelHall[2], 0,0.2));
+level[10].wallPanels.push(new Panel(700,500, panelHall[2], 0,0.2));
+level[10].wallPanels.push(new Panel(800,500, panelHall[2], 0,0.2));
+level[10].wallPanels.push(new Panel(900,500, panelHall[2], 0,0.2));
+level[10].wallPanels.push(new Panel(500,400, panelHall[2], 0,0.2));
+level[10].wallPanels.push(new Panel(500,500, panelHall[2], 0,0.2));
+
+level[10].wallPanels.push(new AniDoor(140,190, 0,0));
+level[10].wallPanels.push(new wordWall(320,250, 'prototype',5));
+level[10].wallPanels.push(new wordWall(320,260, 'agility test lab',4));
+level[10].wallPanels.push(new ForeGround(310,210, wallFeatures[3]));
+level[10].wallPanels.push(new ForeGround(340,270, bioPic[3]));
+level[10].wallPanels.push(new ForeGround(100,230, bioPic[1]));
+level[10].lamps.push(new Lamp(140,210));
+level[10].lamps.push(new FlickerLamp(330,210));
+level[10].lamps.push(new deadLamp(500,170));
+level[10].wallPanels.push(new ForeGround(80,0, pipes[4]));
+level[10].wallPanels.push(new ForeGround(180,0, pipes[4]));
+level[10].wallPanels.push(new ForeGround(280,0, pipes[4]));
+level[10].wallPanels.push(new ForeGround(380,0, pipes[4]));
+level[10].wallPanels.push(new ForeGround(480,0, pipes[2]));
+level[10].wallPanels.push(new ForeGround(600,300, pipes[0]));
+level[10].wallPanels.push(new ForeGround(700,300, pipes[4]));
+level[10].wallPanels.push(new ForeGround(800,300, pipes[4]));
+level[10].wallPanels.push(new ForeGround(900,300, pipes[1]));
+level[10].wallPanels.push(new ForeGround(600,400, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(600,500, wallFeatures[12]));
+level[10].wallPanels.push(new ForeGround(900,400, wallFeatures[12]));
+
+level[10].wallPanels.push(new ForeGround(900,500, wallFeatures[12]));
+level[10].wallPanels.push(new talker(950,190,'no weapons beyond this point','test'));
+level[10].wallPanels.push(new ForeGround(430,260, wallFeatures[6]));
+level[10].exits.push(new Exit(240, 300, 12 ,true, 1500, 800));
+
+
+level.push(new Level('Ascension'))
+level[11].wallPanels.push(new Panel(0,0, panelHall[1], 0,1));
+level[11].wall.push(createWall(0,200, 100,30,floor[0]));
+level[11].wall.push(createWall(100,300, 100,30,floor[0]));
+level[11].wall.push(createWall(200,400, 100,30,floor[0]));
+level[11].wall.push(createWall(300,500, 100,30,floor[0]));
+level[11].wall.push(createWall(400,600, 100,30,floor[0]));
+level[11].wall.push(createWall(500,600, 100,30,floor[0]));
+level[11].wall.push(createWall(600,600, 100,30,floor[0]));
+level[11].wallPanels.push(new Panel(0,200, panelHall[1], 0,0.9));
+level[11].wallPanels.push(new Panel(0,300, panelHall[1], 0,0.8));
+level[11].wallPanels.push(new Panel(100,300, panelHall[1], 0,0.8));
+level[11].wallPanels.push(new Panel(0,400, panelHall[1], 0,0.7));
+level[11].wallPanels.push(new Panel(100,400, panelHall[1], 0,0.7));
+level[11].wallPanels.push(new Panel(200,400, panelHall[1], 0,0.7));
+level[11].wallPanels.push(new Panel(0,500, panelHall[1], 0,0.6));
+level[11].wallPanels.push(new Panel(100,500, panelHall[1], 0,0.6));
+level[11].wallPanels.push(new Panel(200,500, panelHall[1], 0,0.6));
+level[11].wallPanels.push(new Panel(300,500, panelHall[1], 0,0.6));
+level[11].wallPanels.push(new Panel(0,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(100,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(200,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(300,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(400,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(500,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(600,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(0,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(100,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(200,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(300,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(400,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(500,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(600,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(600,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(500,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(400,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(300,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(200,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(200,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(100,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(100,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(200,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(300,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(400,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(500,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(600,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(600,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(600,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(600,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(500,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(400,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(400,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(500,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(500,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(400,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(300,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(300,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(200,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(-80,0, panelHall[2], 0,1));
+level[11].wallPanels.push(new Panel(-80,100, panelHall[2], 0,1));
+level[11].wallPanels.push(new Panel(-80,200, panelHall[2], 0,0.9));
+level[11].wallPanels.push(new Panel(-80,300, panelHall[2], 0,0.8));
+level[11].wallPanels.push(new Panel(-80,400, panelHall[2], 0,0.7));
+level[11].wallPanels.push(new Panel(-80,500, panelHall[2], 0,0.6));
+level[11].wallPanels.push(new Panel(-80,600, panelHall[2], 0,0.5));
+level[11].wall.push(createWall(-30,100, 30,100,sideWall[2]));
+level[11].wall.push(createWall(-30,0, 30,100,sideWall[2]));
+level[11].wall.push(createWall(-30,200, 30,100,sideWall[2]));
+level[11].wall.push(createWall(70,230, 30,100,sideWall[2]));
+level[11].wall.push(createWall(170,330, 30,100,sideWall[2]));
+level[11].wall.push(createWall(270,430, 30,100,sideWall[2]));
+level[11].wall.push(createWall(370,530, 30,100,sideWall[2]));
+level[11].wall.push(createWall(-30,300, 30,100,sideWall[2]));
+level[11].wall.push(createWall(-30,400, 30,100,sideWall[2]));
+level[11].wall.push(createWall(-30,500, 30,100,sideWall[2]));
+level[11].wall.push(createWall(-30,600, 30,100,sideWall[2]));
+level[11].wall.push(createWall(-30,700, 30,100,sideWall[2]));
+level[11].wall.push(createWall(-30,800, 30,100,sideWall[2]));
+level[11].wall.push(createWall(-30,900, 30,100,sideWall[2]));
+level[11].wall.push(createWall(-30,1000, 30,100,sideWall[2]));
+level[11].wall.push(createWall(-30,1100, 30,100,sideWall[2]));
+level[11].wallPanels.push(new Panel(-80,700, panelHall[2], 0,0.4));
+level[11].wallPanels.push(new Panel(-80,800, panelHall[2], 0,0.3));
+level[11].wallPanels.push(new Panel(-80,900, panelHall[2], 0,0.2));
+level[11].wallPanels.push(new Panel(-80,1000, panelHall[2], 0,0.1));
+level[11].wallPanels.push(new Panel(-80,1100, panelHall[2], 0,0));
+level[11].wallPanels.push(new Panel(0,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(100,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(200,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(300,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(400,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(500,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(600,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(700,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(800,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(900,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(1000,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(1100,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(1200,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(1300,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(1400,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(1500,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(1600,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(1700,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(1700,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(1800,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(1900,1100, panelHall[1], 0,0));
+level[11].wallPanels.push(new Panel(0,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(100,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(200,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(300,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(400,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(500,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(600,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(700,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(800,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(900,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(1000,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(1100,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(1200,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(1300,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(1400,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(1500,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(1600,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(1700,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(1800,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(1900,1000, panelHall[1], 0,0.1));
+level[11].wallPanels.push(new Panel(0,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(100,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(200,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(300,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(400,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(500,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(600,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(700,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(800,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(900,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(1000,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(1100,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(1200,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(1300,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(1400,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(1500,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(1600,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(1700,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(1800,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(1900,900, panelHall[1], 0,0.2));
+level[11].wallPanels.push(new Panel(0,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(100,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(200,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(300,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(400,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(500,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(600,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(700,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(800,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(900,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(1000,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(1100,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(1200,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(1300,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(1400,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(1500,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(1600,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(1700,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(1800,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(1900,800, panelHall[1], 0,0.3));
+level[11].wallPanels.push(new Panel(0,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(100,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(200,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(300,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(400,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(500,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(600,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(700,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(800,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(900,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(1000,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(1100,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(1200,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(1300,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(1400,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(1500,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(1600,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(1700,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(1800,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(1900,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(1900,700, panelHall[1], 0,0.4));
+level[11].wallPanels.push(new Panel(700,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(800,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(900,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(1000,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(1100,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(1200,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(1300,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(1400,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(1500,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(1600,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(1700,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(1800,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(1900,600, panelHall[1], 0,0.5));
+level[11].wallPanels.push(new Panel(700,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(800,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(900,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1000,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1100,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1200,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1300,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1400,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1500,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1600,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1700,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1800,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1900,500, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1900,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1900,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1900,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1900,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1900,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1800,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1700,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1600,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1500,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1400,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1300,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1200,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1100,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1000,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(900,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(800,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(700,0, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(700,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(700,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(700,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(700,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(800,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(900,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1000,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1100,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1200,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1400,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1500,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1300,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1600,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1700,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1800,400, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1800,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1800,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1800,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1700,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1600,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1500,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1400,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1300,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1200,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1100,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1000,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(900,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(800,100, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(800,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(800,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(900,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1000,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1100,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1200,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1300,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1400,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1500,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1600,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1700,300, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1700,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1600,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1500,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1400,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1300,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1200,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1100,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(1000,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(900,200, panelHall[1], 0,1));
+level[11].wallPanels.push(new Panel(-80,1100, panelHall[2], 0,0));
+level[11].wallPanels.push(new Panel(-80,1000, panelHall[2], 0,0.1));
+level[11].wallPanels.push(new Panel(-80,900, panelHall[2], 0,0.2));
+level[11].wallPanels.push(new Panel(-80,800, panelHall[2], 0,0.3));
+level[11].wallPanels.push(new Panel(-80,700, panelHall[2], 0,0.4));
+level[11].wall.push(createWall(0,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(100,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(200,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(300,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(400,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(500,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(600,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(700,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(800,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(900,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(1000,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(1100,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(1200,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(1300,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(1400,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(1500,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(1600,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(1700,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(1700,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(1700,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(1800,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(1900,1190, 100,30,floor[0]));
+level[11].wall.push(createWall(2000,1190, 30,100,sideWall[6]));
+level[11].wall.push(createWall(2000,1090, 30,100,sideWall[1]));
+level[11].wall.push(createWall(2000,990, 30,100,sideWall[1]));
+level[11].wall.push(createWall(2000,890, 30,100,sideWall[1]));
+level[11].wall.push(createWall(2000,790, 30,100,sideWall[1]));
+level[11].wall.push(createWall(2000,690, 30,100,sideWall[1]));
+level[11].wall.push(createWall(2000,590, 30,100,sideWall[1]));
+level[11].wall.push(createWall(2000,490, 30,100,sideWall[1]));
+level[11].wall.push(createWall(2000,390, 30,100,sideWall[1]));
+level[11].wall.push(createWall(2000,290, 30,100,sideWall[1]));
+level[11].wall.push(createWall(2000,190, 30,100,sideWall[1]));
+level[11].wall.push(createWall(2000,90, 30,100,sideWall[1]));
+level[11].wall.push(createWall(2000,-10, 30,100,sideWall[1]));
+level[11].wall.push(createWall(1900,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1800,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1700,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1600,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1500,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1400,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1400,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1300,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1200,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1100,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1000,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(900,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(800,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(700,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(600,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(500,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(400,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(300,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(200,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(100,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(0,0, 100,50,ceiling[0]));
+level[11].wall.push(createWall(-30,0, 30,100,sideWall[5]));
+level[11].wall.push(createWall(2000,0, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,70, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,170, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,270, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,370, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,470, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,570, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,670, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,770, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,870, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,970, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,1070, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,1170, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,1190, 30,100,sideWall[6]));
+level[11].wall.push(createWall(-30,100, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,200, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,300, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,400, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,500, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,600, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,700, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,800, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,900, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,1000, 30,100,sideWall[5]));
+level[11].wall.push(createWall(-30,1100, 30,100,sideWall[5]));
+level[11].wall.push(createWall(70,300, 30,100,sideWall[5]));
+level[11].wall.push(createWall(170,400, 30,100,sideWall[5]));
+level[11].wall.push(createWall(270,500, 30,100,sideWall[5]));
+level[11].wall.push(createWall(370,600, 30,100,sideWall[5]));
+level[11].wall.push(createWall(170,400, 30,100,sideWall[6]));
+level[11].wall.push(createWall(70,300, 30,100,sideWall[6]));
+level[11].wall.push(createWall(270,500, 30,100,sideWall[6]));
+level[11].wall.push(createWall(370,600, 30,100,sideWall[6]));
+level[11].wall.push(createWall(-30,280, 30,100,sideWall[6]));
+level[11].wall.push(createWall(-30,180, 30,100,sideWall[6]));
+level[11].wall.push(createWall(-30,80, 30,100,sideWall[6]));
+level[11].wall.push(createWall(-30,380, 30,100,sideWall[6]));
+level[11].wall.push(createWall(-30,480, 30,100,sideWall[6]));
+level[11].wall.push(createWall(-30,580, 30,100,sideWall[6]));
+level[11].wall.push(createWall(-30,680, 30,100,sideWall[6]));
+level[11].wall.push(createWall(-30,780, 30,100,sideWall[6]));
+level[11].wall.push(createWall(-30,880, 30,100,sideWall[6]));
+level[11].wall.push(createWall(-30,980, 30,100,sideWall[6]));
+level[11].wall.push(createWall(-30,1080, 30,100,sideWall[6]));
+level[11].wall.push(createWall(1350,400, 100,30,floor[2]));
+level[11].wall.push(createWall(1440,400, 100,30,floor[2]));
+level[11].wall.push(createWall(1530,400, 100,30,floor[2]));
+level[11].wall.push(createWall(1620,400, 100,30,floor[2]));
+level[11].wall.push(createWall(1710,400, 100,30,floor[2]));
+level[11].wall.push(createWall(1800,400, 100,30,floor[2]));
+level[11].wall.push(createWall(1260,400, 100,30,floor[2]));
+level[11].wall.push(createWall(1170,400, 100,30,floor[2]));
+level[11].wall.push(createWall(1210,360, 100,30,floor[2]));
+level[11].wall.push(createWall(1300,360, 100,30,floor[2]));
+level[11].wall.push(createWall(1390,360, 100,30,floor[2]));
+level[11].wall.push(createWall(1480,360, 100,30,floor[2]));
+level[11].wall.push(createWall(1570,360, 100,30,floor[2]));
+level[11].wall.push(createWall(1660,360, 100,30,floor[2]));
+level[11].wall.push(createWall(1750,360, 100,30,floor[2]));
+level[11].wallPanels.push(new ForeGround(20,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(120,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(220,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(320,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(420,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(520,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(620,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(720,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(820,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(920,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(1020,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(1120,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(1220,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(1320,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(1420,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(1520,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(1620,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(1620,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(1620,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(1720,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(1820,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(1920,1020, wallFeatures[6]));
+level[11].wallPanels.push(new ForeGround(500,630, wallFeatures[12]));
+level[11].wallPanels.push(new ForeGround(500,730, wallFeatures[12]));
+level[11].wallPanels.push(new ForeGround(500,830, wallFeatures[12]));
+level[11].wallPanels.push(new ForeGround(300,830, wallFeatures[12]));
+level[11].wallPanels.push(new ForeGround(300,730, wallFeatures[12]));
+level[11].wallPanels.push(new ForeGround(300,630, wallFeatures[12]));
+level[11].wallPanels.push(new ForeGround(300,530, wallFeatures[12]));
+level[11].wallPanels.push(new ForeGround(100,530, wallFeatures[12]));
+level[11].wallPanels.push(new ForeGround(100,430, wallFeatures[12]));
+level[11].wallPanels.push(new ForeGround(100,330, wallFeatures[12]));
+level[11].wallPanels.push(new ForeGround(100,630, wallFeatures[12]));
+level[11].wallPanels.push(new ForeGround(100,730, wallFeatures[12]));
+level[11].wallPanels.push(new ForeGround(100,830, wallFeatures[12]));
+level[11].lamps.push(new waterDrop(340,920));
+level[11].lamps.push(new waterDrop(350,920));
+level[11].lamps.push(new waterDrop(350,1020));
+level[11].lamps.push(new waterDrop(350,1120));
+level[11].lamps.push(new waterDrop(340,1020));
+level[11].lamps.push(new waterDrop(340,1120));
+level[11].lamps.push(new waterDrop(150,920));
+level[11].lamps.push(new waterDrop(150,1020));
+level[11].lamps.push(new waterDrop(150,1120));
+level[11].lamps.push(new waterDrop(140,920));
+level[11].lamps.push(new waterDrop(140,1020));
+level[11].lamps.push(new waterDrop(140,1120));
+level[11].lamps.push(new waterDrop(540,1120));
+level[11].lamps.push(new waterDrop(540,1020));
+level[11].lamps.push(new waterDrop(540,920));
+level[11].lamps.push(new waterDrop(550,920));
+level[11].lamps.push(new waterDrop(550,1020));
+level[11].lamps.push(new waterDrop(550,1120));
+level[11].dLights.push(new spinLight(50,850,50,0));
+level[11].dLights.push(new spinLight(250,860,50,0));
+level[11].dLights.push(new spinLight(450,860,50,0));
+level[11].lamps.push(new FlickerLamp(1140,850));
+level[11].lamps.push(new FlickerLamp(1260,790));
+level[11].lamps.push(new FlickerLamp(1420,900));
+level[11].lamps.push(new FlickerLamp(1390,740));
+level[11].lamps.push(new FlickerLamp(1570,990));
+level[11].lamps.push(new FlickerLamp(1670,870));
+level[11].lamps.push(new FlickerLamp(1830,990));
+level[11].lamps.push(new FlickerLamp(1770,1070));
+level[11].lamps.push(new deadLamp(1240,930));
+level[11].lamps.push(new deadLamp(1360,850));
+level[11].lamps.push(new deadLamp(1470,950));
+level[11].lamps.push(new deadLamp(1590,900));
+level[11].lamps.push(new deadLamp(1740,940));
+level[11].lamps.push(new deadLamp(1550,840));
+level[11].lamps.push(new deadLamp(1470,780));
+level[11].lamps.push(new deadLamp(1310,770));
+level[11].lamps.push(new deadLamp(1190,810));
+level[11].lamps.push(new sparker(1160,960));
+level[11].lamps.push(new sparker(1240,860));
+level[11].lamps.push(new sparker(1160,790));
+level[11].lamps.push(new sparker(1300,810));
+level[11].lamps.push(new sparker(1390,850));
+level[11].lamps.push(new sparker(1450,780));
+level[11].lamps.push(new sparker(1530,830));
+level[11].lamps.push(new sparker(1500,940));
+level[11].lamps.push(new sparker(1600,900));
+level[11].lamps.push(new sparker(1740,930));
+level[11].lamps.push(new sparker(1830,980));
+level[11].lamps.push(new sparker(1760,1050));
+level[11].items.push(medItem(0,1160));
+level[11].items.push(medItem(100,1160));
+level[11].wall.push(createWall(800,1190, 100,50,ceiling[0]));
+level[11].items.push(smgItem(810,1160));
+level[11].wallPanels.push(new ForeGround(1300,710, floorHole[0]));
+level[11].wallPanels.push(new ForeGround(1200,710, floorHole[0]));
+level[11].wallPanels.push(new ForeGround(1100,710, floorHole[0]));
+level[11].wallPanels.push(new ForeGround(1400,710, floorHole[0]));
+level[11].wallPanels.push(new ForeGround(1500,710, floorHole[0]));
+level[11].wallPanels.push(new ForeGround(1600,710, floorHole[0]));
+level[11].wallPanels.push(new ForeGround(1700,710, floorHole[0]));
+level[11].wall.push(createWall(970,1160, 100,30,floor[2]));
+level[11].wall.push(createWall(1070,1100, 100,30,floor[2]));
+level[11].wall.push(createWall(1000,1130, 100,30,floor[1]));
+level[11].wall.push(createWall(1100,1060, 100,30,floor[1]));
+level[11].wall.push(createWall(1100,1160, 30,100,sideWall[5]));
+level[11].wall.push(createWall(1130,1160, 30,100,sideWall[5]));
+level[11].wall.push(createWall(1160,1160, 30,100,sideWall[5]));
+level[11].wall.push(createWall(1130,1030, 100,30,floor[2]));
+level[11].wall.push(createWall(1160,1030, 100,30,floor[2]));
+level[11].wall.push(createWall(1190,1010, 100,30,floor[2]));
+level[11].wall.push(createWall(1230,970, 100,30,floor[2]));
+level[11].wall.push(createWall(1280,930, 100,30,floor[2]));
+level[11].wall.push(createWall(1320,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1350,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1450,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1550,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1650,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1750,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1850,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1820,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1720,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1620,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1520,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1420,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1380,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1480,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1580,900, 100,30,floor[2]));
+wall.push(createWall(1680,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1780,900, 100,30,floor[2]));
+level[11].wall.push(createWall(1700,700, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1600,700, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1500,700, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1400,700, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1300,700, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1200,700, 100,50,ceiling[0]));
+level[11].wall.push(createWall(1100,700, 100,50,ceiling[0]));
+level[11].wall.push(createWall(700,370, 100,30,floor[2]));
+level[11].wall.push(createWall(720,400, 100,30,floor[2]));
+level[11].wall.push(createWall(750,410, 100,30,floor[2]));
+level[11].wall.push(createWall(780,430, 100,30,floor[2]));
+level[11].wall.push(createWall(810,430, 100,30,floor[2]));
+level[11].wall.push(createWall(840,430, 100,30,floor[2]));
+level[11].wall.push(createWall(870,410, 100,30,floor[2]));
+level[11].wall.push(createWall(900,400, 100,30,floor[2]));
+level[11].wall.push(createWall(920,370, 100,30,floor[2]));
+level[11].wallPanels.push(new ForeGround(720,230, door[1], '', 0.5));
+level[11].wall.push(createWall(1100,380, 100,30,floor[2]));
+level[11].wall.push(createWall(1030,350, 100,30,floor[2]));
+level[11].wall.push(createWall(990,370, 100,30,floor[2]));
+level[11].lamps.push(new Lamp(1180,410));
+level[11].lamps.push(new Lamp(1270,410));
+level[11].lamps.push(new Lamp(1360,410));
+level[11].lamps.push(new Lamp(1450,410));
+level[11].lamps.push(new Lamp(1540,410));
+level[11].lamps.push(new Lamp(1630,410));
+level[11].lamps.push(new Lamp(1720,410));
+level[11].lamps.push(new Lamp(1810,410));
+level[11].rLights.push(new staticLight(1760,370, 20));
+level[11].rLights.push(new staticLight(1670,370, 20));
+level[11].rLights.push(new staticLight(1580,370, 20));
+level[11].rLights.push(new staticLight(1490,370, 20));
+level[11].rLights.push(new staticLight(1400,370, 20));
+level[11].rLights.push(new staticLight(1310,370, 20));
+level[11].rLights.push(new staticLight(1220,370, 20));
+level[11].lamps.push(new BigLamp(1550,0));
+level[11].lamps.push(new BigLamp(1750,0));
+level[11].lamps.push(new BigLamp(1350,0));
+level[11].lamps.push(new BigLampDead(1460,700));
+level[11].lamps.push(new BigLampDead(1660,700));
+
+
+level[12] = new Level('Moving Forward')
+level[12].wall.push(createWall(1400,1000, 100,30,floor[5]));
+level[12].wall.push(createWall(900,1000, 100,30,floor[7]));
+level[12].wall.push(createWall(400,1000, 100,30,floor[7]));
+level[12].wall.push(createWall(300,1000, 100,30,floor[0]));
+level[12].wall.push(createWall(200,1000, 100,30,floor[0]));
+level[12].wall.push(createWall(100,1000, 100,30,floor[0]));
+level[12].wall.push(createWall(70,900, 30,100,sideWall[2]));
+level[12].wall.push(createWall(70,800, 30,100,sideWall[2]));
+level[12].wall.push(createWall(70,1000, 30,100,sideWall[5]));
+level[12].wall.push(createWall(1900,1000, 30,100,sideWall[5]));level[12].wall.push(createWall(1900,600, 30,100,sideWall[7]));
+level[12].wallPanels.push(new Panel(1400,900, panelHall[3], 2,0.5));
+level[12].wallPanels.push(new Panel(1500,900, panelHall[3], 2,0.5));
+level[12].wallPanels.push(new Panel(1600,900, panelHall[3], 2,0.5));
+level[12].wallPanels.push(new Panel(1800,900, panelHall[3], 2,0.5));
+level[12].wallPanels.push(new Panel(1400,800, panelHall[3], 0,0.5));
+level[12].wallPanels.push(new Panel(1500,800, panelHall[3], 0,0.5));
+level[12].wallPanels.push(new Panel(1600,800, panelHall[3], 0,0.5));
+level[12].wallPanels.push(new Panel(1800,800, panelHall[3], 0,0.5));
+level[12].wallPanels.push(new Panel(1800,700, panelHall[3], 0,0.5));
+level[12].wallPanels.push(new Panel(1600,700, panelHall[3], 0,0.5));
+level[12].wallPanels.push(new Panel(1500,700, panelHall[3], 0,0.5));
+level[12].wallPanels.push(new Panel(1400,700, panelHall[3], 0,0.5));
+level[12].wallPanels.push(new Panel(1400,600, panelHall[3], 1,0.5));
+level[12].wallPanels.push(new Panel(1500,600, panelHall[3], 1,0.5));
+level[12].wallPanels.push(new Panel(1600,600, panelHall[3], 1,0.5));
+level[12].wallPanels.push(new Panel(1800,600, panelHall[3], 1,0.5));
+level[12].wallPanels.push(new Panel(1700,800, panelHall[2], 0,0.5));
+level[12].wallPanels.push(new Panel(1700,700, panelHall[2], 0,0.5));
+level[12].wallPanels.push(new Panel(1700,600, panelHall[2], 1,0.5));
+level[12].wallPanels.push(new Panel(1700,900, panelHall[2], 2,0.5));
+level[12].wallPanels.push(new Panel(300,900, panelHall[1], 2,0.3));
+level[12].wallPanels.push(new Panel(200,900, panelHall[1], 2,0.3));
+level[12].wallPanels.push(new Panel(100,900, panelHall[2], 2,0.3));
+level[12].wallPanels.push(new Panel(100,800, panelHall[2], 1,0.3));
+level[12].wallPanels.push(new Panel(200,800, panelHall[1], 1,0.3));
+level[12].wallPanels.push(new Panel(300,800, panelHall[1], 1,0.3));
+level[12].foreGround.push(new ForeGround(500,900, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(500,800, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(600,800, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(600,900, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(700,900, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(700,800, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(800,800, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(800,900, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(900,900, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(1000,900, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(1100,900, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(1200,900, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(1200,800, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(1100,800, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(1000,800, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(900,800, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(400,900, wallFeatures[2]));
+level[12].foreGround.push(new ForeGround(400,800, wallFeatures[2]));level[12].wallPanels.push(new ForeGround(700,900, wallFeatures[2]));
+level[12].wallPanels.push(new ForeGround(700,800, wallFeatures[2]));
+level[12].wallPanels.push(new ForeGround(1000,900, wallFeatures[1]));
+level[12].wallPanels.push(new ForeGround(1000,800, wallFeatures[1]));
+level[12].foreGround.push(new ForeGround(1300,900, wallFeatures[1]));
+level[12].foreGround.push(new ForeGround(1300,800, wallFeatures[1]));
+level[12].wallPanels.push(new ForeGround(700,700, wallFeatures[2]));
+level[12].wallPanels.push(new ForeGround(700,600, wallFeatures[2]));
+level[12].wallPanels.push(new ForeGround(700,500, wallFeatures[2]));
+level[12].wallPanels.push(new ForeGround(1000,700, wallFeatures[1]));
+level[12].wallPanels.push(new ForeGround(1000,600, wallFeatures[1]));
+level[12].wallPanels.push(new ForeGround(1000,500, wallFeatures[1]));
+level[12].foreGround.push(new ForeGround(1300,700, wallFeatures[1]));
+level[12].foreGround.push(new ForeGround(1300,600, wallFeatures[1]));
+level[12].foreGround.push(new ForeGround(1300,500, wallFeatures[1]));
+level[12].foreGround.push(new ForeGround(400,700, wallFeatures[2]));
+level[12].foreGround.push(new ForeGround(400,600, wallFeatures[2]));
+level[12].foreGround.push(new ForeGround(400,500, wallFeatures[2]));
+level[12].lamps.push(new Lamp(790,820));
+level[12].lamps.push(new Lamp(1000,820));level[12].rLights.push(new staticLight(490,1000, 20));
+level[12].rLights.push(new staticLight(490,800, 20));
+level[12].rLights.push(new staticLight(790,1000, 20));
+level[12].rLights.push(new staticLight(1010,1000, 20));
+level[12].rLights.push(new staticLight(1310,1000, 20));
+level[12].rLights.push(new staticLight(1310,800, 20));
+level[12].wall.push(createWall(100,790, 100,30,floor[3]));
+level[12].wall.push(createWall(200,790, 100,50,ceiling[0]));
+level[12].wall.push(createWall(300,790, 100,50,ceiling[0]));
+level[12].wall.push(createWall(400,790, 100,50,ceiling[0]));
+//level[12].wall.push(createWall(1300,790, 100,50,ceiling[0]));
+level[12].wallPanels.push(new ForeGround(1300,780, floor[4]));
+level[12].wallPanels.push(new ForeGround(1700,900, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(1700,800, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(1700,700, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(1700,600, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(100,900, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(100,800, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(1200,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(1100,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(1000,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(900,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(800,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(1300,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(1400,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(1500,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(1600,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(1700,1000, pipes[2]));
+level[12].wallPanels.push(new ForeGround(700,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(500,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(400,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(300,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(200,1000, pipes[4]));
+level[12].wallPanels.push(new ForeGround(100,1000, pipes[3]));
+level[12].lamps.push(new waterDrop(600,1060));
+level[12].lamps.push(new waterDrop(700,1060));
+level[12].lamps.push(new waterDrop(700,1050));
+level[12].lamps.push(new waterDrop(600,1050));
+level[12].wallPanels.push(new AniDoor(200,800, 0,0));
+level[12].wallPanels.push(new AniDoor(1500,800, 0,0));
+level[12].wallPanels.push(new fan(1820,920, 0.2,0,1));
+level[12].wallPanels.push(new fan(1820,820, 0.2,0,1));
+level[12].lamps.push(new BigLamp(260,800));
+level[12].wallPanels.push(new ForeGround(840,850, wallFeatures[4]));
+level[12].wallPanels.push(new ForeGround(400,900, wallFeatures[35]));
+level[12].wallPanels.push(new ForeGround(400,800, wallFeatures[35]));
+level[12].wallPanels.push(new ForeGround(1300,900, wallFeatures[34]));
+level[12].wallPanels.push(new ForeGround(1300,800, wallFeatures[34]));
+level[12].lamps.push(new FlickerLamp(1510,850));
+level[12].lamps.push(new FlickerLamp(1680,850));
+level[12].wallPanels.push(new ForeGround(1300,900, wallFeatures[33]));
+level[12].wallPanels.push(new ForeGround(1200,900, wallFeatures[33]));
+level[12].wallPanels.push(new ForeGround(1100,900, wallFeatures[33]));
+level[12].wallPanels.push(new ForeGround(1000,900, wallFeatures[33]));
+level[12].wallPanels.push(new ForeGround(900,900, wallFeatures[33]));
+level[12].wallPanels.push(new ForeGround(800,900, wallFeatures[33]));
+level[12].wallPanels.push(new ForeGround(700,900, wallFeatures[33]));
+level[12].wallPanels.push(new ForeGround(600,900, wallFeatures[33]));
+level[12].wallPanels.push(new ForeGround(500,900, wallFeatures[33]));
+level[12].wallPanels.push(new ForeGround(400,900, wallFeatures[33]));
+level[12].wall.push(createWall(70,790, 30,100,sideWall[5]));
+
+
+
+level[12].items.push(spawnTrap(900,900, recorder, '0', '5','300,800'));
+level[12].items.push(spawnTrap(900,900, recorder, '0', '5','300,800'));
+level[12].items.push(spawnTrap(900,900, recorder, '0', '4','1600,800'));
+level[12].items.push(spawnTrap(900,900, recorder, '0', '4','1600,800'));
+level[12].items.push(spawnTrap(900,900, recorder, '0', '5','1600,800'));
+level[12].items.push(spawnTrap(900,900, recorder, '0', '4','1600,800'));
+
+level[12].foreGround.push(new ForeGround(200,690, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(200,590, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(200,490, wallFeatures[0]));
+level[12].foreGround.push(new ForeGround(200,390, wallFeatures[0]));
+level[12].wallPanels.push(new ForeGround(220,690, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(220,590, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(180,690, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(180,590, pipes[1]));
+level[12].wallPanels.push(new ForeGround(80,590, pipes[3]));level[12].wallPanels.push(new ForeGround(290,590, pipes[0]));
+level[12].wallPanels.push(new ForeGround(390,590, pipes[4]));
+level[12].wallPanels.push(new ForeGround(490,590, pipes[4]));
+level[12].wallPanels.push(new ForeGround(590,590, pipes[2]));
+level[12].wallPanels.push(new ForeGround(290,690, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(80,490, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(80,390, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(220,490, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(220,390, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(590,490, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(590,390, wallFeatures[12]));
+level[12].lamps.push(new waterDrop(590,650));
+level[12].lamps.push(new waterDrop(590,640));
+level[12].lamps.push(new waterDrop(650,590));
+level[12].foreGround.push(new ForeGround(100,690, wallFeatures[12]));
+level[12].foreGround.push(new ForeGround(100,590, wallFeatures[12]));
+level[12].foreGround.push(new ForeGround(100,490, wallFeatures[12]));
+level[12].foreGround.push(new ForeGround(100,390, wallFeatures[12]));
+level[12].wallPanels.push(new ForeGround(990,900, bioPic[9]));
+level[12].wallPanels.push(new ForeGround(640,860, bioPic[13]));
+level[12].wallPanels.push(new ForeGround(1310,800, bioPic[11]));
+level[12].wallPanels.push(new ForeGround(850,940, bioPic[7]));
+level[12].items.push(smgItem(900,970));
+level[12].exits.push(new Exit(300,900, 13, true, 1600, 200));
+
+
+
+
+level[13] = new Level('Wounds')
+level[13].wall.push(createWall(1400,400, 100,30,floor[5]));
+level[13].wall.push(createWall(800,400, 100,30,floor[5]));
+level[13].wall.push(createWall(1900,200, 30,100,sideWall[8]));
+level[13].wall.push(createWall(770,200, 30,100,sideWall[8]));
+level[13].wall.push(createWall(1900,600, 30,100,sideWall[8]));
+level[13].wall.push(createWall(770,600, 30,100,sideWall[8]));
+level[13].wall.push(createWall(800,1000, 100,30,floor[5]));
+level[13].wall.push(createWall(1400,1000, 100,30,floor[5]));
+level[13].wall.push(createWall(1300,1000, 100,30,floor[0]));
+level[13].wall.push(createWall(1400,400, 30,100,sideWall[7]));
+level[13].wall.push(createWall(1270,400, 30,100,sideWall[7]));
+level[13].wall.push(createWall(1400,190, 100,30,floor[6]));
+level[13].wall.push(createWall(800,190, 100,30,floor[6]));
+level[13].wall.push(createWall(770,190, 30,100,sideWall[5]));
+level[13].wall.push(createWall(1900,190, 30,100,sideWall[5]));
+level[13].wall.push(createWall(1890,400, 30,100,sideWall[6]));
+level[13].wall.push(createWall(780,400, 30,100,sideWall[6]));
+level[13].wall.push(createWall(1270,400, 30,100,sideWall[6]));
+level[13].wall.push(createWall(1400,400, 30,100,sideWall[6]));
+level[13].wall.push(createWall(800,790, 100,30,floor[6]));
+level[13].wall.push(createWall(1400,790, 100,30,floor[6]));
+level[13].wall.push(createWall(1300,190, 100,30,floor[3]));
+level[13].wall.push(createWall(1400,760, 30,100,sideWall[5]));
+level[13].wall.push(createWall(1270,760, 30,100,sideWall[5]));level[13].wallPanels.push(new Panel(800,800, panelHall[3], 1,0.8));
+level[13].wallPanels.push(new Panel(900,800, panelHall[3], 1,0.8));
+level[13].wallPanels.push(new Panel(1000,800, panelHall[3], 1,0.8));
+level[13].wallPanels.push(new Panel(1100,800, panelHall[3], 1,0.8));
+level[13].wallPanels.push(new Panel(1200,800, panelHall[3], 1,0.8));
+level[13].wallPanels.push(new Panel(1400,800, panelHall[3], 1,0.8));
+level[13].wallPanels.push(new Panel(1500,800, panelHall[3], 1,0.8));
+level[13].wallPanels.push(new Panel(1600,800, panelHall[3], 1,0.8));
+level[13].wallPanels.push(new Panel(1700,800, panelHall[3], 1,0.8));
+level[13].wallPanels.push(new Panel(1800,800, panelHall[3], 1,0.8));
+level[13].wallPanels.push(new Panel(1800,900, panelHall[3], 2,0.8));
+level[13].wallPanels.push(new Panel(1700,900, panelHall[3], 2,0.8));
+level[13].wallPanels.push(new Panel(1600,900, panelHall[3], 2,0.8));
+level[13].wallPanels.push(new Panel(1500,900, panelHall[3], 2,0.8));
+level[13].wallPanels.push(new Panel(1400,900, panelHall[3], 2,0.8));
+level[13].wallPanels.push(new Panel(1200,900, panelHall[3], 2,0.8));
+level[13].wallPanels.push(new Panel(1100,900, panelHall[3], 2,0.8));
+level[13].wallPanels.push(new Panel(800,900, panelHall[3], 2,0.8));
+level[13].wallPanels.push(new Panel(900,900, panelHall[3], 2,0.8));
+level[13].wallPanels.push(new Panel(1000,900, panelHall[3], 2,0.8));
+level[13].wallPanels.push(new Panel(1300,900, panelHall[2], 2,0.8));
+level[13].wallPanels.push(new Panel(1300,800, panelHall[2], 0,0.8));
+level[13].wallPanels.push(new Panel(1300,700, panelHall[2], 0,0.8));level[13].wallPanels.push(new Panel(1300,600, panelHall[2], 0,0.7));
+level[13].wallPanels.push(new Panel(1300,500, panelHall[2], 0,0.6));
+level[13].wallPanels.push(new Panel(1300,400, panelHall[2], 0,0.5));
+level[13].wallPanels.push(new Panel(1300,300, panelHall[2], 0,0.5));
+level[13].wallPanels.push(new Panel(1300,200, panelHall[2], 1,0.5));
+level[13].wall.push(createWall(770,1000, 30,100,sideWall[5]));
+level[13].wall.push(createWall(1900,1000, 30,100,sideWall[5]));
+level[13].wallPanels.push(new Panel(1200,200, panelHall[0], 1,0.5));
+level[13].wallPanels.push(new Panel(1400,200, panelHall[0], 1,0.5));
+level[13].wallPanels.push(new Panel(1800,200, panelHall[0], 1,0.5));
+level[13].wallPanels.push(new Panel(800,200, panelHall[0], 1,0.5));
+level[13].wallPanels.push(new Panel(800,300, panelHall[0], 2,0.5));
+level[13].wallPanels.push(new Panel(1800,300, panelHall[0], 2,0.5));
+level[13].wallPanels.push(new Panel(1400,300, panelHall[0], 2,0.5));
+level[13].wallPanels.push(new Panel(1200,300, panelHall[0], 2,0.5));
+level[13].wallPanels.push(new Panel(1500,200, panelHall[1], 1,0.5));
+level[13].wallPanels.push(new Panel(1600,200, panelHall[1], 1,0.5));
+level[13].wallPanels.push(new Panel(1700,200, panelHall[1], 1,0.5));
+level[13].wallPanels.push(new Panel(1100,200, panelHall[1], 1,0.5));
+level[13].wallPanels.push(new Panel(1000,200, panelHall[1], 1,0.5));
+level[13].wallPanels.push(new Panel(900,200, panelHall[1], 1,0.5));
+level[13].wallPanels.push(new Panel(900,300, panelHall[1], 2,0.5));
+level[13].wallPanels.push(new Panel(1000,300, panelHall[1], 2,0.5));
+level[13].wallPanels.push(new Panel(1100,300, panelHall[1], 2,0.5));
+level[13].wallPanels.push(new Panel(1500,300, panelHall[1], 2,0.5));
+level[13].wallPanels.push(new Panel(1600,300, panelHall[1], 2,0.5));
+level[13].wallPanels.push(new Panel(1700,300, panelHall[1], 2,0.5));
+level[13].wallPanels.push(new AniDoor(900,800, 0,1));
+level[13].wallPanels.push(new AniDoor(1600,200, 0,0));
+level[13].wallPanels.push(new AniDoor(900,200, 1,0));
+level[13].wall.push(createWall(1040,300, 100,30,floor[1]));
+level[13].wall.push(createWall(1170,300, 100,30,floor[1]));
+level[13].wall.push(createWall(1230,270, 100,30,floor[2]));
+level[13].wall.push(createWall(1200,270, 100,30,floor[2]));
+level[13].wall.push(createWall(1220,240, 100,30,floor[2]));
+level[13].wall.push(createWall(1140,370, 100,30,floor[2]));
+level[13].wall.push(createWall(1080,270, 100,30,floor[2]));
+level[13].wall.push(createWall(1010,370, 100,30,floor[2]));
+level[13].wall.push(createWall(890,300, 100,30,floor[1]));
+level[13].wall.push(createWall(840,370, 100,30,floor[2]));
+level[13].wall.push(createWall(1140,340, 100,30,floor[2]));
+level[13].wall.push(createWall(1070,240, 100,30,floor[2]));
+level[13].lamps.push(new deadLamp(870,270));
+level[13].lamps.push(new FlickerLamp(1270,270));
+level[13].lamps.push(new Lamp(1420,270));
+level[13].dLights.push(new spinLight(930,250,50,0));
+level[13].wallPanels.push(new Fire(1000,400, 'test'));
+level[13].wallPanels.push(new Fire(1030,370, 'test'));
+level[13].wallPanels.push(new Fire(1160,340, 'test'));
+level[13].wallPanels.push(new Fire(1060,300, 'test'));
+level[13].wallPanels.push(new ForeGround(1190,400, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1190,500, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1190,600, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1190,700, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1410,700, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1410,600, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1410,500, pipes[0]));
+level[13].wallPanels.push(new ForeGround(1510,500, pipes[2]));
+level[13].wallPanels.push(new ForeGround(1510,400, wallFeatures[12]));
+level[13].foreGround.push(new ForeGround(1510,300, wallFeatures[12]));
+level[13].foreGround.push(new ForeGround(1510,200, wallFeatures[12]));level[13].wallPanels.push(new wordWall(1460,270, 'MED',5));
+level[13].wallPanels.push(new wordWall(1460,280, 'LAB',5));
+level[13].wallPanels.push(new wordWall(1470,290, '6',5));
+level[13].wallPanels.push(new ForeGround(1450,250, wallFeatures[3]));
+level[13].wallPanels.push(new wordWall(1100,870, 'physical',5));level[13].wallPanels.push(new wordWall(1100,880, 'TASK',5));
+level[13].wallPanels.push(new wordWall(1100,890, 'TRAINING',5));
+level[13].wallPanels.push(new ForeGround(1160,800, wallFeatures[3]));
+level[13].wallPanels.push(new AniDoor(1600,800, 0,1));level[13].wallPanels.push(new wordWall(1800,870, 'AID',5));
+level[13].wallPanels.push(new wordWall(1800,880, 'STATION',5));
+level[13].wallPanels.push(new wordWall(1800,890, 'B-7',5));
+level[13].wallPanels.push(new ForeGround(1850,800, wallFeatures[3]));
+level[13].lamps.push(new BigLamp(1660,800));
+level[13].lamps.push(new BigLamp(960,800));
+level[13].lamps.push(new deadLamp(1270,830));
+level[13].lamps.push(new deadLamp(1420,830));
+level[13].lamps.push(new pulseLight(1350,200));
+level[13].lamps[7].addPLight(1350, 300);
+level[13].lamps[7].addPLight(1350, 400);
+level[13].lamps[7].addPLight(1350, 500);
+level[13].lamps[7].addPLight(1350, 600);
+level[13].lamps[7].addPLight(1350, 700);
+level[13].lamps[7].addPLight(1350, 800);
+level[13].lamps[7].addPLight(1350, 900);
+level[13].lamps[7].addPLight(1350, 1000);
+level[13].wallPanels.push(new Monitor(1460,830, 'ALERT safezone 15 to 29 unsafe proceed to safezone 1 to 13 ALERT',0));level[13].wallPanels.push(new Server(1780,900, '1',0));level[13].wallPanels.push(new Server(1820,900, '1',0));
+level[13].elevators.push(new elevator(1300,1000, 0,600));level[13].wall.push(createWall(1300,1000, 100,30,ceiling[0]));level[13].wallPanels.push(new Monitor(820,830, 'making your workers more skilled than ever',0));
+level[13].wallPanels.push(new ForeGround(820,850, bioPic[4]));
+level[13].wallPanels.push(new ForeGround(1090,850, bioPic[2]));
+level[13].lamps.push(new Lamp(1820,270));
+level[13].wallPanels.push(new ForeGround(1760,340, bioPic[7]));level[13].foreGround.push(new ForeGround(820,300, bioPic[8]));
+level[13].wallPanels.push(new ForeGround(1100,240, bioPic[10]));
+level[13].wallPanels.push(new ForeGround(1190,860, wallFeatures[13]));
+level[13].wallPanels.push(new ForeGround(1520,320, wallFeatures[28]));
+level[13].wallPanels.push(new ForeGround(1480,930, wallFeatures[28]));
+level[13].wallPanels.push(new fan(840,930, 0.2,0,1));
+level[13].items.push(spawnTrap(1350,600, recorder, '0', '4','1550,300'));
+level[13].items.push(spawnTrap(1350,680, recorder, '0', '3','1550,300'));
+level[13].items.push(spawnTrap(1080,910, recorder, '0', '5','1440,800'));
+level[13].items.push(spawnTrap(1080,910, recorder, '0', '5','1440,800'));
+level[13].wallPanels.push(new ForeGround(800,700, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(800,600, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(800,500, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(800,400, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1820,400, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1820,500, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1770,400, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1770,500, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1820,600, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1820,700, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1770,600, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1770,700, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1000,700, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1100,400, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1000,600, wallFeatures[12]));
+level[13].wallPanels.push(new ForeGround(1100,500, pipes[2]));
+level[13].wallPanels.push(new ForeGround(1000,500, pipes[0]));
+level[13].exits.push(new Exit(1700,900, 14, true, 600, 400));
+level[13].exits.push(new Exit(1700,300, 12, true, 200, 800));
+level[13].exits.push(new Exit(1000,900, 4, false, 400, 200));
+
+
+level[14] = new Level('AID Station B-7')
+level[14].exits.push(new Exit(700,500, 13, true, 1600, 800));
+level[14].wall.push(createWall(600,600, 100,30,floor[5]));
+level[14].wall.push(createWall(570,200, 30,100,sideWall[9]));
+level[14].wall.push(createWall(1100,200, 30,100,sideWall[9]));
+level[14].wall.push(createWall(570,600, 30,100,sideWall[5]));
+level[14].wall.push(createWall(1100,600, 30,100,sideWall[5]));
+level[14].wall.push(createWall(600,190, 100,30,floor[6]));
+level[14].wall.push(createWall(570,190, 30,100,sideWall[5]));
+level[14].wall.push(createWall(1100,190, 30,100,sideWall[5]));
+level[14].wall.push(createWall(1000,390, 100,30,floor[4]));
+level[14].wall.push(createWall(900,390, 100,30,floor[4]));
+level[14].elevators.push(new elevator(800,600, 100,200));level[14].wall.push(createWall(800,600, 100,30,ceiling[0]));
+level[14].wallPanels.push(new Panel(600,500, panelHall[3], 2,1));
+level[14].wallPanels.push(new Panel(700,500, panelHall[3], 2,1));
+level[14].wallPanels.push(new Panel(800,500, panelHall[3], 2,1));
+level[14].wallPanels.push(new Panel(600,200, panelHall[3], 1,1));
+level[14].wallPanels.push(new Panel(700,200, panelHall[3], 1,1));
+level[14].wallPanels.push(new Panel(800,200, panelHall[3], 1,1));
+level[14].wallPanels.push(new Panel(600,300, panelHall[3], 0,1));
+level[14].wallPanels.push(new Panel(700,300, panelHall[3], 0,1));
+level[14].wallPanels.push(new Panel(800,300, panelHall[3], 0,1));
+level[14].wallPanels.push(new Panel(800,400, panelHall[3], 0,1));
+level[14].wallPanels.push(new Panel(700,400, panelHall[3], 0,1));
+level[14].wallPanels.push(new Panel(600,400, panelHall[3], 0,1));level[14].wallPanels.push(new Panel(900,200, panelHall[0], 1,1));
+level[14].wallPanels.push(new Panel(1000,200, panelHall[0], 1,1));
+level[14].wallPanels.push(new Panel(900,300, panelHall[0], 0,1));
+level[14].wallPanels.push(new Panel(1000,300, panelHall[0], 0,1));
+level[14].wallPanels.push(new Panel(900,400, panelHall[0], 0,1));
+level[14].wallPanels.push(new Panel(1000,400, panelHall[0], 0,1));level[14].wallPanels.push(new Panel(1000,500, panelHall[0], 0,1));
+level[14].wallPanels.push(new Panel(900,500, panelHall[0], 0,1));
+level[14].wallPanels.push(new AniDoor(600,400, 0,1));
+level[14].lamps.push(new BigLamp(960,410));
+level[14].lamps.push(new BigLampFlicker(960,200));
+level[14].lamps.push(new Lamp(620,450));
+level[14].lamps.push(new Lamp(770,450));
+level[14].wallPanels.push(new ForeGround(900,400, wallFeatures[3]));
+level[14].wallPanels.push(new ForeGround(900,200, wallFeatures[3]));
+level[14].foreGround.push(new ForeGround(810,500, wallFeatures[2]));
+level[14].foreGround.push(new ForeGround(810,400, wallFeatures[2]));
+level[14].foreGround.push(new ForeGround(810,300, wallFeatures[2]));
+level[14].foreGround.push(new ForeGround(810,200, wallFeatures[2]));
+level[14].foreGround.push(new ForeGround(900,200, wallFeatures[0]));
+level[14].foreGround.push(new ForeGround(1000,200, wallFeatures[0]));
+level[14].foreGround.push(new ForeGround(900,300, wallFeatures[0]));
+level[14].foreGround.push(new ForeGround(1000,300, wallFeatures[0]));
+level[14].foreGround.push(new ForeGround(1000,400, wallFeatures[0]));level[14].foreGround.push(new ForeGround(900,400, wallFeatures[0]));
+level[14].foreGround.push(new ForeGround(900,500, wallFeatures[0]));
+level[14].foreGround.push(new ForeGround(1000,500, wallFeatures[0]));
+level[14].foreGround.push(new ForeGround(600,200, wallFeatures[0]));
+level[14].foreGround.push(new ForeGround(700,200, wallFeatures[0]));
+level[14].foreGround.push(new ForeGround(700,300, wallFeatures[0]));
+level[14].foreGround.push(new ForeGround(600,300, wallFeatures[0]));
+level[14].wall.push(createWall(700,390, 100,30,floor[4]));
+level[14].wall.push(createWall(600,390, 100,30,floor[4]));
+level[14].lamps.push(new BigLampDead(660,200));
+level[14].foreGround.push(new ForeGround(790,200, wallFeatures[1]));
+level[14].foreGround.push(new ForeGround(790,300, wallFeatures[1]));
+level[14].wallPanels.push(new ForeGround(1000,500, foreGPic[0]));
+level[14].wallPanels.push(new ForeGround(1000,290, foreGPic[0]));
+level[14].wallPanels.push(new ForeGround(1060,270, foreGPic[5]));
+level[14].wallPanels.push(new ForeGround(1060,480, foreGPic[5]));
+level[14].items.push(medItem(980,500));
+level[14].items.push(medItem(980,290));
+level[14].wall.push(createWall(600,290, 100,30,floor[1]));
+level[14].wall.push(createWall(710,360, 100,30,floor[2]));
+level[14].wall.push(createWall(700,330, 100,30,floor[2]));
+level[14].wall.push(createWall(630,260, 100,30,floor[2]));
+level[14].items.push(pistolItem(670,300));
+level[14].items.push(messageTrap(960,460, recorder, 'Medical Note', 'Begin Log ~~Prototypes have shown increased capacity for physical labour under what would normally be considered  harsh conditions.  ~~The reptilian genome has shown excellent resistance to chemical toxicity. ~~End log'));
+level[14].items.push(messageTrap(960,260, recorder, 'Medical Note', 'Begin Log ~~The latest batch of test prototypes have scored exceptionally high in the latest series of labour tests. ~~The subjects apear to have a high apptitude for machinery and teamwork despite moderate physical injuries sustained on the job. ~~On the other hand social interaction with others outside their own genome including their minders has continued to decline as productivity increases.  ~~It is only a matter of time before we strike the right balance. ~~End log'));
+
+
+level[15] = new Level('Training')
+level[15].wallPanels.push(new Panel(400,200, panelHall[3], 1,0.8));
+level[15].wallPanels.push(new Panel(500,200, panelHall[3], 1,0.8));
+level[15].wallPanels.push(new Panel(600,200, panelHall[3], 1,0.8));
+level[15].wallPanels.push(new Panel(700,200, panelHall[3], 1,0.8));
+level[15].wallPanels.push(new Panel(800,200, panelHall[3], 1,0.8));
+level[15].wallPanels.push(new Panel(900,200, panelHall[3], 1,0.8));
+level[15].wallPanels.push(new Panel(400,300, panelHall[3], 2,0.8));
+level[15].wallPanels.push(new Panel(500,300, panelHall[3], 2,0.8));
+level[15].wallPanels.push(new Panel(600,300, panelHall[3], 2,0.8));
+level[15].wallPanels.push(new Panel(700,300, panelHall[3], 2,0.8));
+level[15].wallPanels.push(new Panel(800,300, panelHall[3], 2,0.8));
+level[15].wallPanels.push(new Panel(900,300, panelHall[3], 2,0.8));
+level[15].wallPanels.push(new AniDoor(400,200, NaN,1));
+level[15].wall.push(createWall(400,400, 100,30,floor[5]));
+level[15].wall.push(createWall(900,400, 100,30,floor[0]));
+level[15].wallPanels.push(new wordWall(580,260, 'Training 6-C',5));
+level[15].wallPanels.push(new ForeGround(570,210, wallFeatures[3]));
+level[15].wall.push(createWall(400,190, 100,30,floor[6]));
+level[15].wallPanels.push(new ForeGround(620,320, wallFeatures[28]));
+level[15].wallPanels.push(new ForeGround(700,300, wallFeatures[26]));
+level[15].foreGround.push(new ForeGround(760,300, foreGPic[0]));
+level[15].foreGround.push(new ForeGround(860,300, foreGPic[1]));
+level[15].wallPanels.push(new Monitor(700,200, 'No weapons beyond this point .',0));
+level[15].foreGround.push(new ForeGround(900,300, wallFeatures[0]));level[15].foreGround.push(new ForeGround(800,300, wallFeatures[0]));
+level[15].foreGround.push(new ForeGround(800,200, wallFeatures[0]));
+level[15].foreGround.push(new ForeGround(900,200, wallFeatures[0]));
+level[15].foreGround.push(new ForeGround(700,300, wallFeatures[2]));
+level[15].foreGround.push(new ForeGround(700,200, wallFeatures[2]));level[15].wallPanels.push(new ForeGround(810,240, wallFeatures[39]));
+level[15].wallPanels.push(new ForeGround(880,240, wallFeatures[39]));
+level[15].foreGround.push(new ForeGround(820,280, foreGPic[2]));
+level[15].foreGround.push(new ForeGround(880,280, foreGPic[9]));
+level[15].wall.push(createWall(970,400, 30,100,sideWall[9]));level[15].wall.push(createWall(1200,200, 30,100,sideWall[9]));
+level[15].wall.push(createWall(700,190, 100,30,floor[6]));
+level[15].wall.push(createWall(1200,590, 100,30,floor[6]));
+level[15].wall.push(createWall(1200,800, 100,30,floor[7]));
+level[15].wall.push(createWall(1200,1100, 100,30,floor[5]));
+level[15].wall.push(createWall(700,1100, 100,30,floor[5]));
+level[15].wall.push(createWall(1400,1100, 100,30,floor[5]));
+level[15].wall.push(createWall(1400,800, 100,30,floor[7]));level[15].wall.push(createWall(1900,700, 30,100,sideWall[8]));
+level[15].wall.push(createWall(1900,600, 30,100,sideWall[1]));
+level[15].wall.push(createWall(1400,590, 100,30,floor[6]));
+level[15].wall.push(createWall(1890,800, 30,100,sideWall[6]));
+level[15].wall.push(createWall(1900,590, 30,100,sideWall[5]));
+level[15].elevators.push(new CargoElevator(1000,1100, 500,700));
+level[15].foreGround.push(new ForeGround(1200,700, wallFeatures[33]));
+level[15].foreGround.push(new ForeGround(1300,700, wallFeatures[33]));
+level[15].foreGround.push(new ForeGround(1400,700, wallFeatures[33]));
+level[15].foreGround.push(new ForeGround(1500,700, wallFeatures[33]));
+level[15].foreGround.push(new ForeGround(1600,700, wallFeatures[33]));
+level[15].foreGround.push(new ForeGround(1700,700, wallFeatures[33]));
+level[15].foreGround.push(new ForeGround(1800,700, wallFeatures[33]));level[15].foreGround.push(new ForeGround(910,300, wallFeatures[2]));
+level[15].foreGround.push(new ForeGround(910,200, wallFeatures[2]));
+level[15].foreGround.push(new ForeGround(1110,700, wallFeatures[2]));
+level[15].foreGround.push(new ForeGround(1110,600, wallFeatures[2]));
+level[15].foreGround.push(new ForeGround(1410,700, wallFeatures[2]));
+level[15].foreGround.push(new ForeGround(1410,600, wallFeatures[2]));
+level[15].foreGround.push(new ForeGround(1710,600, wallFeatures[2]));
+level[15].foreGround.push(new ForeGround(1710,700, wallFeatures[2]));
+
+level[15].wallPanels.push(new Panel(1000,200, panelHall[3], 1,0.8));
+level[15].wallPanels.push(new Panel(1100,200, panelHall[3], 1,0.8));
+level[15].wallPanels.push(new Panel(1000,300, panelHall[3], 0,0.8));
+level[15].wallPanels.push(new Panel(1100,300, panelHall[3], 0,0.8));
+level[15].wallPanels.push(new Panel(1000,400, panelHall[2], 0,0.8));
+level[15].wallPanels.push(new Panel(1100,400, panelHall[2], 0,0.8));
+level[15].wallPanels.push(new Panel(1000,500, panelHall[2], 0,0.7));
+level[15].wallPanels.push(new Panel(1100,500, panelHall[2], 0,0.7));
+level[15].wallPanels.push(new Panel(1100,600, panelHall[2], 0,0.7));
+level[15].wallPanels.push(new Panel(1000,600, panelHall[2], 0,0.7));
+level[15].wallPanels.push(new Panel(1000,700, panelHall[2], 0,0.6));
+level[15].wallPanels.push(new Panel(1100,700, panelHall[2], 0,0.6));
+level[15].wallPanels.push(new Panel(1000,800, panelHall[2], 0,0.5));
+level[15].wallPanels.push(new Panel(1100,800, panelHall[2], 0,0.5));
+level[15].wallPanels.push(new Panel(1000,900, panelHall[2], 0,0.4));
+level[15].wallPanels.push(new Panel(1100,900, panelHall[2], 0,0.4));
+level[15].wallPanels.push(new Panel(1000,1000, panelHall[2], 2,0.3));
+level[15].wallPanels.push(new Panel(1100,1000, panelHall[2], 2,0.3));
+level[15].wallPanels.push(new Panel(1200,1000, panelHall[0], 2,0.3));
+level[15].wallPanels.push(new Panel(1200,1000, panelHall[0], 2,0.3));
+level[15].wallPanels.push(new Panel(1400,1000, panelHall[0], 2,0.3));
+level[15].wallPanels.push(new Panel(1600,1000, panelHall[0], 2,0.3));
+level[15].wallPanels.push(new Panel(1800,1000, panelHall[0], 2,0.3));
+level[15].wallPanels.push(new Panel(1300,1000, panelHall[1], 2,0.3));
+level[15].wallPanels.push(new Panel(1500,1000, panelHall[1], 2,0.3));
+level[15].wallPanels.push(new Panel(1700,1000, panelHall[1], 2,0.3));
+level[15].wallPanels.push(new Panel(1300,900, panelHall[1], 0,0.4));
+level[15].wallPanels.push(new Panel(1500,900, panelHall[1], 0,0.4));
+level[15].wallPanels.push(new Panel(1700,900, panelHall[1], 0,0.4));
+level[15].wallPanels.push(new Panel(1800,900, panelHall[1], 0,0.4));
+level[15].wallPanels.push(new Panel(1600,900, panelHall[1], 0,0.4));
+level[15].wallPanels.push(new Panel(1400,900, panelHall[1], 0,0.4));
+level[15].wallPanels.push(new Panel(1200,900, panelHall[1], 0,0.4));
+level[15].wallPanels.push(new Panel(1200,600, panelHall[1], 1,0.7));
+level[15].wallPanels.push(new Panel(1400,600, panelHall[1], 1,0.7));
+level[15].wallPanels.push(new Panel(1500,600, panelHall[1], 1,0.7));
+level[15].wallPanels.push(new Panel(1700,600, panelHall[1], 1,0.7));
+level[15].wallPanels.push(new Panel(1800,600, panelHall[1], 1,0.7));
+level[15].wallPanels.push(new Panel(1300,600, panelHall[0], 1,0.7));
+level[15].wallPanels.push(new Panel(1600,600, panelHall[0], 1,0.7));
+level[15].wallPanels.push(new Panel(1300,700, panelHall[0], 0,0.6));
+level[15].wallPanels.push(new Panel(1600,700, panelHall[0], 0,0.6));
+level[15].wallPanels.push(new Panel(1300,800, panelHall[0], 1,0.5));
+level[15].wallPanels.push(new Panel(1600,800, panelHall[0], 1,0.5));
+level[15].wallPanels.push(new Panel(1200,800, panelHall[1], 1,0.5));
+level[15].wallPanels.push(new Panel(1400,800, panelHall[1], 1,0.5));
+level[15].wallPanels.push(new Panel(1500,800, panelHall[1], 1,0.5));
+level[15].wallPanels.push(new Panel(1700,800, panelHall[1], 1,0.5));
+level[15].wallPanels.push(new Panel(1800,800, panelHall[1], 1,0.5));
+level[15].wallPanels.push(new Panel(1200,700, panelHall[1], 0,0.6));
+level[15].wallPanels.push(new Panel(1400,700, panelHall[1], 0,0.6));
+level[15].wallPanels.push(new Panel(1500,700, panelHall[1], 0,0.6));
+level[15].wallPanels.push(new Panel(1700,700, panelHall[1], 0,0.6));
+level[15].wallPanels.push(new Panel(1800,700, panelHall[1], 0,0.6));level[15].wallPanels.push(new wordWall(1220,660, 'Tools',5));
+level[15].wallPanels.push(new wordWall(1220,960, 'machine',5));
+level[15].wallPanels.push(new wordWall(1220,970, 'training',5));
+level[15].wallPanels.push(new ForeGround(1210,600, wallFeatures[3]));/*
+level[15].wallPanels.push(new ForeGround(1400,800, wallFeatures[9]));
+level[15].wallPanels.push(new ForeGround(1700,1000, wallFeatures[9]));
+level[15].wallPanels.push(new ForeGround(1850,950, wallFeatures[36]));
+level[15].wallPanels.push(new ForeGround(1800,950, wallFeatures[36]));
+level[15].wallPanels.push(new ForeGround(1750,950, wallFeatures[36]));
+level[15].wallPanels.push(new ForeGround(1700,950, wallFeatures[36]));
+level[15].wallPanels.push(new ForeGround(1650,950, wallFeatures[36]));
+level[15].wallPanels.push(new ForeGround(1600,950, wallFeatures[36]));
+level[15].wallPanels.push(new ForeGround(1550,950, wallFeatures[36]));
+level[15].wallPanels.push(new ForeGround(1500,950, wallFeatures[36]));
+level[15].wallPanels.push(new ForeGround(1450,950, wallFeatures[36]));
+level[15].wallPanels.push(new ForeGround(1400,950, wallFeatures[36]));
+/*level[15].wallPanels.push(new ForeGround(1350,950, wallFeatures[36]));
+level[15].wallPanels.push(new ForeGround(1250,990, wallFeatures[34]));
+level[15].wallPanels.push(new ForeGround(1350,1000, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1350,1050, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1550,1000, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1550,1050, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1750,1000, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1750,1050, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1450,1000, wallFeatures[34]));
+level[15].wallPanels.push(new ForeGround(1650,1000, wallFeatures[34]));
+level[15].wallPanels.push(new ForeGround(1800,1000, wallFeatures[35]));
+level[15].wallPanels.push(new ForeGround(1600,1000, wallFeatures[35]));
+level[15].wallPanels.push(new ForeGround(1400,1000, wallFeatures[35]));
+level[15].wallPanels.push(new ForeGround(1420,940, wallFeatures[37]));
+level[15].wallPanels.push(new ForeGround(1530,940, wallFeatures[37]));
+level[15].wallPanels.push(new ForeGround(1830,940, wallFeatures[37]));
+level[15].wallPanels.push(new ForeGround(1420,620, wallFeatures[39]));
+level[15].wallPanels.push(new ForeGround(1420,720, wallFeatures[39]));
+level[15].wallPanels.push(new ForeGround(1520,620, wallFeatures[39]));
+level[15].wallPanels.push(new ForeGround(1520,720, wallFeatures[39]));
+level[15].wallPanels.push(new ForeGround(1220,720, wallFeatures[28]));
+level[15].wallPanels.push(new ForeGround(1420,730, wallFeatures[40]));
+level[15].wallPanels.push(new ForeGround(1520,730, wallFeatures[41]));
+level[15].wallPanels.push(new ForeGround(1420,630, wallFeatures[41]));
+level[15].wallPanels.push(new ForeGround(1570,960, floor[2]));
+level[15].wallPanels.push(new ForeGround(1760,960, floor[2]));
+level[15].wallPanels.push(new ForeGround(1690,960, floor[2]));
+level[15].wallPanels.push(new ForeGround(1360,960, floor[2]));*/
+level[15].wallPanels.push(new fan(1720,620, 0.2,0,1));
+level[15].wallPanels.push(new fan(1820,620, 0.2,0,1));
+level[15].wallPanels.push(new fan(1720,820, 0.1,1,1));
+level[15].wallPanels.push(new fan(1830,820, 0.1,1,1));
+level[15].wallPanels.push(new fan(1520,820, 0.1,1,1));
+level[15].wallPanels.push(new fan(1220,820, 0.1,1,1));
+level[15].wallPanels.push(new ForeGround(1720,720, wallFeatures[29]));
+level[15].wallPanels.push(new ForeGround(1820,720, wallFeatures[29]));
+level[15].wallPanels.push(new ForeGround(1480,1050, wallFeatures[40]));
+level[15].wallPanels.push(new ForeGround(1270,1000, wallFeatures[22]));
+level[15].wallPanels.push(new ForeGround(1270,920, wallFeatures[16]));
+level[15].wallPanels.push(new ForeGround(1270,900, wallFeatures[8]));
+level[15].wallPanels.push(new ForeGround(1300,650, wallFeatures[13]));
+level[15].lamps.push(new FlickerLamp(1320,670));
+level[15].rLights.push(new staticLight(1200,800, 20));
+level[15].rLights.push(new staticLight(1200,700, 20));
+level[15].rLights.push(new staticLight(1200,600, 20));
+level[15].rLights.push(new staticLight(1000,1100, 20));
+level[15].rLights.push(new staticLight(1200,1100, 20));
+
+level[15].lamps.push(new BigLamp(460,200));level[15].dLights.push(new spinLight(1480,940,50,0));level[15].dLights.push(new spinLight(1810,940,50,0));
+level[15].lamps.push(new deadLamp(1510,940));level[15].items.push(medItem(1580,770));level[15].items.push(medItem(1630,770));
+level[15].items.push(medItem(1590,740));
+level[15].wall.push(createWall(500,800, 100,30,floor[6]));
+level[15].wall.push(createWall(500,1100, 100,30,floor[5]));
+level[15].wall.push(createWall(470,1000, 30,100,sideWall[1]));
+level[15].wall.push(createWall(470,900, 30,100,sideWall[1]));
+level[15].wall.push(createWall(470,800, 30,100,sideWall[1]));
+level[15].wall.push(createWall(470,1100, 30,100,sideWall[5]));
+level[15].wall.push(createWall(1900,1100, 30,100,sideWall[5]));
+//level[15].wallPanels.push(new ForeGround(1630,930, wallFeatures[6]));
+level[15].lamps.push(new deadLamp(1620,670));
+level[15].lamps.push(new deadLamp(1670,670));
+level[15].foreGround.push(new ForeGround(800,1000, wallFeatures[1]));
+level[15].foreGround.push(new ForeGround(800,900, wallFeatures[1]));
+level[15].foreGround.push(new ForeGround(700,1000, wallFeatures[0]));
+level[15].foreGround.push(new ForeGround(700,900, wallFeatures[0]));
+level[15].foreGround.push(new ForeGround(600,900, wallFeatures[0]));
+level[15].foreGround.push(new ForeGround(600,1000, wallFeatures[0]));
+level[15].foreGround.push(new ForeGround(500,1000, wallFeatures[0]));
+level[15].foreGround.push(new ForeGround(500,900, wallFeatures[0]));
+level[15].wallPanels.push(new Panel(900,1000, panelHall[2], 2,0.3));
+level[15].wallPanels.push(new Panel(900,900, panelHall[2], 0,0.4));
+level[15].wallPanels.push(new Panel(900,800, panelHall[2], 1,0.5));
+level[15].wallPanels.push(new Panel(500,1000, panelHall[1], 2,0.3));
+level[15].wallPanels.push(new Panel(600,1000, panelHall[1], 2,0.3));
+level[15].wallPanels.push(new Panel(700,1000, panelHall[1], 2,0.3));
+level[15].wallPanels.push(new Panel(800,1000, panelHall[1], 2,0.3));
+level[15].wallPanels.push(new Panel(500,900, panelHall[1], 0,0.4));
+level[15].wallPanels.push(new Panel(600,900, panelHall[1], 0,0.4));level[15].wallPanels.push(new Panel(700,900, panelHall[1], 0,0.4));
+level[15].wallPanels.push(new Panel(800,900, panelHall[1], 0,0.4));
+level[15].wallPanels.push(new Panel(500,800, panelHall[1], 1,0.5));
+level[15].wallPanels.push(new Panel(600,800, panelHall[1], 1,0.5));
+level[15].wallPanels.push(new Panel(700,800, panelHall[1], 1,0.5));
+level[15].wallPanels.push(new Panel(800,800, panelHall[1], 1,0.5));
+level[15].wallPanels.push(new AniDoor(700,900, 1,0));
+level[15].wallPanels.push(new AniDoor(500,900, 0,1));level[15].wallPanels.push(new wordWall(660,960, 'obervation',4));
+level[15].wallPanels.push(new wordWall(670,970, 'station 6',4));
+level[15].wallPanels.push(new wordWall(870,960, 'holding',4));
+level[15].wallPanels.push(new wordWall(870,970, 'cells',4));
+level[15].lamps.push(new BigLamp(560,900));
+level[15].rLights.push(new staticLight(810,1100, 20));
+level[15].rLights.push(new staticLight(810,1000, 20));
+level[15].rLights.push(new staticLight(810,900, 20));
+level[15].wallPanels.push(new ForeGround(900,1000, wallFeatures[12]));
+level[15].wallPanels.push(new ForeGround(900,900, wallFeatures[12]));
+level[15].wallPanels.push(new ForeGround(900,800, wallFeatures[12]));
+//level[15].wallPanels.push(new ForeGround(1630,940, wallFeatures[41]));
+level[15].wallPanels.push(new talker(680,930,'no prototypes beyond this point','test'));
+level[15].wallPanels.push(new cBelt(1350,1000,'11','10'));
+level[15].wallPanels.push(new ForeGround(1350,1000, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1350,1050, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1850,1000, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1850,1050, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1500,1000, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1500,1050, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1700,1000, wallFeatures[38]));
+level[15].wallPanels.push(new ForeGround(1700,1050, wallFeatures[38]));
+
+level[15].wall.push(createWall(370,300, 30,100,sideWall[2]));
+level[15].wall.push(createWall(370,200, 30,100,sideWall[2]));
+level[15].wall.push(createWall(370,400, 30,100,sideWall[5]));level[15].wall.push(createWall(370,190, 30,100,sideWall[5]));
+level[15].wall.push(createWall(1200,190, 30,100,sideWall[5]));
+level[15].wallPanels.push(new ForeGround(1080,280, wallFeatures[4]));
+level[15].creature.push(BugSmall(1010,400,0));
+level[15].creature.push(BugSmall(950,400,0));
+level[15].exits.push(new Exit(600,1000, 16, true, 1600, 400));
+level[15].start = {x:400, y:200}
+level[15].rLights.push(new staticLight(1400,970, 20));
+level[15].rLights.push(new staticLight(1350,970, 20));
+level[15].rLights.push(new staticLight(1500,970, 20));
+level[15].rLights.push(new staticLight(1600,970, 20));
+level[15].rLights.push(new staticLight(1750,970, 20));
+level[15].rLights.push(new staticLight(1800,970, 20));
+level[15].rLights.push(new staticLight(1900,970, 20));
+
+
+cutscene.push(new Cutscene('Job Training'))
+//cutscene[4].lev = level[15]
+//cutscene[4].lev.creature = []
+
+cutscene[4].lev.wallPanels.push(new Panel(400,200, panelHall[3], 1,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(500,200, panelHall[3], 1,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(600,200, panelHall[3], 1,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(700,200, panelHall[3], 1,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(800,200, panelHall[3], 1,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(900,200, panelHall[3], 1,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(1000,200, panelHall[3], 1,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(1100,200, panelHall[3], 1,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(400,300, panelHall[3], 2,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(500,300, panelHall[3], 2,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(600,300, panelHall[3], 2,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(700,300, panelHall[3], 2,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(800,300, panelHall[3], 2,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(900,300, panelHall[3], 2,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(1000,300, panelHall[3], 0,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(1100,300, panelHall[3], 0,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(1000,400, panelHall[2], 0,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(1100,400, panelHall[2], 0,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(1100,500, panelHall[2], 0,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(1000,500, panelHall[2], 0,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(1000,600, panelHall[2], 0,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(1100,600, panelHall[2], 0,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(1100,700, panelHall[2], 0,0.9));
+cutscene[4].lev.wallPanels.push(new Panel(1000,700, panelHall[2], 0,0.9));
+cutscene[4].lev.elevators.push(new CargoElevator(1000,800, 400,400));
+cutscene[4].lev.wall.push(createWall(400,400, 100,30,floor[5]));
+cutscene[4].lev.wall.push(createWall(900,400, 100,30,floor[0]));
+cutscene[4].lev.wall.push(createWall(400,190, 100,30,floor[6]));
+cutscene[4].lev.wall.push(createWall(700,190, 100,30,floor[6]));
+cutscene[4].lev.wall.push(createWall(370,300, 30,100,sideWall[2]));
+cutscene[4].lev.wall.push(createWall(370,200, 30,100,sideWall[2]));
+cutscene[4].lev.wall.push(createWall(370,400, 30,100,sideWall[5]));
+cutscene[4].lev.wall.push(createWall(370,190, 30,100,sideWall[5]));
+cutscene[4].lev.wall.push(createWall(1200,200, 30,100,sideWall[9]));
+cutscene[4].lev.wall.push(createWall(970,400, 30,100,sideWall[9]));
+cutscene[4].lev.wall.push(createWall(1200,600, 30,100,sideWall[2]));
+cutscene[4].lev.wall.push(createWall(1200,700, 30,100,sideWall[2]));
+cutscene[4].lev.wall.push(createWall(1200,190, 30,100,sideWall[5]));
+cutscene[4].lev.wallPanels.push(new ForeGround(810,240, wallFeatures[39]));
+cutscene[4].lev.wallPanels.push(new ForeGround(880,240, wallFeatures[39]));
+cutscene[4].lev.foreGround.push(new ForeGround(900,300, wallFeatures[0]));
+cutscene[4].lev.foreGround.push(new ForeGround(800,300, wallFeatures[0]));
+cutscene[4].lev.foreGround.push(new ForeGround(800,200, wallFeatures[0]));
+cutscene[4].lev.foreGround.push(new ForeGround(900,200, wallFeatures[0]));
+cutscene[4].lev.foreGround.push(new ForeGround(700,300, wallFeatures[2]));
+cutscene[4].lev.foreGround.push(new ForeGround(700,200, wallFeatures[2]));
+cutscene[4].lev.wallPanels.push(new ForeGround(400,200, door[0], '', 0.5));
+cutscene[4].lev.wallPanels.push(new wordWall(580,260, 'Training 6 - c',5));
+cutscene[4].lev.wallPanels.push(new ForeGround(570,210, wallFeatures[3]));
+cutscene[4].lev.wallPanels.push(new ForeGround(620,320, wallFeatures[28]));
+cutscene[4].lev.wallPanels.push(new ForeGround(700,300, wallFeatures[26]));cutscene[4].lev.wallPanels.push(new Monitor(700,200, 'no weapons beyond this point',0));
+cutscene[4].lev.wallPanels.push(new ForeGround(760,300, foreGPic[0]));
+cutscene[4].lev.wallPanels.push(new ForeGround(860,300, foreGPic[1]));
+cutscene[4].lev.wallPanels.push(new ForeGround(810,280, foreGPic[2]));
+cutscene[4].lev.wallPanels.push(new ForeGround(890,280, foreGPic[9]));
+
+
+cutscene[4].lev.items.push(pistolItem(790,240));
+cutscene[4].lev.items.push(pistolItem(790,260));
+cutscene[4].lev.creature.push(Marine(710,200,3));
+cutscene[4].lev.creature.push(Scientist(370,210,3));
+cutscene[4].lev.creature.push(Scientist(320,210,3));
+
+cutscene[4].endFrame = 570;
+cutscene[4].darkForeground = false;
+cutscene[4].shaded = false;
+cutscene[4].nextLevel = 15
+cutscene[4].draw = function(){
+	ctxOx = -150
+	ctxOy = 100
+	//2- marine
+	//3- scientist 1
+	//4- scientist 2
+	
+	if(this.frame == 0){
+		creature[1].sx = 5
+		creature[1].state = 2
+		creature[2].sx = 5
+		creature[2].state = 2
+		
+		//creature[0].state = 5//??
+		creature[0].taimer = {x:0, y:500}
+		creature[0].aimer = {x:0, y:200}
+		creature[1].taimer = {x:800, y:200}
+		creature[1].aimer = {x:800, y:200}
+		creature[2].taimer = {x:800, y:200}
+		creature[2].aimer = {x:800, y:200}
+	}else if(this.frame == 10){
+		creature[0].speak("Morning sir.");
+	}else if(this.frame == 40){
+		creature[1].speak("Morning for some of us.");
+		creature[1].sx = 0
+		creature[1].state = 0
+		creature[2].sx = 0
+		creature[2].state = 0
+	}else if(this.frame == 90){
+		creature[2].speak("God I hate the hours in this hole."); 
+		creature[1].taimer = {x:-800, y:200}
+		creature[1].aimer = {x:-800, y:200}
+	}else if(this.frame == 160){
+		creature[1].speak("How's our little workers today?");
+		creature[1].taimer = {x:800, y:200}
+		creature[1].aimer = {x:800, y:200}
+	}else if(this.frame == 220){
+		creature[0].speak("They're starting to get the hang of the drills.");
+	}else if(this.frame == 310){
+		creature[2].speak("Any other incidents?");
+	}else if(this.frame == 360){
+		creature[0].speak("...");
+	}else if(this.frame == 380){
+		creature[1].speak("Cpl Valens?");
+	}else if(this.frame == 450){
+		creature[0].speak("The supervisor lost a finger sir.");
+	}else if(this.frame == 490){
+		creature[0].speak("Our 'worker' seemed");
+	}else if(this.frame == 520){
+		creature[0].speak("to enjoy the experience.");
+	}
+}
+
+level[16] = new Level('Watching')
+level[16].wallPanels.push(new Panel(1300,300, panelHall[3], 1,0.5));
+level[16].wallPanels.push(new Panel(1200,300, panelHall[3], 1,0.2));
+level[16].wallPanels.push(new Panel(1400,300, panelHall[3], 1,0.2));
+
+level[16].wall.push(createWall(1400,600, 100,30,floor[5]));
+level[16].wall.push(createWall(1370,600, 30,100,sideWall[5]));
+level[16].wall.push(createWall(1340,620, 30,100,sideWall[5]));
+level[16].wall.push(createWall(1310,640, 30,100,sideWall[5]));
+level[16].wall.push(createWall(1280,660, 30,100,sideWall[5]));
+level[16].wall.push(createWall(780,680, 100,30,floor[5]));
+level[16].wall.push(createWall(280,680, 100,30,floor[5]));
+level[16].wallPanels.push(new Panel(1800,500, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(1700,500, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(1600,500, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(1500,500, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(1400,500, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(1300,600, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(1200,600, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(1100,600, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(1000,600, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(900,600, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(800,600, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(700,600, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(600,600, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(500,600, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(400,600, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(300,600, panelHall[3], 2,0.9));
+level[16].wallPanels.push(new Panel(300,500, panelHall[3], 0,0.9));
+level[16].wallPanels.push(new Panel(400,500, panelHall[3], 0,0.9));
+level[16].wallPanels.push(new Panel(500,500, panelHall[3], 0,0.9));
+level[16].wallPanels.push(new Panel(600,500, panelHall[3], 0,0.9));level[16].wallPanels.push(new Panel(700,500, panelHall[3], 0,0.9));
+level[16].wallPanels.push(new Panel(800,500, panelHall[3], 0,0.9));
+level[16].wallPanels.push(new Panel(900,500, panelHall[3], 0,0.9));
+level[16].wallPanels.push(new Panel(1000,500, panelHall[3], 0,0.9));level[16].wallPanels.push(new Panel(1100,500, panelHall[3], 0,0.9));
+level[16].wallPanels.push(new Panel(1200,500, panelHall[3], 0,0.9));
+level[16].wallPanels.push(new Panel(1300,500, panelHall[3], 0,0.9));
+level[16].wallPanels.push(new Panel(1800,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(1700,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(1600,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(1500,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(1400,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(1300,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(1200,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(1100,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(1000,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(900,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(800,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(700,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(600,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(500,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(400,400, panelHall[3], 1,0.9));
+level[16].wallPanels.push(new Panel(300,400, panelHall[3], 1,0.9));level[16].wallPanels.push(new Panel(1400,600, panelHall[3], 1,0.2));
+level[16].wallPanels.push(new Panel(1500,600, panelHall[3], 1,0.2));
+level[16].wallPanels.push(new Panel(1600,600, panelHall[3], 1,0.2));
+level[16].wallPanels.push(new Panel(1700,600, panelHall[3], 1,0.2));
+level[16].wallPanels.push(new Panel(1800,600, panelHall[3], 1,0.2));
+level[16].wall.push(createWall(280,580, 30,100,sideWall[2]));
+level[16].wall.push(createWall(280,480, 30,100,sideWall[2]));
+level[16].wall.push(createWall(280,390, 30,100,sideWall[2]));
+level[16].wall.push(createWall(300,390, 100,30,floor[6]));
+level[16].wall.push(createWall(1400,390, 100,30,floor[6]));
+level[16].wall.push(createWall(800,390, 100,30,floor[6]));
+level[16].wallPanels.push(new ForeGround(1300,390, ceilingHole[0], 0,0));
+level[16].wallPanels.push(new ForeGround(1400,400, foreGPic[7]));
+level[16].wallPanels.push(new ForeGround(1270,400, foreGPic[6]));level[16].wallPanels.push(new AniDoor(1670,400, 0,1));
+level[16].wallPanels.push(new ForeGround(1570,500, foreGPic[1]));
+level[16].wallPanels.push(new ForeGround(1470,500, foreGPic[0]));level[16].wallPanels.push(new Monitor(1400,410, 'no weapons beyond this point .',0));level[16].foreGround.push(new ForeGround(1460,500, wallFeatures[0]));
+level[16].foreGround.push(new ForeGround(1460,400, wallFeatures[0]));
+level[16].foreGround.push(new ForeGround(1560,500, wallFeatures[0]));
+level[16].foreGround.push(new ForeGround(1560,400, wallFeatures[0]));
+level[16].foreGround.push(new ForeGround(1370,500, wallFeatures[2]));
+level[16].foreGround.push(new ForeGround(1370,400, wallFeatures[2]));
+level[16].wallPanels.push(new ForeGround(1660,500, wallFeatures[1]));
+level[16].wallPanels.push(new ForeGround(1660,400, wallFeatures[1]));
+level[16].wallPanels.push(new ForeGround(1580,440, wallFeatures[39]));
+level[16].wallPanels.push(new ForeGround(1510,440, wallFeatures[39]));
+level[16].wallPanels.push(new ForeGround(1520,480, foreGPic[3]));
+level[16].wallPanels.push(new ForeGround(1000,580, foreGPic[1]));
+level[16].wallPanels.push(new ForeGround(900,580, foreGPic[0]));
+level[16].wallPanels.push(new ForeGround(500,580, foreGPic[0]));
+level[16].wallPanels.push(new ForeGround(600,580, foreGPic[1]));
+level[16].wallPanels.push(new Monitor(1100,460, '',0));
+level[16].wallPanels.push(new Monitor(1000,460, '',0));
+level[16].wallPanels.push(new Monitor(900,460, '',0));level[16].wallPanels.push(new Monitor(800,460, 'signal lost .',0));level[16].wallPanels.push(new Monitor(700,460, 'signal lost .',0));
+level[16].wallPanels.push(new Monitor(500,460, 'signal lost .',0));
+level[16].wallPanels.push(new Monitor(600,460, '',0));level[16].wallPanels.push(new wordWall(510,560, 'training',4));
+level[16].wallPanels.push(new wordWall(510,570, 'area',4));
+level[16].wallPanels.push(new wordWall(1110,560, 'holding',4));
+level[16].wallPanels.push(new wordWall(1010,560, 'holding',4));
+level[16].wallPanels.push(new wordWall(910,560, 'holding',4));
+level[16].wallPanels.push(new wordWall(810,560, 'holding',4));
+level[16].wallPanels.push(new wordWall(610,560, 'security',4));
+level[16].wallPanels.push(new wordWall(710,560, 'security',4));
+level[16].wallPanels.push(new wordWall(610,570, 'cam - 1',4));
+level[16].wallPanels.push(new wordWall(710,570, 'cam - 2',4));
+level[16].wallPanels.push(new wordWall(810,570, 'cell 1',4));
+level[16].wallPanels.push(new wordWall(910,570, 'cell 2',4));level[16].wallPanels.push(new wordWall(1110,570, 'cell 4',4));
+level[16].wallPanels.push(new wordWall(1010,570, 'cell 3',4));level[16].wallPanels.push(new wordWall(1320,510, 'training',5));
+level[16].wallPanels.push(new wordWall(1320,500, 'prototype',5));
+level[16].wallPanels.push(new wordWall(1320,520, 'area',5));
+level[16].wallPanels.push(new ForeGround(1020,560, foreGPic[3]));
+level[16].wallPanels.push(new ForeGround(620,560, foreGPic[3]));
+level[16].wallPanels.push(new ForeGround(550,560, foreGPic[4]));
+level[16].wallPanels.push(new ForeGround(940,560, foreGPic[5]));level[16].wallPanels.push(new ForeGround(990,560, foreGPic[8]));
+level[16].wall.push(createWall(1900,500, 30,100,sideWall[0]));
+level[16].wall.push(createWall(1900,400, 30,100,sideWall[0]));
+level[16].wall.push(createWall(1900,600, 30,100,sideWall[5]));
+level[16].wall.push(createWall(1900,390, 30,100,sideWall[5]));
+level[16].wall.push(createWall(280,680, 30,100,sideWall[6]));
+level[16].wallPanels.push(new ForeGround(1400,600, pipes[0]));
+level[16].wallPanels.push(new ForeGround(1500,600, pipes[4]));
+level[16].wallPanels.push(new ForeGround(1600,600, pipes[4]));
+level[16].wallPanels.push(new ForeGround(1700,600, pipes[4]));
+level[16].wallPanels.push(new ForeGround(1800,600, pipes[4]));
+level[16].wallPanels.push(new AniDoor(280,480, 0,0));
+level[16].lamps.push(new Lamp(1680,440));
+level[16].rLights.push(new staticLight(1460,500, 20));
+level[16].rLights.push(new staticLight(1460,400, 20));
+level[16].rLights.push(new staticLight(1670,400, 20));
+level[16].rLights.push(new staticLight(1670,500, 20));
+level[16].lamps.push(new pulseLight(1280,680));
+level[16].lamps[1].addPLight(1200, 680);
+level[16].lamps[1].addPLight(1100, 680);
+level[16].lamps[1].addPLight(1000, 680);
+level[16].lamps[1].addPLight(900, 680);
+level[16].lamps[1].addPLight(800, 680);
+level[16].lamps[1].addPLight(700, 680);
+level[16].lamps[1].addPLight(600, 680);
+level[16].lamps[1].addPLight(500, 680);
+level[16].lamps[1].addPLight(400, 680);level[16].lamps.push(new UpLamp(1200,640));
+level[16].lamps.push(new UpLamp(480,640));
+level[16].lamps.push(new UpLamp(840,640));
+level[16].dLights.push(new spinLight(1850,440,50,0));
+level[16].wallPanels.push(new talker(1680,470,'alert containment failure please evacuate to nearest safe zone','test'));
+level[16].wallPanels.push(new talker(460,520,'alert containment failure please evacuate to nearest safe zone','test'));
+level[16].wallPanels.push(new talker(900,530,'alert containment failure please evacuate to nearest safe zone','test'));
+level[16].wallPanels.push(new ForeGround(1310,460, wallFeatures[3]));
+level[16].wallPanels.push(new ForeGround(720,580, wallFeatures[30]));
+level[16].wallPanels.push(new ForeGround(760,580, wallFeatures[30]));
+level[16].wallPanels.push(new wordWall(450,550, 'Admin',5));
+level[16].wallPanels.push(new wordWall(450,560, 'Office',5));
+level[16].wallPanels.push(new ForeGround(630,470, wallFeatures[13]));
+level[16].wallPanels.push(new ForeGround(440,500, wallFeatures[3]));
+level[16].wallPanels.push(new ForeGround(1100,540, wallFeatures[7]));
+level[16].wallPanels.push(new ForeGround(740,570, bioPic[3]));
+level[16].wallPanels.push(new ForeGround(810,580, bioPic[9]));
+level[16].wallPanels.push(new ForeGround(1470,470, bioPic[7]));
+level[16].wallPanels.push(new ForeGround(1290,500, bioPic[0]));
+level[16].wallPanels.push(new ForeGround(440,530, bioPic[2]));
+level[16].wallPanels.push(new ForeGround(570,480, bioPic[0]));
+level[16].items.push(spawnTrap(800,590, recorder, '0', '1','1400,450'));
+level[16].items.push(spawnTrap(800,590, recorder, '0', '1','1400,450'));
+level[16].exits.push(new Exit(1750,500 , 15, true, 500, 900));
+level[16].exits.push(new Exit(380,600 , 17, true, 800, 200));
+
+level[17] = new Level('Administration')
+level[17].wallPanels.push(new Panel(800,100, panelHall[3], 1,0.9));
+level[17].wallPanels.push(new Panel(900,100, panelHall[3], 1,0.9));
+level[17].wallPanels.push(new Panel(1000,100, panelHall[3], 1,0.9));
+level[17].wallPanels.push(new Panel(700,100, panelHall[3], 1,0.9));
+level[17].wallPanels.push(new Panel(700,200, panelHall[3], 0,0.9));
+level[17].wallPanels.push(new Panel(800,200, panelHall[3], 0,0.9));
+level[17].wallPanels.push(new Panel(900,200, panelHall[3], 0,0.9));
+level[17].wallPanels.push(new Panel(1000,200, panelHall[3], 0,0.9));
+level[17].wallPanels.push(new Panel(700,300, panelHall[3], 2,0.9));
+level[17].wallPanels.push(new Panel(800,300, panelHall[3], 2,0.9));
+level[17].wallPanels.push(new Panel(900,300, panelHall[3], 2,0.9));
+level[17].wallPanels.push(new Panel(1000,300, panelHall[3], 2,0.9));
+level[17].wallPanels.push(new AniDoor(800,200, 0,0));
+level[17].wallPanels.push(new wordWall(980,270, 'Admin',5));
+level[17].wallPanels.push(new wordWall(980,280, 'Office',5));
+level[17].wallPanels.push(new ForeGround(980,220, wallFeatures[3]));
+level[17].wallPanels.push(new Panel(600,300, panelHall[3], 2,0.9));
+level[17].wallPanels.push(new Panel(1100,300, panelHall[3], 2,0.9));
+level[17].wallPanels.push(new Panel(600,200, panelHall[3], 1,0.9));
+level[17].wallPanels.push(new Panel(1100,200, panelHall[3], 1,0.9));
+level[17].wall.push(createWall(700,90, 100,50,ceiling[0]));
+level[17].wall.push(createWall(800,90, 100,50,ceiling[0]));
+level[17].wall.push(createWall(900,90, 100,50,ceiling[0]));
+level[17].wall.push(createWall(1000,90, 100,50,ceiling[0]));
+level[17].wall.push(createWall(1100,190, 100,50,ceiling[0]));
+level[17].wall.push(createWall(600,190, 100,50,ceiling[0]));
+level[17].wall.push(createWall(670,90, 30,100,sideWall[2]));
+level[17].wall.push(createWall(1100,90, 30,100,sideWall[2]));
+level[17].wall.push(createWall(400,400, 100,30,floor[7]));
+level[17].wall.push(createWall(900,400, 100,30,floor[7]));
+level[17].foreGround.push(new ForeGround(600,350, wallFeatures[38]));
+level[17].foreGround.push(new ForeGround(600,300, wallFeatures[38]));
+level[17].foreGround.push(new ForeGround(600,250, wallFeatures[38]));
+level[17].foreGround.push(new ForeGround(600,200, wallFeatures[38]));
+level[17].foreGround.push(new ForeGround(1150,350, wallFeatures[38]));
+level[17].foreGround.push(new ForeGround(1150,300, wallFeatures[38]));
+level[17].foreGround.push(new ForeGround(1150,250, wallFeatures[38]));
+level[17].foreGround.push(new ForeGround(1150,200, wallFeatures[38]));
+level[17].foreGround.push(new ForeGround(650,300, wallFeatures[35]));
+level[17].foreGround.push(new ForeGround(650,200, wallFeatures[35]));
+level[17].foreGround.push(new ForeGround(1200,300, wallFeatures[35]));
+level[17].foreGround.push(new ForeGround(1200,200, wallFeatures[35]));
+level[17].foreGround.push(new ForeGround(500,200, wallFeatures[34]));
+level[17].foreGround.push(new ForeGround(500,300, wallFeatures[34]));
+level[17].foreGround.push(new ForeGround(1050,300, wallFeatures[34]));
+level[17].foreGround.push(new ForeGround(1050,200, wallFeatures[34]));
+level[17].lamps.push(new UpLamp(810,370));
+level[17].lamps.push(new UpLamp(980,370));
+level[17].lamps.push(new UpLamp(710,370));
+level[17].lamps.push(new UpLamp(1080,370));
+level[17].wallPanels.push(new Panel(500,300, panelHall[1], 2,0.9));
+level[17].wallPanels.push(new Panel(400,300, panelHall[1], 2,0.9));
+level[17].wallPanels.push(new Panel(1200,300, panelHall[0], 2,0.9));
+level[17].wallPanels.push(new Panel(1300,300, panelHall[0], 2,0.9));
+level[17].wallPanels.push(new Panel(1200,200, panelHall[0], 1,0.9));level[17].wallPanels.push(new Panel(1300,200, panelHall[0], 1,0.9));
+level[17].wallPanels.push(new Panel(400,200, panelHall[1], 1,0.9));
+level[17].wallPanels.push(new Panel(500,200, panelHall[1], 1,0.9));
+level[17].wall.push(createWall(500,190, 100,50,ceiling[0]));
+level[17].wall.push(createWall(400,190, 100,50,ceiling[0]));
+level[17].wall.push(createWall(1200,190, 100,50,ceiling[0]));
+level[17].wall.push(createWall(1300,190, 100,50,ceiling[0]));
+level[17].wall.push(createWall(1400,300, 30,100,sideWall[1]));
+level[17].wall.push(createWall(1400,200, 30,100,sideWall[1]));
+level[17].wall.push(createWall(1400,400, 30,100,sideWall[5]));
+level[17].wall.push(createWall(370,400, 30,100,sideWall[5]));
+level[17].wall.push(createWall(670,90, 30,100,sideWall[5]));
+level[17].wall.push(createWall(1100,90, 30,100,sideWall[5]));
+level[17].wall.push(createWall(1100,170, 30,100,sideWall[5]));
+level[17].wall.push(createWall(670,170, 30,100,sideWall[5]));
+level[17].wall.push(createWall(1400,190, 30,100,sideWall[6]));
+level[17].wall.push(createWall(370,300, 30,100,sideWall[1]));
+level[17].wall.push(createWall(370,200, 30,100,sideWall[1]));
+level[17].wall.push(createWall(370,190, 30,100,sideWall[6]));
+level[17].wallPanels.push(new AniDoor(400,200, 0,1));
+level[17].wallPanels.push(new AniDoor(1200,200, 0,0));
+level[17].lamps.push(new FlickerLamp(1220,270));
+level[17].lamps.push(new FlickerLamp(570,270));
+level[17].wallPanels.push(new wordWall(670,270, 'sales',5));
+level[17].wallPanels.push(new wordWall(670,280, 'Dept',5));
+level[17].wallPanels.push(new wordWall(1100,280, 'Dept',5));
+level[17].wallPanels.push(new wordWall(1100,270, 'HR',5));
+level[17].wallPanels.push(new wordWall(980,260, 'UASA',5));
+level[17].wallPanels.push(new wordWall(790,150, 'building',18));
+level[17].wallPanels.push(new wordWall(850,170, 'better',9));
+level[17].wallPanels.push(new wordWall(820,200, 'people',15));
+level[17].foreGround.push(new ForeGround(400,300, foreGPic[18]));
+level[17].foreGround.push(new ForeGround(500,200, foreGPic[18]));
+level[17].foreGround.push(new ForeGround(1200,300, foreGPic[18]));
+level[17].foreGround.push(new ForeGround(1200,200, foreGPic[19]));
+level[17].foreGround.push(new ForeGround(1300,300, foreGPic[19]));
+level[17].foreGround.push(new ForeGround(500,300, foreGPic[19]));
+level[17].foreGround.push(new ForeGround(400,200, foreGPic[17]));
+level[17].foreGround.push(new ForeGround(1300,200, foreGPic[17]));
+
+level[17].exits.push(new Exit(900,300 , 16, true, 300, 500));
+level[17].exits.push(new Exit(500,300 , 18, true, 1700, 400));
+level[17].exits.push(new Exit(1300,300, 23, true, 300, 600));
+
+
+level[18] = new Level('Sales')
+level[18].wallPanels.push(new Panel(1800,500, panelHall[3], 2,0.7));
+level[18].wallPanels.push(new Panel(1700,500, panelHall[3], 2,0.7));
+level[18].wallPanels.push(new Panel(1600,500, panelHall[3], 2,0.7));
+level[18].wallPanels.push(new Panel(1500,500, panelHall[3], 2,0.7));
+level[18].wallPanels.push(new Panel(1400,500, panelHall[3], 2,0.7));
+level[18].wallPanels.push(new Panel(1300,500, panelHall[3], 2,0.7));
+level[18].wallPanels.push(new Panel(1300,400, panelHall[3], 0,0.7));
+level[18].wallPanels.push(new Panel(1400,400, panelHall[3], 0,0.7));
+level[18].wallPanels.push(new Panel(1500,400, panelHall[3], 0,0.7));
+level[18].wallPanels.push(new Panel(1600,400, panelHall[3], 0,0.7));
+level[18].wallPanels.push(new Panel(1700,400, panelHall[3], 0,0.7));
+level[18].wallPanels.push(new Panel(1800,400, panelHall[3], 0,0.7));
+level[18].wallPanels.push(new Panel(1300,300, panelHall[3], 1,0.7));
+level[18].wallPanels.push(new Panel(1400,300, panelHall[3], 1,0.7));
+level[18].wallPanels.push(new Panel(1500,300, panelHall[3], 1,0.7));
+level[18].wallPanels.push(new Panel(1600,300, panelHall[3], 1,0.7));
+level[18].wallPanels.push(new Panel(1700,300, panelHall[3], 1,0.7));
+level[18].wallPanels.push(new Panel(1800,300, panelHall[3], 1,0.7));
+level[18].wallPanels.push(new AniDoor(1700,400, 0,1));
+level[18].wallPanels.push(new ForeGround(1550,500, foreGPic[12]));
+level[18].wallPanels.push(new ForeGround(1490,500, foreGPic[11]));
+level[18].wallPanels.push(new ForeGround(1430,500, foreGPic[12]));
+level[18].foreGround.push(new ForeGround(1300,500, foreGPic[1]));
+level[18].foreGround.push(new ForeGround(1330,480, foreGPic[4]));
+level[18].wallPanels.push(new ForeGround(1520,520, foreGPic[16]));
+level[18].wallPanels.push(new ForeGround(1860,550, foreGPic[15]));
+level[18].foreGround.push(new ForeGround(1350,480, foreGPic[14]));
+level[18].wallPanels.push(new ForeGround(1350,360, posterArt[1]));
+level[18].wallPanels.push(new ForeGround(1470,360, posterArt[3]));
+//level[18].wallPanels.push(new ForeGround(1590,360, posterArt[0]));
+level[18].wallPanels.push(new Billboard(1590,360, 'random',0));
+level[18].wallPanels.push(new wordWall(1350,490, 'why change the world?',10));
+
+level[18].wall.push(createWall(1400,600, 100,30,floor[5]));
+level[18].wall.push(createWall(900,600, 100,30,floor[5]));
+level[18].wallPanels.push(new Panel(1200,500, panelHall[0], 2,0.6));
+level[18].wallPanels.push(new Panel(1000,500, panelHall[0], 2,0.6));
+level[18].wallPanels.push(new Panel(1100,500, panelHall[2], 2,0.6));level[18].wallPanels.push(new Panel(1100,400, panelHall[2], 1,0.6));
+level[18].wallPanels.push(new Panel(1200,400, panelHall[0], 1,0.6));
+level[18].wallPanels.push(new Panel(1000,400, panelHall[0], 1,0.6));
+level[18].wall.push(createWall(400,600, 100,30,floor[5]));
+level[18].wallPanels.push(new Panel(900,400, panelHall[1], 1,0.6));
+level[18].wallPanels.push(new Panel(800,400, panelHall[1], 1,0.6));
+level[18].wallPanels.push(new Panel(700,400, panelHall[1], 1,0.6));
+level[18].wallPanels.push(new Panel(600,400, panelHall[1], 1,0.6));
+level[18].wallPanels.push(new Panel(500,400, panelHall[1], 1,0.6));
+level[18].wallPanels.push(new Panel(400,400, panelHall[1], 1,0.6));
+level[18].wallPanels.push(new Panel(400,500, panelHall[1], 2,0.6));
+level[18].wallPanels.push(new Panel(500,500, panelHall[1], 2,0.6));
+level[18].wallPanels.push(new Panel(600,500, panelHall[1], 2,0.6));
+level[18].wallPanels.push(new Panel(700,500, panelHall[1], 2,0.6));
+level[18].wallPanels.push(new Panel(800,500, panelHall[1], 2,0.6));
+level[18].wallPanels.push(new Panel(900,500, panelHall[1], 2,0.6));
+level[18].wallPanels.push(new Panel(300,400, panelHall[0], 1,0.6));
+level[18].wallPanels.push(new Panel(100,400, panelHall[0], 1,0.6));
+level[18].wallPanels.push(new Panel(200,400, panelHall[2], 1,0.6));
+level[18].wallPanels.push(new Panel(200,500, panelHall[2], 2,0.6));
+level[18].wallPanels.push(new Panel(100,500, panelHall[0], 2,0.6));
+level[18].wallPanels.push(new Panel(300,500, panelHall[0], 2,0.6));
+level[18].wall.push(createWall(100,600, 100,30,floor[5]));
+level[18].wallPanels.push(new ForeGround(1200,500, wallFeatures[34]));
+level[18].wallPanels.push(new ForeGround(1200,400, wallFeatures[34]));
+level[18].foreGround.push(new ForeGround(1200,500, foreGPic[10]));
+level[18].foreGround.push(new ForeGround(1100,500, foreGPic[10]));
+level[18].foreGround.push(new ForeGround(1000,500, foreGPic[10]));
+level[18].foreGround.push(new ForeGround(900,500, foreGPic[0]));
+level[18].foreGround.push(new ForeGround(950,480, foreGPic[3]));
+level[18].foreGround.push(new ForeGround(1020,480, foreGPic[9]));
+level[18].foreGround.push(new ForeGround(1230,480, foreGPic[9]));
+level[18].foreGround.push(new ForeGround(910,480, foreGPic[16]));
+level[18].wallPanels.push(new AniDoor(500,400, 1,0));level[18].wallPanels.push(new AniDoor(700,400, 0,0));
+level[18].wallPanels.push(new wordWall(870,460, 'Development',5));
+level[18].wallPanels.push(new wordWall(450,460, 'Financing',5));
+level[18].wallPanels.push(new ForeGround(440,400, wallFeatures[3]));
+level[18].wallPanels.push(new ForeGround(860,400, wallFeatures[3]));
+level[18].wall.push(createWall(800,390, 100,30,floor[6]));
+level[18].wall.push(createWall(300,390, 100,30,floor[6]));
+level[18].wall.push(createWall(100,390, 100,30,floor[6]));
+level[18].wall.push(createWall(1300,290, 100,30,floor[6]));
+level[18].wall.push(createWall(1800,290, 100,50,ceiling[0]));
+level[18].wall.push(createWall(1270,290, 30,100,sideWall[2]));
+level[18].wall.push(createWall(1900,500, 30,100,sideWall[2]));
+level[18].wall.push(createWall(1900,400, 30,100,sideWall[2]));
+level[18].wall.push(createWall(1900,300, 30,100,sideWall[2]));
+level[18].wall.push(createWall(1900,600, 30,100,sideWall[5]));
+level[18].wall.push(createWall(1900,290, 30,100,sideWall[5]));
+level[18].wall.push(createWall(1270,290, 30,100,sideWall[5]));
+level[18].wall.push(createWall(1270,370, 30,100,sideWall[5]));
+level[18].wall.push(createWall(70,500, 30,100,sideWall[1]));
+level[18].wall.push(createWall(70,400, 30,100,sideWall[1]));
+level[18].wallPanels.push(new ForeGround(70,600, sideWall[5]));
+level[18].foreGround.push(new ForeGround(70,390, sideWall[5]));
+level[18].dLights.push(new GenLight(1340,500,10, 0.2));
+level[18].lamps.push(new deadLamp(1270,420));
+level[18].lamps.push(new deadLamp(1220,420));
+level[18].lamps.push(new deadLamp(1070,420));
+level[18].lamps.push(new FlickerLamp(1020,420));
+level[18].lamps.push(new BigLampDead(560,400));
+level[18].lamps.push(new BigLampFlicker(760,400));level[18].foreGround.push(new ForeGround(130,400, wallFeatures[18]));
+level[18].wallPanels.push(new talker(320,470,'Our dedicated teams produce the finest genetic traits for our workers so they will thrive in their new homes.  This in one of the many production vessels we use throughout our operations to ensure the highest quality and production capacity.','test'));
+level[18].wallPanels.push(new talker(1710,470,'Welcome.  We hope you enjoy your visit.  Please have a seat and a representative will be with you shortly.  Again, the United Americas Space Agency welcomes you, have a nice day.','test'));
+level[18].exits.push(new Exit(1800,500, 17, true, 400,200));
+
+
+level[19] = new Level('Development')
+level[19].wallPanels.push(new Panel(800,1000, panelHall[1], 2,0.8));
+level[19].wallPanels.push(new Panel(900,1000, panelHall[1], 2,0.8));
+level[19].wallPanels.push(new Panel(800,900, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(900,900, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(900,800, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(800,800, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(800,700, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(900,700, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(800,400, panelHall[1], 1,0.8));
+level[19].wallPanels.push(new Panel(900,400, panelHall[1], 1,0.8));
+level[19].wallPanels.push(new Panel(800,500, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(900,500, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(900,600, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(800,600, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(1000,1000, panelHall[2], 2,0.8));
+level[19].wallPanels.push(new Panel(700,1000, panelHall[2], 2,0.8));
+level[19].wallPanels.push(new Panel(1100,900, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(1100,800, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(600,900, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(600,800, panelHall[1], 0,0.8));
+level[19].wallPanels.push(new Panel(600,1000, panelHall[1], 2,0.8));
+level[19].wallPanels.push(new Panel(1100,1000, panelHall[1], 2,0.8));level[19].wallPanels.push(new Panel(500,900, panelHall[0], 0,0.8));
+level[19].wallPanels.push(new Panel(1200,900, panelHall[0], 0,0.8));
+level[19].wallPanels.push(new Panel(1300,900, panelHall[0], 0,0.8));
+level[19].wallPanels.push(new Panel(1400,900, panelHall[0], 0,0.8));
+level[19].wallPanels.push(new Panel(1500,900, panelHall[0], 0,0.8));
+level[19].wallPanels.push(new Panel(1600,900, panelHall[0], 0,0.8));level[19].wallPanels.push(new Panel(400,900, panelHall[0], 0,0.8));
+level[19].wallPanels.push(new Panel(300,900, panelHall[0], 0,0.8));
+level[19].wallPanels.push(new Panel(200,900, panelHall[0], 0,0.8));
+level[19].wallPanels.push(new Panel(100,900, panelHall[0], 0,0.8));
+level[19].wallPanels.push(new AniDoor(800,900, 0,0));
+level[19].wallPanels.push(new Panel(400,1000, panelHall[0], 2,0.8));
+level[19].wallPanels.push(new Panel(200,1000, panelHall[0], 2,0.8));
+level[19].wallPanels.push(new Panel(1300,1000, panelHall[0], 2,0.8));
+level[19].wallPanels.push(new Panel(1500,1000, panelHall[0], 2,0.8));
+level[19].wallPanels.push(new Panel(1200,1000, panelHall[1], 2,0.8));
+level[19].wallPanels.push(new Panel(1400,1000, panelHall[1], 2,0.8));
+level[19].wallPanels.push(new Panel(1600,1000, panelHall[1], 2,0.8));
+level[19].wallPanels.push(new Panel(100,1000, panelHall[1], 2,0.8));
+level[19].wallPanels.push(new Panel(300,1000, panelHall[1], 2,0.8));
+level[19].wallPanels.push(new Panel(500,1000, panelHall[1], 2,0.8));
+level[19].wallPanels.push(new Panel(700,900, panelHall[2], 0,0.8));
+level[19].wallPanels.push(new Panel(700,800, panelHall[2], 0,0.8));
+level[19].wallPanels.push(new Panel(1000,900, panelHall[2], 0,0.8));
+level[19].wallPanels.push(new Panel(1000,800, panelHall[2], 0,0.8));
+level[19].wallPanels.push(new Panel(1000,700, panelHall[2], 0,0.8));
+level[19].wallPanels.push(new Panel(700,700, panelHall[2], 0,0.8));
+level[19].wall.push(createWall(1200,1100, 100,30,floor[5]));
+level[19].wall.push(createWall(700,1100, 100,30,floor[5]));
+level[19].wall.push(createWall(200,1100, 100,30,floor[5]));
+level[19].wall.push(createWall(100,1100, 100,30,floor[0]));
+level[19].wall.push(createWall(200,800, 100,30,floor[7]));
+level[19].wall.push(createWall(1100,800, 100,30,floor[7]));
+level[19].wall.push(createWall(200,600, 100,30,floor[7]));
+level[19].wall.push(createWall(1100,600, 100,30,floor[7]));
+level[19].elevators.push(new elevator(100,800, 0,200));level[19].wall.push(createWall(100,800, 100,30,ceiling[0]));
+level[19].elevators.push(new elevator(1600,800, 0,200));level[19].wall.push(createWall(1600,800, 100,30,ceiling[0]));
+level[19].elevators.push(new elevator(1000,1100, 0,300));level[19].wall.push(createWall(1000,1100, 100,30,ceiling[0]));
+level[19].elevators.push(new elevator(700,1100, 250,300));level[19].wall.push(createWall(700,1100, 100,30,ceiling[0]));
+level[19].wall.push(createWall(1700,700, 30,100,sideWall[9]));
+level[19].wall.push(createWall(1700,400, 30,100,sideWall[9]));
+level[19].wall.push(createWall(70,700, 30,100,sideWall[9]));
+level[19].wall.push(createWall(70,400, 30,100,sideWall[9]));
+level[19].wall.push(createWall(700,500, 30,100,sideWall[1]));
+level[19].wall.push(createWall(700,400, 30,100,sideWall[1]));
+level[19].wall.push(createWall(1070,500, 30,100,sideWall[1]));
+level[19].wall.push(createWall(1070,400, 30,100,sideWall[1]));
+level[19].wall.push(createWall(700,600, 30,100,sideWall[5]));
+level[19].wall.push(createWall(1070,600, 30,100,sideWall[5]));
+level[19].wall.push(createWall(70,1100, 30,100,sideWall[5]));
+level[19].wall.push(createWall(1700,1100, 30,100,sideWall[5]));
+level[19].wall.push(createWall(1070,500, 30,100,sideWall[1]));
+level[19].wall.push(createWall(1070,400, 30,100,sideWall[1]));
+level[19].wall.push(createWall(700,600, 30,100,sideWall[5]));
+level[19].wall.push(createWall(1070,600, 30,100,sideWall[5]));
+level[19].wall.push(createWall(70,1100, 30,100,sideWall[5]));
+level[19].wall.push(createWall(1700,1100, 30,100,sideWall[5]));
+level[19].wallPanels.push(new Panel(100,700, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(200,700, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(300,700, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(400,700, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(500,700, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(600,700, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(1100,700, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(1200,700, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(1300,700, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(1400,700, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(1500,700, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(1610,700, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(100,500, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(200,500, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(300,500, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(400,500, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(500,500, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(600,500, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(1100,500, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(1200,500, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(1300,500, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(1400,500, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(1500,500, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(1600,500, panelHall[3], 2,0.7));
+level[19].wallPanels.push(new Panel(100,600, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(200,600, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(300,600, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(400,600, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(500,600, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(600,600, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(1100,600, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(1200,600, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(1300,600, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(1400,600, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(1500,600, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(1600,600, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(1100,400, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(1200,400, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(1300,400, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(1400,400, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(1500,400, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(1600,400, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(100,400, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(200,400, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(300,400, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(400,400, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(500,400, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(600,400, panelHall[3], 1,0.7));
+level[19].wallPanels.push(new Panel(700,400, panelHall[0], 1,0.8));
+level[19].wallPanels.push(new Panel(1000,400, panelHall[0], 1,0.8));
+level[19].wallPanels.push(new Panel(700,500, panelHall[0], 0,0.8));
+level[19].wallPanels.push(new Panel(700,600, panelHall[0], 0,0.8));
+level[19].wallPanels.push(new Panel(1000,600, panelHall[0], 0,0.8));
+level[19].wallPanels.push(new Panel(1000,500, panelHall[0], 0,0.8));level[19].foreGround.push(new ForeGround(600,700, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(500,700, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(400,700, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(300,700, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(200,700, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(600,500, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(500,500, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(400,500, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(300,500, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(200,500, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(1500,700, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(1400,700, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(1300,700, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(1200,700, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(1100,700, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(1100,500, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(1200,500, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(1300,500, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(1400,500, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(1500,500, wallFeatures[33]));
+level[19].foreGround.push(new ForeGround(1600,600, floor[4]));
+level[19].foreGround.push(new ForeGround(100,600, floor[4]));
+
+level[19].wallPanels.push(new Panel(1300,800, panelHall[0], 1,0.8));
+level[19].wallPanels.push(new Panel(1500,800, panelHall[0], 1,0.8));
+level[19].wallPanels.push(new Panel(200,800, panelHall[0], 1,0.8));
+level[19].wallPanels.push(new Panel(400,800, panelHall[0], 1,0.8));
+level[19].wallPanels.push(new Panel(100,800, panelHall[1], 1,0.8));
+level[19].wallPanels.push(new Panel(300,800, panelHall[1], 1,0.8));
+level[19].wallPanels.push(new Panel(500,800, panelHall[1], 1,0.8));
+level[19].wallPanels.push(new Panel(1200,800, panelHall[1], 1,0.8));
+level[19].wallPanels.push(new Panel(1400,800, panelHall[1], 1,0.8));
+level[19].wallPanels.push(new Panel(1600,800, panelHall[1], 1,0.8));
+level[19].wallPanels.push(new ForeGround(1230,900, wallFeatures[17]));level[19].foreGround.push(new ForeGround(1470,900, wallFeatures[19]));
+level[19].foreGround.push(new ForeGround(130,900, wallFeatures[18]));
+level[19].wallPanels.push(new ForeGround(370,900, wallFeatures[18]));
+level[19].wallPanels.push(new ForeGround(370,800, wallFeatures[12]));
+level[19].wallPanels.push(new ForeGround(470,800, wallFeatures[12]));
+level[19].foreGround.push(new ForeGround(130,800, wallFeatures[12]));
+level[19].foreGround.push(new ForeGround(220,800, wallFeatures[12]));
+level[19].foreGround.push(new ForeGround(1470,800, wallFeatures[12]));
+level[19].foreGround.push(new ForeGround(1570,800, wallFeatures[12]));
+level[19].wallPanels.push(new ForeGround(1230,800, wallFeatures[12]));
+level[19].wallPanels.push(new ForeGround(1330,800, wallFeatures[12]));
+level[19].foreGround.push(new ForeGround(1470,700, wallFeatures[12]));
+level[19].foreGround.push(new ForeGround(1470,600, wallFeatures[12]));
+level[19].foreGround.push(new ForeGround(1470,500, wallFeatures[12]));
+level[19].foreGround.push(new ForeGround(1470,400, wallFeatures[12]));
+level[19].foreGround.push(new ForeGround(220,700, wallFeatures[12]));
+level[19].foreGround.push(new ForeGround(220,600, wallFeatures[12]));
+level[19].foreGround.push(new ForeGround(220,500, wallFeatures[12]));
+level[19].foreGround.push(new ForeGround(220,400, wallFeatures[12]));
+
+level[19].foreGround.push(new ForeGround(130,700, pipes[1]));
+level[19].foreGround.push(new ForeGround(30,700, pipes[4]));
+level[19].foreGround.push(new ForeGround(1570,700, pipes[0]));
+level[19].foreGround.push(new ForeGround(1670,700, pipes[4]));
+level[19].foreGround.push(new ForeGround(1770,700, pipes[4]));
+level[19].foreGround.push(new ForeGround(-70,700, pipes[4]));
+level[19].wallPanels.push(new ForeGround(300,620, wallFeatures[24]));
+level[19].wallPanels.push(new ForeGround(400,620, wallFeatures[24]));
+level[19].wallPanels.push(new ForeGround(500,620, wallFeatures[24]));
+level[19].wallPanels.push(new ForeGround(1200,620, wallFeatures[24]));
+level[19].wallPanels.push(new ForeGround(1400,620, wallFeatures[24]));level[19].wallPanels.push(new Monitor(1300,620, 'all systems nominal',0));
+level[19].wallPanels.push(new ForeGround(1300,400, door[1], '', 0.5));
+level[19].wallPanels.push(new wordWall(1470,470, 'Specimen',5));
+level[19].wallPanels.push(new AniDoor(300,400, 0,0));
+level[19].wallPanels.push(new wordWall(470,470, 'Specimen',5));
+level[19].wallPanels.push(new wordWall(470,480, '1 - 5',5));
+level[19].wallPanels.push(new wordWall(1470,480, '6 - 10',5));
+level[19].wall.push(createWall(800,800, 30,100,sideWall[5]));
+level[19].wall.push(createWall(970,800, 30,100,sideWall[5]));
+level[19].wall.push(createWall(940,780, 30,100,sideWall[5]));
+level[19].wall.push(createWall(830,780, 30,100,sideWall[5]));
+level[19].wall.push(createWall(850,780, 100,30,floor[4]));level[19].wallPanels.push(new Billboard(800,600, '',0));
+level[19].wallPanels.push(new Billboard(900,600, 'random',0));
+level[19].lamps.push(new Lamp(830,810));
+level[19].lamps.push(new Lamp(960,810));
+level[19].creature.push(MedReptile(1150,860,1));
+level[19].wall.push(createWall(100,390, 100,30,floor[6]));
+level[19].wall.push(createWall(600,390, 100,30,floor[6]));
+level[19].wall.push(createWall(1100,390, 100,30,floor[6]));
+level[19].wall.push(createWall(1600,390, 100,50,ceiling[0]));
+level[19].foreGround.push(new ForeGround(1700,390, sideWall[5]));
+level[19].foreGround.push(new ForeGround(70,390, sideWall[5]));
+level[19].foreGround.push(new ForeGround(1550,550, wallFeatures[38]));
+level[19].foreGround.push(new ForeGround(1550,500, wallFeatures[38]));
+level[19].foreGround.push(new ForeGround(1550,450, wallFeatures[38]));
+level[19].foreGround.push(new ForeGround(1550,400, wallFeatures[38]));
+level[19].foreGround.push(new ForeGround(200,550, wallFeatures[38]));
+level[19].foreGround.push(new ForeGround(200,500, wallFeatures[38]));
+level[19].foreGround.push(new ForeGround(200,450, wallFeatures[38]));
+level[19].foreGround.push(new ForeGround(200,400, wallFeatures[38]));
+level[19].rLights.push(new staticLight(210,1070, 20));
+level[19].rLights.push(new staticLight(490,1070, 20));
+level[19].rLights.push(new staticLight(550,1070, 20));
+level[19].rLights.push(new staticLight(1590,1070, 20));
+level[19].rLights.push(new staticLight(1550,1070, 20));
+level[19].lamps.push(new Lamp(320,450));
+level[19].creature.push(ScientistArmed(1550,900,3));
+level[19].creature.push(ScientistArmed(530,400,3));
+level[19].wallPanels.push(new ForeGround(960,1050, foreGPic[15]));
+level[19].wallPanels.push(new ForeGround(800,1050, foreGPic[16]));
+level[19].foreGround.push(new ForeGround(840,730, foreGPic[16]));
+level[19].foreGround.push(new ForeGround(910,730, foreGPic[14]));
+level[19].lamps.push(new deadLamp(290,640));
+level[19].lamps.push(new deadLamp(610,640));
+level[19].lamps.push(new deadLamp(1180,640));
+level[19].lamps.push(new deadLamp(1320,450));
+level[19].wallPanels.push(new wordWall(820,880, 'innovation',9));
+level[19].wallPanels.push(new wordWall(210,700, '2',20));
+level[19].wallPanels.push(new wordWall(1560,700, '2',20));
+level[19].wallPanels.push(new wordWall(1120,700, '2',20));
+level[19].wallPanels.push(new wordWall(650,700, '2',20));
+level[19].wallPanels.push(new wordWall(1560,500, '3',20));
+level[19].wallPanels.push(new wordWall(210,500, '3',20));
+level[19].wallPanels.push(new wordWall(660,960, '1',20));
+level[19].wallPanels.push(new wordWall(1130,960, '1',20));
+level[19].wallPanels.push(new wordWall(650,930, 'level',5));
+level[19].wallPanels.push(new wordWall(1120,930, 'level',5));
+level[19].wallPanels.push(new wordWall(650,670, 'level',5));
+level[19].wallPanels.push(new wordWall(210,670, 'level',5));
+level[19].wallPanels.push(new wordWall(210,470, 'level',5));
+level[19].wallPanels.push(new wordWall(1120,670, 'level',5));
+level[19].wallPanels.push(new wordWall(1560,670, 'level',5));
+level[19].wallPanels.push(new wordWall(1560,470, 'level',5));
+level[19].items.push(messageTrap(900,1000, blankPic, 'Help!', "The scientists are starting to hunt us all down! ~~There's one over here and another upstairs. ~~The only way out is past them both to get through the showroom doors up on level 3. ~~~We have to get out of here, they've been selling us... $0"));
+level[19].items.push(messageTrap(900,1000, blankPic, 'Help!', "What do you mean selling us? $99"));
+level[19].items.push(messageTrap(900,1000, blankPic, 'Help!', "We do all the work ~~They get all reward! $0"));
+level[19].exits.push(new Exit(900, 1000, 18, true, 700, 400))
+level[19].exits.push(new Exit(400, 500, 22, true, 300, 600))
+level[18].exits.push(new Exit(800, 500, 19, true, 800, 900))
+
+
+level[20] = new Level('To The Showroom')
+level[20].wallPanels.push(new Panel(400,400, panelHall[2], 2,0.5));
+level[20].wallPanels.push(new Panel(800,400, panelHall[2], 2,0.5));
+level[20].wallPanels.push(new Panel(1200,400, panelHall[2], 2,0.5));
+level[20].wallPanels.push(new Panel(1600,400, panelHall[2], 2,0.5));
+level[20].wallPanels.push(new Panel(300,400, panelHall[1], 2,0.5));
+level[20].wallPanels.push(new Panel(200,400, panelHall[1], 2,0.5));
+level[20].wallPanels.push(new Panel(100,400, panelHall[1], 2,0.5));
+level[20].wallPanels.push(new Panel(600,400, panelHall[1], 2,0.5));
+level[20].wallPanels.push(new Panel(1000,400, panelHall[1], 2,0.5));
+level[20].wallPanels.push(new Panel(1400,400, panelHall[1], 2,0.5));
+level[20].wallPanels.push(new Panel(1700,400, panelHall[1], 2,0.5));
+level[20].wallPanels.push(new Panel(1800,400, panelHall[1], 2,0.5));
+level[20].wallPanels.push(new Panel(600,300, panelHall[1], 0,0.5));
+level[20].wallPanels.push(new Panel(1000,300, panelHall[1], 0,0.5));
+level[20].wallPanels.push(new Panel(1400,300, panelHall[1], 0,0.5));level[20].wallPanels.push(new Panel(1700,300, panelHall[1], 0,0.5));
+level[20].wallPanels.push(new Panel(1800,300, panelHall[1], 0,0.5));
+level[20].wallPanels.push(new Panel(100,300, panelHall[1], 0,0.5));
+level[20].wallPanels.push(new Panel(200,300, panelHall[1], 0,0.5));
+level[20].wallPanels.push(new Panel(300,300, panelHall[1], 0,0.5));
+level[20].wallPanels.push(new Panel(100,200, panelHall[1], 1,0.5));
+level[20].wallPanels.push(new Panel(200,200, panelHall[1], 1,0.5));
+level[20].wallPanels.push(new Panel(300,200, panelHall[1], 1,0.5));
+level[20].wallPanels.push(new Panel(600,200, panelHall[1], 1,0.5));
+level[20].wallPanels.push(new Panel(1000,200, panelHall[1], 1,0.5));
+level[20].wallPanels.push(new Panel(1400,200, panelHall[1], 1,0.5));
+level[20].wallPanels.push(new Panel(1700,200, panelHall[1], 1,0.5));
+level[20].wallPanels.push(new Panel(1800,200, panelHall[1], 1,0.5));
+level[20].wallPanels.push(new Panel(400,200, panelHall[2], 1,0.5));
+level[20].wallPanels.push(new Panel(800,200, panelHall[2], 1,0.5));
+level[20].wallPanels.push(new Panel(1600,200, panelHall[2], 1,0.5));
+level[20].wallPanels.push(new Panel(1200,200, panelHall[2], 1,0.5));
+level[20].wallPanels.push(new Panel(1200,300, panelHall[2], 0,0.5));
+level[20].wallPanels.push(new Panel(1600,300, panelHall[2], 0,0.5));
+level[20].wallPanels.push(new Panel(400,300, panelHall[2], 0,0.5));
+level[20].wallPanels.push(new Panel(800,300, panelHall[2], 0,0.5));
+level[20].wallPanels.push(new Panel(500,300, panelHall[0], 0,0.5));
+level[20].wallPanels.push(new Panel(700,300, panelHall[0], 0,0.5));
+level[20].wallPanels.push(new Panel(900,300, panelHall[0], 0,0.5));
+level[20].wallPanels.push(new Panel(1100,300, panelHall[0], 0,0.5));
+level[20].wallPanels.push(new Panel(1300,300, panelHall[0], 0,0.5));
+level[20].wallPanels.push(new Panel(1500,300, panelHall[0], 0,0.5));
+level[20].wallPanels.push(new Panel(900,400, panelHall[0], 2,0.5));
+level[20].wallPanels.push(new Panel(1100,400, panelHall[0], 2,0.5));
+level[20].wallPanels.push(new Panel(1300,400, panelHall[0], 2,0.5));
+level[20].wallPanels.push(new Panel(1500,400, panelHall[0], 2,0.5));
+level[20].wallPanels.push(new Panel(500,400, panelHall[0], 2,0.5));
+level[20].wallPanels.push(new Panel(700,400, panelHall[0], 2,0.5));
+level[20].wallPanels.push(new Panel(500,200, panelHall[0], 1,0.5));
+level[20].wallPanels.push(new Panel(700,200, panelHall[0], 1,0.5));
+level[20].wallPanels.push(new Panel(900,200, panelHall[0], 1,0.5));
+level[20].wallPanels.push(new Panel(1100,200, panelHall[0], 1,0.5));
+level[20].wallPanels.push(new Panel(1300,200, panelHall[0], 1,0.5));
+level[20].wallPanels.push(new Panel(1500,200, panelHall[0], 1,0.5));
+level[20].wallPanels.push(new AniDoor(200,300, 0,1));
+level[20].wallPanels.push(new AniDoor(1700,300, 0,1));level[20].wallPanels.push(new Billboard(120,300, 'random',0));
+level[20].wallPanels.push(new ForeGround(400,400, wallFeatures[12]));
+level[20].wallPanels.push(new ForeGround(400,300, wallFeatures[12]));
+level[20].wallPanels.push(new ForeGround(400,200, wallFeatures[12]));
+level[20].wallPanels.push(new ForeGround(800,400, wallFeatures[12]));
+level[20].wallPanels.push(new ForeGround(800,300, wallFeatures[12]));
+level[20].wallPanels.push(new ForeGround(800,200, wallFeatures[12]));
+level[20].wallPanels.push(new ForeGround(1200,400, wallFeatures[12]));
+level[20].wallPanels.push(new ForeGround(1200,300, wallFeatures[12]));
+level[20].wallPanels.push(new ForeGround(1200,200, wallFeatures[12]));
+level[20].wallPanels.push(new ForeGround(1600,400, wallFeatures[12]));
+level[20].wallPanels.push(new ForeGround(1600,300, wallFeatures[12]));
+level[20].wallPanels.push(new ForeGround(1600,200, wallFeatures[12]));
+level[20].foreGround.push(new ForeGround(100,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(200,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(300,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(400,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(500,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(650,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(750,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(850,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(950,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(1100,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(1200,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(1300,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(1450,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(1550,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(1650,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(1750,400, wallFeatures[33]));
+level[20].foreGround.push(new ForeGround(1400,450, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1400,400, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1400,350, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1400,300, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1400,250, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1400,200, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1850,450, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1850,400, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1850,350, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1850,300, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1850,250, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1850,200, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1050,450, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1050,400, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1050,350, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1050,300, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1050,250, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(1050,200, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(600,450, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(600,400, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(600,350, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(600,300, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(600,250, wallFeatures[38]));
+level[20].foreGround.push(new ForeGround(600,200, wallFeatures[38]));
+level[20].wallPanels.push(new ForeGround(1500,300, windowArt[0]));
+level[20].wallPanels.push(new ForeGround(1300,300, windowArt[2]));
+level[20].wallPanels.push(new ForeGround(1100,300, windowArt[3]));
+level[20].wallPanels.push(new ForeGround(900,300, windowArt[2]));
+level[20].wallPanels.push(new ForeGround(500,300, windowArt[1]));
+level[20].wallPanels.push(new ForeGround(700,300, windowArt[3]));
+level[20].wall.push(createWall(100,500, 100,30,floor[7]));
+level[20].wall.push(createWall(600,500, 100,30,floor[7]));
+level[20].wall.push(createWall(1100,500, 100,30,floor[7]));
+level[20].wall.push(createWall(1400,500, 100,30,floor[7]));
+level[20].wall.push(createWall(1400,180, 100,30,floor[7]));
+level[20].wall.push(createWall(900,180, 100,30,floor[7]));
+level[20].wall.push(createWall(400,180, 100,30,floor[7]));
+level[20].wall.push(createWall(100,180, 100,30,floor[7]));
+level[20].wall.push(createWall(70,400, 30,100,sideWall[2]));
+level[20].wall.push(createWall(70,300, 30,100,sideWall[2]));
+level[20].wall.push(createWall(70,200, 30,100,sideWall[2]));
+level[20].wall.push(createWall(70,500, 30,100,sideWall[5]));
+level[20].wall.push(createWall(70,180, 30,100,sideWall[5]));
+level[20].wall.push(createWall(1900,500, 30,100,sideWall[5]));
+level[20].wall.push(createWall(1900,400, 30,100,sideWall[2]));
+level[20].wall.push(createWall(1900,300, 30,100,sideWall[2]));
+level[20].wall.push(createWall(1900,200, 30,100,sideWall[2]));
+level[20].wall.push(createWall(1900,180, 30,100,sideWall[5]));
+
+level[20].dLights.push(new GenLight(550,350,10, 0.2));
+level[20].dLights.push(new GenLight(1550,350,10, 0.2));
+level[20].lamps.push(new pulseLight(100,500));
+level[20].lamps[0].addPLight(200, 500);
+level[20].lamps[0].addPLight(300, 500);
+level[20].lamps[0].addPLight(400, 500);
+level[20].lamps[0].addPLight(500, 500);
+level[20].lamps[0].addPLight(600, 500);
+level[20].lamps[0].addPLight(700, 500);
+level[20].lamps[0].addPLight(800, 500);
+level[20].lamps[0].addPLight(900, 500);
+level[20].lamps[0].addPLight(1000, 500);
+level[20].lamps[0].addPLight(1100, 500);
+level[20].lamps[0].addPLight(1200, 500);
+level[20].lamps[0].addPLight(1300, 500);
+level[20].lamps[0].addPLight(1400, 500);
+level[20].lamps[0].addPLight(1500, 500);
+level[20].lamps[0].addPLight(1600, 500);
+level[20].lamps[0].addPLight(1700, 500);
+level[20].lamps[0].addPLight(1800, 500);
+level[20].lamps[0].addPLight(1900, 500);
+level[20].creature.push(HighReptile(360,270,1));
+level[20].wallPanels.push(new Fire(840,500, 'test'));level[20].dLights.push(new steamJet(1250,400));
+level[20].lamps.push(new deadLamp(370,330));level[20].lamps.push(new deadLamp(220,330));
+level[20].items.push(messageTrap(390,400, blankPic, 'No Way Out', 'Look out the windows, theres nothing out there on the other side of these walls. ~~I heard some of the guards mention this whole place is moving somewhere and they can leave when they get there.  ~~We have to hurry. $0'));
+
+level[20].exits.push(new Exit(1800,400,21,true, 900,400))
+level[20].exits.push(new Exit(300,400,22,true, 1700,600))
+
+level[21] = new Level('The Showroom')
+level[21].wallPanels.push(new Panel(900,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(1000,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(1100,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(1200,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(1300,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(800,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(700,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(600,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(500,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(400,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(300,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(200,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(100,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(1400,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(1500,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(1600,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(1700,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(1800,200, panelHall[3], 1,1));
+level[21].wallPanels.push(new Panel(100,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(200,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(300,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(400,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(500,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(600,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(700,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(800,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(900,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1000,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1100,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1200,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1300,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1400,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1500,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1600,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1700,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1800,300, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1800,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1800,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1700,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1700,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1600,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1600,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1500,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1500,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1400,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1400,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1300,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1300,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1200,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1200,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1100,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1000,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(900,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(800,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(700,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(600,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(500,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(500,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(600,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(700,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(800,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(900,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1000,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(1100,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(100,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(200,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(300,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(400,400, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(400,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(300,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(200,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(100,500, panelHall[3], 0,1));
+level[21].wallPanels.push(new Panel(100,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(200,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(300,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(400,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(500,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(600,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(700,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(800,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(900,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(1000,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(1100,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(1200,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(1300,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(1400,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(1500,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(1600,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(1700,600, panelHall[3], 2,1));
+level[21].wallPanels.push(new Panel(1800,600, panelHall[3], 2,1));
+level[21].wall.push(createWall(100,700, 100,30,floor[5]));
+level[21].wall.push(createWall(600,700, 100,30,floor[5]));
+level[21].wall.push(createWall(1100,700, 100,30,floor[5]));
+level[21].wall.push(createWall(1400,700, 100,30,floor[5]));
+level[21].wall.push(createWall(1900,300, 30,100,sideWall[9]));
+level[21].wall.push(createWall(70,300, 30,100,sideWall[9]));
+level[21].wall.push(createWall(70,200, 30,100,sideWall[2]));
+level[21].wall.push(createWall(1900,200, 30,100,sideWall[2]));
+level[21].wall.push(createWall(1400,190, 100,30,floor[6]));
+level[21].wall.push(createWall(900,190, 100,30,floor[6]));
+level[21].wall.push(createWall(400,190, 100,30,floor[6]));
+level[21].wall.push(createWall(100,190, 100,30,floor[6]));
+level[21].wallPanels.push(new ForeGround(70,190, sideWall[5]));
+level[21].wallPanels.push(new ForeGround(70,700, sideWall[5]));
+level[21].wallPanels.push(new ForeGround(1900,700, sideWall[5]));
+level[21].wallPanels.push(new ForeGround(1900,190, sideWall[5]));level[21].wallPanels.push(new AniDoor(900,400, 0,1));
+level[21].wall.push(createWall(750,600, 100,30,floor[7]));level[21].wall.push(createWall(700,620, 100,30,floor[4]));
+level[21].wall.push(createWall(650,640, 100,30,floor[4]));
+level[21].wall.push(createWall(600,660, 100,30,floor[4]));
+level[21].wall.push(createWall(550,680, 100,30,floor[4]));
+level[21].wall.push(createWall(1200,620, 100,30,floor[4]));
+level[21].wall.push(createWall(1250,640, 100,30,floor[4]));
+level[21].wall.push(createWall(1300,660, 100,30,floor[4]));
+level[21].wall.push(createWall(1360,680, 100,30,floor[4]));level[21].wallPanels.push(new Billboard(1100,500, 'random',0));level[21].wallPanels.push(new Billboard(800,500, 'random',0));
+level[21].wallPanels.push(new Billboard(1100,400, 'random',0));
+level[21].wallPanels.push(new Billboard(800,400, 'random',0));
+level[21].lamps.push(new BigLampFlicker(960,420));
+level[21].foreGround.push(new ForeGround(1210,500, wallFeatures[21]));
+level[21].foreGround.push(new ForeGround(590,500, wallFeatures[17]));level[21].foreGround.push(new ForeGround(590,300, wallFeatures[20]));
+level[21].foreGround.push(new ForeGround(1210,300, wallFeatures[18]));
+level[21].wallPanels.push(new AniDoor(200,500, 0,1));
+level[21].wallPanels.push(new AniDoor(1600,500, 0,1));
+level[21].wallPanels.push(new wordWall(380,550, 'Reptile',5));
+level[21].wallPanels.push(new wordWall(1780,550, 'Insect',5));
+level[21].wallPanels.push(new wordWall(1780,560, 'geneline',5));
+level[21].wallPanels.push(new wordWall(380,560, 'geneline',5));
+level[21].wallPanels.push(new ForeGround(370,500, wallFeatures[3]));
+level[21].wallPanels.push(new ForeGround(1770,500, wallFeatures[3]));
+level[21].foreGround.push(new ForeGround(600,200, pipes[1]));
+level[21].foreGround.push(new ForeGround(500,200, pipes[4]));
+level[21].foreGround.push(new ForeGround(400,200, pipes[4]));
+level[21].foreGround.push(new ForeGround(300,200, pipes[4]));
+level[21].foreGround.push(new ForeGround(200,200, pipes[4]));
+level[21].foreGround.push(new ForeGround(100,200, pipes[4]));
+level[21].foreGround.push(new ForeGround(1300,200, pipes[0]));
+level[21].foreGround.push(new ForeGround(1400,200, pipes[4]));
+level[21].foreGround.push(new ForeGround(1500,200, pipes[4]));
+level[21].foreGround.push(new ForeGround(1600,200, pipes[4]));
+level[21].foreGround.push(new ForeGround(1700,200, pipes[4]));
+level[21].foreGround.push(new ForeGround(1800,200, pipes[4]));
+level[21].foreGround.push(new ForeGround(700,200, wallFeatures[12]));
+level[21].foreGround.push(new ForeGround(1200,200, wallFeatures[12]));
+level[21].wall.push(createWall(100,400, 100,30,floor[4]));
+level[21].wall.push(createWall(200,400, 100,30,floor[4]));
+level[21].wall.push(createWall(300,400, 100,30,floor[4]));
+level[21].wall.push(createWall(400,400, 100,30,floor[4]));
+level[21].wall.push(createWall(1800,400, 100,30,floor[4]));
+level[21].wall.push(createWall(1700,400, 100,30,floor[4]));
+level[21].wall.push(createWall(1600,400, 100,30,floor[4]));
+level[21].wall.push(createWall(1500,400, 100,30,floor[4]));
+level[21].foreGround.push(new ForeGround(1500,300, wallFeatures[33]));
+level[21].foreGround.push(new ForeGround(1600,300, wallFeatures[33]));
+level[21].foreGround.push(new ForeGround(1700,300, wallFeatures[33]));
+level[21].foreGround.push(new ForeGround(1800,300, wallFeatures[33]));
+level[21].foreGround.push(new ForeGround(100,300, wallFeatures[33]));
+level[21].foreGround.push(new ForeGround(200,300, wallFeatures[33]));
+level[21].foreGround.push(new ForeGround(300,300, wallFeatures[33]));
+level[21].foreGround.push(new ForeGround(400,300, wallFeatures[33]));
+level[21].foreGround.push(new ForeGround(500,320, wallFeatures[35]));
+level[21].foreGround.push(new ForeGround(1400,320, wallFeatures[34]));
+level[21].foreGround.push(new ForeGround(1410,300, wallFeatures[2]));
+level[21].foreGround.push(new ForeGround(1410,200, wallFeatures[2]));
+level[21].foreGround.push(new ForeGround(490,300, wallFeatures[1]));
+level[21].foreGround.push(new ForeGround(490,200, wallFeatures[1]));
+level[21].wallPanels.push(new wordWall(800,300, 'custom workers',15));
+level[21].wallPanels.push(new wordWall(900,330, 'for a custom',10));level[21].wallPanels.push(new wordWall(930,370, 'world',15));
+level[21].rLights.push(new staticLight(710,670, 20));
+level[21].rLights.push(new staticLight(670,670, 20));
+level[21].rLights.push(new staticLight(1330,670, 20));
+level[21].rLights.push(new staticLight(1290,670, 20));
+level[21].rLights.push(new staticLight(1290,470, 20));
+level[21].rLights.push(new staticLight(1330,470, 20));
+level[21].rLights.push(new staticLight(710,470, 20));
+level[21].rLights.push(new staticLight(670,470, 20));
+level[21].lamps.push(new pulseLight(1900,430));
+level[21].lamps[1].addPLight(1800, 430);
+level[21].lamps[1].addPLight(1700, 430);
+level[21].lamps[1].addPLight(1600, 430);
+level[21].lamps[1].addPLight(1500, 430);
+level[21].lamps.push(new pulseLight(100,430));
+level[21].lamps[2].addPLight(200, 430);
+level[21].lamps[2].addPLight(300, 430);
+level[21].lamps[2].addPLight(400, 430);
+level[21].lamps[2].addPLight(500, 430);
+level[21].wallPanels.push(new ForeGround(130,300, foreGPic[12]));
+level[21].wallPanels.push(new ForeGround(190,300, foreGPic[11]));
+level[21].wallPanels.push(new ForeGround(220,320, foreGPic[15]));
+level[21].wallPanels.push(new ForeGround(250,300, foreGPic[12]));level[21].wallPanels.push(new ForeGround(310,300, foreGPic[11]));
+level[21].wallPanels.push(new ForeGround(370,300, foreGPic[12]));
+level[21].wallPanels.push(new ForeGround(1760,300, foreGPic[12]));
+level[21].wallPanels.push(new ForeGround(1700,300, foreGPic[11]));
+level[21].wallPanels.push(new ForeGround(1640,300, foreGPic[12]));
+level[21].wallPanels.push(new ForeGround(1580,300, foreGPic[11]));
+level[21].wallPanels.push(new ForeGround(1520,300, foreGPic[12]));
+level[21].wallPanels.push(new ForeGround(1610,320, foreGPic[13]));
+level[21].wallPanels.push(new ForeGround(1160,510, bioPic[3]));
+level[21].wallPanels.push(new ForeGround(680,510, bioPic[5]));
+level[21].wallPanels.push(new ForeGround(810,440, bioPic[2]));
+level[21].wallPanels.push(new ForeGround(400,560, bioPic[0]));
+level[21].wallPanels.push(new ForeGround(1170,420, bioPic[5]));
+level[21].wallPanels.push(new ForeGround(1050,450, bioPic[4]));
+level[21].foreGround.push(new ForeGround(1380,600, bioPic[9]));
+level[21].foreGround.push(new ForeGround(1800,420, bioPic[12]));
+level[21].wallPanels.push(new talker(1600,600,'Insect geneline.  All the abilities of a baseline human combined with the industriousness and loyalty of and old earth insect colony. ','test'));
+level[21].wallPanels.push(new talker(400,600,'Reptile geneline.  Known for their hardiness in a variety of hostile environs.  These custom workers never tire and can operate in even the harshest conditions.','test'));
+level[21].creature.push(MedInsect(110,210,0));
+level[21].creature.push(MedInsect(140,210,0));
+level[21].creature.push(MedInsect(230,210,0));
+level[21].creature.push(MedInsect(1740,200,0));
+level[21].creature.push(MedInsect(1680,210,0));
+level[21].creature.push(MedInsect(1620,200,0));
+level[21].creature.push(Bug(1750,470,0));
+level[21].creature.push(BugSmall(1660,470,0));
+level[21].creature.push(BugSmall(1600,480,0));
+level[21].creature.push(BugSmall(150,470,0));
+level[21].creature.push(BugSmall(240,470,0));
+level[21].creature.push(BugSmall(320,480,0));
+
+level[21].foreGround.push(new ForeGround(400,600, wallFeatures[1]));
+level[21].foreGround.push(new ForeGround(400,500, wallFeatures[1]));
+level[21].foreGround.push(new ForeGround(400,400, wallFeatures[1]));
+level[21].foreGround.push(new ForeGround(1500,600, wallFeatures[2]));
+level[21].foreGround.push(new ForeGround(1500,500, wallFeatures[2]));
+level[21].foreGround.push(new ForeGround(1500,400, wallFeatures[2]));
+level[21].foreGround.push(new ForeGround(100,600, foreGPic[17]));
+level[21].foreGround.push(new ForeGround(200,500, foreGPic[17]));
+level[21].foreGround.push(new ForeGround(100,400, foreGPic[17]));
+level[21].foreGround.push(new ForeGround(300,600, foreGPic[17]));
+level[21].foreGround.push(new ForeGround(200,600, foreGPic[19]));
+level[21].foreGround.push(new ForeGround(100,500, foreGPic[19]));
+level[21].foreGround.push(new ForeGround(300,400, foreGPic[19]));
+level[21].foreGround.push(new ForeGround(200,400, foreGPic[18]));
+level[21].foreGround.push(new ForeGround(300,500, foreGPic[18]));
+level[21].foreGround.push(new ForeGround(1600,600, foreGPic[18]));
+level[21].foreGround.push(new ForeGround(1700,500, foreGPic[18]));
+level[21].foreGround.push(new ForeGround(1600,400, foreGPic[18]));
+level[21].foreGround.push(new ForeGround(1800,400, foreGPic[18]));
+level[21].foreGround.push(new ForeGround(1700,400, foreGPic[19]));
+level[21].foreGround.push(new ForeGround(1700,600, foreGPic[19]));
+level[21].foreGround.push(new ForeGround(1800,500, foreGPic[19]));
+level[21].foreGround.push(new ForeGround(1600,500, foreGPic[17]));
+level[21].foreGround.push(new ForeGround(1800,600, foreGPic[17]));
+level[21].foreGround.push(new ForeGround(1160,500, bioPic[17]));
+level[21].foreGround.push(new ForeGround(640,500, bioPic[18]));
+level[21].wallPanels.push(new ForeGround(1540,550, bioPic[4]));
+level[21].exits.push(new Exit(300, 600,  24, true, 900, 400));
+level[21].exits.push(new Exit(1700, 600,  25, true, 600, 300));
+
+
+level[22] = new Level('Specimens 1- 5')
+level[22].wallPanels.push(new Panel(700,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(800,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(900,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(1000,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(1100,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(1200,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(1300,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(1400,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(1500,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(1600,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(1700,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(1800,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(600,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(500,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(400,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(300,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(200,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(100,500, panelHall[3], 1,1));
+level[22].wallPanels.push(new Panel(100,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(200,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(300,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(400,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(500,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(600,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(700,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(800,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(900,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(1000,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(1100,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(1200,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(1300,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(1400,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(1500,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(1600,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(1700,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(1800,600, panelHall[3], 0,1));
+level[22].wallPanels.push(new Panel(1800,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(1700,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(1600,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(1500,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(1400,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(1300,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(1200,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(1100,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(1000,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(900,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(800,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(700,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(600,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(500,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(400,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(300,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(200,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new Panel(100,700, panelHall[3], 2,1));
+level[22].wallPanels.push(new AniDoor(300,600, 0,0));
+level[22].wallPanels.push(new Billboard(200,600, 'Here our workers develope their skills to maximize industrial output and work together as a team.',0));
+level[22].wallPanels.push(new ForeGround(900,600, door[0], '', 0.5));
+level[22].wallPanels.push(new Panel(820,680, panelHall[3], 2,0.4));
+level[22].wallPanels.push(new Panel(720,680, panelHall[3], 2,0.4));
+level[22].wallPanels.push(new Panel(620,680, panelHall[3], 2,0.4));
+level[22].wallPanels.push(new Panel(1080,680, panelHall[3], 2,0.4));
+level[22].wallPanels.push(new Panel(1180,680, panelHall[3], 2,0.4));
+level[22].wallPanels.push(new Panel(1280,680, panelHall[3], 2,0.4));level[22].wallPanels.push(new Panel(1420,680, panelHall[3], 2,0.4));
+level[22].wallPanels.push(new Panel(1520,680, panelHall[3], 2,0.4));
+level[22].wallPanels.push(new Panel(1620,680, panelHall[3], 2,0.4));
+level[22].wallPanels.push(new Panel(620,580, panelHall[3], 1,0.4));
+level[22].wallPanels.push(new Panel(720,580, panelHall[3], 1,0.4));
+level[22].wallPanels.push(new Panel(820,580, panelHall[3], 1,0.4));
+level[22].wallPanels.push(new Panel(1080,580, panelHall[3], 1,0.4));
+level[22].wallPanels.push(new Panel(1180,580, panelHall[3], 1,0.4));
+level[22].wallPanels.push(new Panel(1280,580, panelHall[3], 1,0.4));
+level[22].wallPanels.push(new Panel(1420,580, panelHall[3], 1,0.4));
+level[22].wallPanels.push(new Panel(1520,580, panelHall[3], 1,0.4));
+level[22].wallPanels.push(new Panel(1620,580, panelHall[3], 1,0.4));
+level[22].wallPanels.push(new AniDoor(1700,600, 0,0));level[22].wallPanels.push(new wordTicker(1750,610, 'NO ENTRY'));level[22].wallPanels.push(new wordWall(1740,600, 'restricted',7));
+
+level[22].wallPanels.push(new ForeGround(630,580, wallFeatures[14]));
+level[22].wallPanels.push(new ForeGround(630,580, wallFeatures[14]));
+level[22].wallPanels.push(new ForeGround(800,680, foreGPic[11]));
+level[22].wallPanels.push(new ForeGround(830,700, foreGPic[15]));
+level[22].wallPanels.push(new ForeGround(670,600, windowArt[0]));level[22].wallPanels.push(new ForeGround(1510,580, wallFeatures[32]));
+level[22].wallPanels.push(new ForeGround(1280,680, foreGPic[0]));
+level[22].wallPanels.push(new ForeGround(1330,660, foreGPic[4]));
+level[22].wallPanels.push(new ForeGround(1110,680, foreGPic[12]));
+level[22].wallPanels.push(new ForeGround(1190,730, foreGPic[13]));
+level[22].wallPanels.push(new ForeGround(1290,660, foreGPic[15]));
+level[22].wallPanels.push(new ForeGround(1640,660, foreGPic[16]));
+level[22].wallPanels.push(new ForeGround(1170,680, foreGPic[11]));
+level[22].wallPanels.push(new ForeGround(1200,700, foreGPic[9]));
+level[22].wallPanels.push(new ForeGround(1100,600, posterArt[0]));
+level[22].wallPanels.push(new ForeGround(1440,600, posterArt[1]));
+level[22].wallPanels.push(new Monitor(1560,600, 'we care about you -- we love what you do --',0));
+level[22].wall.push(createWall(100,800, 100,30,floor[5]));
+level[22].wall.push(createWall(600,800, 100,30,floor[5]));
+level[22].wall.push(createWall(1100,800, 100,30,floor[5]));
+level[22].wall.push(createWall(1400,800, 100,30,floor[5]));
+level[22].wall.push(createWall(1900,700, 30,100,sideWall[2]));
+level[22].wall.push(createWall(1900,600, 30,100,sideWall[2]));
+level[22].wall.push(createWall(1900,500, 30,100,sideWall[2]));
+level[22].wall.push(createWall(70,500, 30,100,sideWall[2]));
+level[22].wall.push(createWall(70,600, 30,100,sideWall[2]));
+level[22].wall.push(createWall(70,700, 30,100,sideWall[2]));
+level[22].wall.push(createWall(70,800, 30,100,sideWall[5]));
+level[22].wall.push(createWall(1900,800, 30,100,sideWall[5]));
+level[22].wall.push(createWall(1400,500, 100,30,floor[6]));
+level[22].wall.push(createWall(900,500, 100,30,floor[6]));
+level[22].wall.push(createWall(400,500, 100,30,floor[6]));
+level[22].wall.push(createWall(100,500, 100,30,floor[6]));
+level[22].dLights.push(new GenLight(1230,670,10, 1));
+level[22].dLights.push(new GenLight(1570,680,10, 1));
+level[22].dLights.push(new GenLight(780,680,10, 1));level[22].lamps.push(new UpLamp(570,780));
+level[22].lamps.push(new UpLamp(490,780));
+level[22].lamps.push(new UpLamp(310,780));
+level[22].lamps.push(new UpLamp(230,780));
+level[22].lamps.push(new UpLamp(930,780));
+level[22].lamps.push(new UpLamp(1060,780));
+level[22].lamps.push(new UpLamp(1400,780));
+level[22].lamps.push(new UpLamp(1730,780));
+level[22].lamps.push(new UpLamp(1860,780));
+level[22].wallPanels.push(new wordWall(500,650, 'worker',5));
+level[22].wallPanels.push(new wordWall(500,660, 'dormatory',5));
+level[22].wallPanels.push(new wordWall(500,670, '1 - 5',5));
+level[22].wallPanels.push(new ForeGround(620,680, foreGPic[17]));
+level[22].wallPanels.push(new ForeGround(820,580, foreGPic[17]));
+level[22].wallPanels.push(new ForeGround(1080,580, foreGPic[17]));
+level[22].wallPanels.push(new ForeGround(1180,680, foreGPic[17]));
+level[22].wallPanels.push(new ForeGround(1420,580, foreGPic[17]));
+level[22].wallPanels.push(new ForeGround(720,680, foreGPic[18]));
+level[22].wallPanels.push(new ForeGround(620,580, foreGPic[18]));
+level[22].wallPanels.push(new ForeGround(1080,680, foreGPic[18]));
+level[22].wallPanels.push(new ForeGround(1280,580, foreGPic[18]));
+level[22].wallPanels.push(new ForeGround(820,680, foreGPic[19]));
+level[22].wallPanels.push(new ForeGround(720,580, foreGPic[19]));
+level[22].wallPanels.push(new ForeGround(1180,580, foreGPic[19]));
+level[22].wallPanels.push(new ForeGround(1280,680, foreGPic[19]));
+level[22].wallPanels.push(new ForeGround(1520,680, foreGPic[19]));
+level[22].wallPanels.push(new ForeGround(1620,580, foreGPic[19]));
+level[22].wallPanels.push(new ForeGround(1420,680, foreGPic[18]));
+level[22].wallPanels.push(new ForeGround(1520,580, foreGPic[18]));
+level[22].wallPanels.push(new ForeGround(1620,680, foreGPic[17]));
+
+
+level[22].items.push(messageTrap(520,690, recorder, 'Welcome', 'As you can see here in our sample dorm our workers live and train in the most humane of environments well above the requirements stipulated in the Solaris Convention. ~~Each dorm is equiped with a private sleeping area, dining area, and education center providing both entertainment as well as job training to provide the highest quality workforce. ~~In short we care about our workers.  A happy worker is a most productive one.'));
+level[22].items.push(messageTrap(520,690, blankPic, 'Home?', "People actually lived here? ~~I've never slept in a place this big, our job training was always done at the end of a shock stick. $0"));
+
+level[22].exits.push(new Exit(400, 700, 19, true, 300, 400))
+level[22].exits.push(new Exit(1800, 700, 20, true, 200, 300))
+
+
+
+level[23] = new Level('Human Resources')
+level[23].wallPanels.push(new Panel(200,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(300,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(400,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(500,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(600,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(700,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(200,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(300,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(400,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(500,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(600,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(700,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(200,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(300,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(400,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(500,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(600,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(700,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new AniDoor(300,600, 0,1));
+level[23].wallPanels.push(new wordWall(490,660, 'Human',5));
+level[23].wallPanels.push(new wordWall(490,670, 'Resources',5));
+level[23].wallPanels.push(new Panel(800,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(800,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(800,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new ForeGround(480,700, foreGPic[11]));
+level[23].wallPanels.push(new ForeGround(550,700, foreGPic[12]));
+level[23].wallPanels.push(new ForeGround(630,700, foreGPic[12]));
+level[23].wallPanels.push(new ForeGround(700,700, foreGPic[11]));
+level[23].wallPanels.push(new ForeGround(730,720, foreGPic[14]));
+level[23].wallPanels.push(new ForeGround(510,720, foreGPic[13]));
+level[23].wall.push(createWall(200,800, 100,30,floor[5]));
+level[23].wall.push(createWall(700,800, 100,30,floor[5]));
+level[23].wallPanels.push(new Panel(900,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(1000,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(1100,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(1200,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(1300,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(1400,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(1500,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(1600,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(1700,700, panelHall[3], 2,0.7));
+level[23].wallPanels.push(new Panel(1700,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(1600,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(1500,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(1400,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(1300,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(1200,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(1100,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(1000,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(900,600, panelHall[3], 0,0.7));
+level[23].wallPanels.push(new Panel(900,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(1000,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(1100,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(1200,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(1300,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(1400,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(1500,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(1600,500, panelHall[3], 1,0.8));
+level[23].wallPanels.push(new Panel(1700,500, panelHall[3], 1,0.8));
+level[23].wall.push(createWall(1200,800, 100,30,floor[5]));
+level[23].wall.push(createWall(1700,800, 100,30,floor[0]));
+level[23].wall.push(createWall(1300,490, 100,30,floor[6]));
+level[23].wall.push(createWall(800,490, 100,30,floor[6]));
+level[23].wall.push(createWall(300,490, 100,30,floor[6]));
+level[23].wall.push(createWall(200,490, 100,50,ceiling[0]));
+level[23].wall.push(createWall(170,700, 30,100,sideWall[2]));
+level[23].wall.push(createWall(170,600, 30,100,sideWall[2]));
+level[23].wall.push(createWall(170,500, 30,100,sideWall[2]));
+level[23].wallPanels.push(new ForeGround(820,700, foreGPic[0]));
+level[23].wallPanels.push(new ForeGround(920,700, foreGPic[1]));
+level[23].wallPanels.push(new ForeGround(830,680, foreGPic[2]));
+level[23].wallPanels.push(new ForeGround(970,680, foreGPic[5]));level[23].wallPanels.push(new ForeGround(930,680, foreGPic[16]));
+level[23].wall.push(createWall(170,800, 30,100,sideWall[5]));
+level[23].wall.push(createWall(170,490, 30,100,sideWall[5]));
+level[23].wall.push(createWall(1800,800, 30,100,sideWall[5]));
+level[23].wall.push(createWall(1800,700, 30,100,sideWall[2]));
+level[23].wall.push(createWall(1800,600, 30,100,sideWall[2]));
+level[23].wall.push(createWall(1800,500, 30,100,sideWall[2]));
+level[23].wall.push(createWall(1800,490, 30,100,sideWall[5]));level[23].wallPanels.push(new Panel(1140,700, panelHall[3], 2,0.4));
+level[23].wallPanels.push(new Panel(1240,700, panelHall[3], 2,0.4));
+level[23].wallPanels.push(new Panel(1340,700, panelHall[3], 2,0.4));
+level[23].wallPanels.push(new Panel(1440,700, panelHall[3], 2,0.4));
+level[23].wallPanels.push(new Panel(1140,600, panelHall[3], 1,0.4));
+level[23].wallPanels.push(new Panel(1240,600, panelHall[3], 1,0.4));
+level[23].wallPanels.push(new Panel(1340,600, panelHall[3], 1,0.4));
+level[23].wallPanels.push(new Panel(1440,600, panelHall[3], 1,0.4));
+level[23].wallPanels.push(new ForeGround(1250,700, foreGPic[10]));
+level[23].wallPanels.push(new ForeGround(1150,700, foreGPic[0]));
+level[23].wallPanels.push(new ForeGround(1350,700, foreGPic[1]));
+level[23].wallPanels.push(new ForeGround(1190,680, foreGPic[14]));
+level[23].wallPanels.push(new ForeGround(1360,680, foreGPic[15]));
+level[23].wallPanels.push(new ForeGround(1230,680, foreGPic[9]));
+level[23].wallPanels.push(new ForeGround(1320,680, foreGPic[9]));
+level[23].wallPanels.push(new ForeGround(1450,700, foreGPic[12]));
+level[23].wallPanels.push(new Panel(1540,600, panelHall[3], 1,0.4));
+level[23].wallPanels.push(new Panel(1540,700, panelHall[3], 2,0.4));
+level[23].wallPanels.push(new ForeGround(1530,700, wallFeatures[30]));
+level[23].wallPanels.push(new ForeGround(1030,700, wallFeatures[30]));
+level[23].wallPanels.push(new ForeGround(1450,620, posterArt[1]));
+level[23].wallPanels.push(new ForeGround(1140,700, foreGPic[18]));
+level[23].wallPanels.push(new ForeGround(1140,600, foreGPic[19]));
+level[23].wallPanels.push(new ForeGround(1240,700, foreGPic[17]));
+level[23].wallPanels.push(new ForeGround(1240,600, foreGPic[18]));
+level[23].wallPanels.push(new ForeGround(1340,700, foreGPic[19]));
+level[23].wallPanels.push(new ForeGround(1340,600, foreGPic[17]));
+level[23].wallPanels.push(new ForeGround(1440,600, foreGPic[18]));
+level[23].wallPanels.push(new ForeGround(1440,700, foreGPic[19]));
+level[23].wallPanels.push(new ForeGround(1540,700, wallFeatures[35]));
+level[23].wallPanels.push(new ForeGround(1540,600, wallFeatures[35]));
+level[23].lamps.push(new FlickerLamp(1190,630));
+level[23].lamps.push(new deadLamp(1290,630));
+level[23].lamps.push(new Lamp(1390,630));
+level[23].lamps.push(new Lamp(1590,630));
+level[23].lamps.push(new UpLamp(1100,780));
+level[23].lamps.push(new UpLamp(800,780));
+level[23].lamps.push(new UpLamp(500,780));level[23].lamps.push(new BigLampFlicker(880,600));
+level[23].lamps.push(new BigLampDead(360,600));
+level[23].wallPanels.push(new ForeGround(480,620, wallFeatures[3]));
+level[23].wallPanels.push(new ForeGround(1100,680, wallFeatures[13]));
+level[23].wallPanels.push(new ForeGround(1380,680, bioPic[3]));
+level[23].wallPanels.push(new ForeGround(750,700, bioPic[8]));
+level[23].wallPanels.push(new ForeGround(650,590, bioPic[4]));
+level[23].wallPanels.push(new ForeGround(550,710, bioPic[7]));
+level[23].wallPanels.push(new ForeGround(890,720, bioPic[6]));
+level[23].wallPanels.push(new ForeGround(240,660, bioPic[0]));level[23].wallPanels.push(new ForeGround(1690,700, floor[1]));
+level[23].wallPanels.push(new ForeGround(1660,770, floor[2]));
+level[23].wallPanels.push(new ForeGround(1740,670, floor[2]));
+level[23].wallPanels.push(new Fire(1680,800, 'test'));
+level[23].wallPanels.push(new Fire(1740,700, 'test'));
+level[23].wallPanels.push(new Fire(1590,800, 'test'));
+level[23].wallPanels.push(new Fire(1070,770, 'test'));
+level[23].wallPanels.push(new Fire(1690,790, 'test'));
+level[23].wallPanels.push(new Fire(1700,800, 'test'));
+level[23].wallPanels.push(new Fire(1780,800, 'test'));level[23].wallPanels.push(new Fire(350,800, 'test'));
+level[23].wallPanels.push(new ForeGround(1540,700, wallFeatures[34]));
+level[23].wallPanels.push(new ForeGround(1540,600, wallFeatures[34]));
+level[23].wallPanels.push(new wordWall(1650,660, 'conference',5));
+level[23].wallPanels.push(new wordWall(1650,670, 'room 6',5));
+level[23].wallPanels.push(new ForeGround(1640,620, wallFeatures[3]));
+level[23].creature.push(HighInsect(1280,600,0));level[23].creature.push(BugSmall(1000,600,0));
+level[23].creature.push(BugSmall(1200,600,0));
+level[23].wallPanels.push(new ForeGround(300,500, wallFeatures[2]));
+level[23].wallPanels.push(new ForeGround(820,500, wallFeatures[2]));
+level[23].wallPanels.push(new ForeGround(400,500, wallFeatures[1]));
+level[23].wallPanels.push(new ForeGround(920,500, wallFeatures[1]));
+level[23].wallPanels.push(new ForeGround(1700,500, wallFeatures[1]));
+level[23].wallPanels.push(new ForeGround(1600,500, wallFeatures[2]));
+level[23].lamps.push(new BigLampDead(1660,600));
+level[23].wallPanels.push(new ForeGround(1380,600, bioPic[19]));
+level[23].wallPanels.push(new ForeGround(520,570, bioPic[15]));
+
+
+level[23].exits.push(new Exit(400,700, 17, true, 1200, 200));
+
+
+
+level[24] = new Level('Reptile Lab')
+level[24].wallPanels.push(new Panel(900,500, panelHall[1], 2,0.8));
+level[24].wallPanels.push(new Panel(1000,500, panelHall[1], 2,0.8));
+level[24].wallPanels.push(new Panel(1100,500, panelHall[1], 2,0.8));
+level[24].wallPanels.push(new Panel(800,500, panelHall[1], 2,0.8));
+level[24].wallPanels.push(new Panel(800,400, panelHall[1], 0,0.8));
+level[24].wallPanels.push(new Panel(900,400, panelHall[1], 0,0.8));
+level[24].wallPanels.push(new Panel(1000,400, panelHall[1], 0,0.8));
+level[24].wallPanels.push(new Panel(1100,400, panelHall[1], 0,0.8));
+level[24].wallPanels.push(new Panel(800,300, panelHall[1], 1,0.8));
+level[24].wallPanels.push(new Panel(900,300, panelHall[1], 1,0.8));
+level[24].wallPanels.push(new Panel(1000,300, panelHall[1], 1,0.8));
+level[24].wallPanels.push(new Panel(1100,300, panelHall[1], 1,0.8));
+level[24].wallPanels.push(new AniDoor(900,400, 0,1));level[24].wallPanels.push(new wordWall(1110,430, 'reptile',5));
+level[24].wallPanels.push(new wordWall(1110,440, 'gene-line',5));level[24].wallPanels.push(new wordWall(1110,450, 'Dev.',5));
+level[24].wallPanels.push(new Panel(1400,500, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(1500,500, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(1600,500, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(1700,500, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(1800,500, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(1300,500, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(1200,500, panelHall[2], 2,0.8));
+level[24].wallPanels.push(new Panel(1200,400, panelHall[2], 0,0.8));
+level[24].wallPanels.push(new Panel(1200,300, panelHall[2], 0,0.8));
+level[24].wallPanels.push(new Panel(1200,200, panelHall[2], 1,0.8));
+level[24].wallPanels.push(new Panel(1300,400, panelHall[0], 1,0.8));
+level[24].wallPanels.push(new Panel(1800,400, panelHall[0], 1,0.8));
+level[24].wallPanels.push(new Panel(1350,400, panelHall[3], 1,0.3));
+level[24].wallPanels.push(new Panel(1450,400, panelHall[3], 1,0.3));
+level[24].wallPanels.push(new Panel(1550,400, panelHall[3], 1,0.3));
+level[24].wallPanels.push(new Panel(1650,400, panelHall[3], 1,0.3));
+level[24].wallPanels.push(new Panel(1750,400, panelHall[3], 1,0.3));
+level[24].wallPanels.push(new Panel(1350,450, panelHall[3], 0,0.3));
+level[24].wallPanels.push(new Panel(1450,450, panelHall[3], 0,0.3));
+level[24].wallPanels.push(new Panel(1550,450, panelHall[3], 0,0.3));
+level[24].wallPanels.push(new Panel(1650,450, panelHall[3], 0,0.3));
+level[24].wallPanels.push(new Panel(1750,450, panelHall[3], 0,0.3));
+level[24].wall.push(createWall(1300,380, 100,30,floor[7]));
+level[24].wall.push(createWall(1800,380, 100,30,floor[4]));
+
+level[24].lamps.push(new Lamp(1320,420));
+level[24].lamps.push(new Lamp(1870,420));
+level[24].wallPanels.push(new Panel(1300,300, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(1400,300, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(1500,300, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(1600,300, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(1700,300, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(1800,300, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(1300,200, panelHall[0], 1,0.8));
+level[24].wallPanels.push(new Panel(1400,200, panelHall[0], 1,0.8));
+level[24].wallPanels.push(new Panel(1500,200, panelHall[0], 1,0.8));
+level[24].wallPanels.push(new Panel(1600,200, panelHall[0], 1,0.8));
+level[24].wallPanels.push(new Panel(1700,200, panelHall[0], 1,0.8));
+level[24].wallPanels.push(new Panel(1800,200, panelHall[0], 1,0.8));level[24].wallPanels.push(new Panel(1350,250, panelHall[3], 2,0.3));
+level[24].wallPanels.push(new Panel(1450,250, panelHall[3], 2,0.3));
+level[24].wallPanels.push(new Panel(1550,250, panelHall[3], 2,0.3));
+level[24].wallPanels.push(new Panel(1650,250, panelHall[3], 2,0.3));
+level[24].wallPanels.push(new Panel(1750,250, panelHall[3], 2,0.3));
+level[24].wallPanels.push(new ForeGround(1380,500, wallFeatures[15]));
+level[24].wallPanels.push(new ForeGround(1100,400, wallFeatures[3]));
+level[24].wallPanels.push(new ForeGround(1100,500, wallFeatures[9]));
+level[24].wallPanels.push(new ForeGround(1540,450, foreGPic[12]));
+level[24].wallPanels.push(new ForeGround(1410,350, wallFeatures[14]));
+level[24].wallPanels.push(new ForeGround(1650,450, wallFeatures[30]));
+level[24].wallPanels.push(new ForeGround(1780,480, wallFeatures[28]));
+level[24].wallPanels.push(new ForeGround(1660,500, wallFeatures[38]));
+level[24].wallPanels.push(new ForeGround(1660,450, wallFeatures[38]));
+level[24].wallPanels.push(new ForeGround(1660,400, wallFeatures[38]));level[24].wallPanels.push(new ForeGround(1350,450, foreGPic[18]));
+level[24].wallPanels.push(new ForeGround(1450,450, foreGPic[19]));
+level[24].wallPanels.push(new ForeGround(1550,450, foreGPic[17]));
+level[24].wallPanels.push(new ForeGround(1650,450, foreGPic[18]));
+level[24].wallPanels.push(new ForeGround(1750,450, foreGPic[17]));
+
+level[24].lamps.push(new Lamp(1320,220));
+level[24].lamps.push(new Lamp(1870,220));level[24].wallPanels.push(new ForeGround(1350,450, wallFeatures[35]));
+level[24].wallPanels.push(new ForeGround(1750,450, wallFeatures[34]));
+level[24].wallPanels.push(new ForeGround(1310,500, wallFeatures[22]));
+level[24].wallPanels.push(new ForeGround(1380,270, wallFeatures[37]));
+level[24].wallPanels.push(new ForeGround(1380,280, wallFeatures[36]));
+level[24].wallPanels.push(new ForeGround(1430,280, wallFeatures[36]));
+level[24].wallPanels.push(new ForeGround(1480,270, wallFeatures[40]));
+level[24].wallPanels.push(new ForeGround(1540,270, wallFeatures[40]));
+level[24].wallPanels.push(new ForeGround(1600,270, wallFeatures[41]));
+level[24].wallPanels.push(new ForeGround(1660,290, floor[2]));
+level[24].wallPanels.push(new ForeGround(1720,290, floor[2]));
+level[24].wallPanels.push(new ForeGround(1480,280, wallFeatures[36]));
+level[24].wallPanels.push(new ForeGround(1530,280, wallFeatures[36]));
+level[24].wallPanels.push(new ForeGround(1580,280, wallFeatures[36]));
+level[24].wallPanels.push(new ForeGround(1630,280, wallFeatures[36]));
+level[24].wallPanels.push(new ForeGround(1680,280, wallFeatures[36]));
+level[24].wallPanels.push(new ForeGround(1730,280, wallFeatures[36]));
+level[24].wallPanels.push(new ForeGround(1780,270, wallFeatures[37]));
+level[24].wallPanels.push(new ForeGround(1780,280, wallFeatures[36]));
+level[24].wallPanels.push(new ForeGround(1350,250, foreGPic[17]));
+level[24].wallPanels.push(new ForeGround(1450,250, foreGPic[18]));
+level[24].wallPanels.push(new ForeGround(1550,250, foreGPic[19]));
+level[24].wallPanels.push(new ForeGround(1650,250, foreGPic[17]));
+level[24].wallPanels.push(new ForeGround(1750,250, foreGPic[18]));
+level[24].wallPanels.push(new ForeGround(1750,250, wallFeatures[34]));
+level[24].wallPanels.push(new ForeGround(1350,250, wallFeatures[35]));
+level[24].items.push(messageTrap(1150,450, recorder, 'Evacuation', 'To all Personel, ~~Evacuation procedures are in effect. ~~Prototypes have breached containment.  Under no circumstances is it advisable to approach any of the test subjects. ~~Genetic stability has broken down.  Unexpected mutations are manifesting throughout the prototype population. ~~Observed mutations have shown to be extremely dangerous.  ~~Proceed to nearest functioning safe zone. ~~Marine forces will be dispatched to regain control of affected areas.'));
+level[24].dLights.push(new GenLight(1440,460,5, 0.8));
+level[24].dLights.push(new GenLight(1550,450,5, 0.8));
+level[24].dLights.push(new GenLight(1650,450,5, 0.8));
+level[24].dLights.push(new GenLight(1750,450,5, 0.8));
+level[24].dLights.push(new GenLight(1400,300,5, 0.8));
+level[24].dLights.push(new GenLight(1500,300,5, 0.8));
+level[24].dLights.push(new GenLight(1600,300,5, 0.8));
+level[24].dLights.push(new GenLight(1700,300,5, 0.8));
+level[24].dLights.push(new GenLight(1800,300,5, 0.8));
+
+level[24].wallPanels.push(new Panel(700,500, panelHall[2], 0,0.8));
+level[24].wallPanels.push(new Panel(700,400, panelHall[2], 0,0.8));
+level[24].wallPanels.push(new Panel(700,300, panelHall[0], 1,0.8));
+level[24].wallPanels.push(new Panel(600,300, panelHall[1], 1,0.8));
+level[24].wallPanels.push(new Panel(500,300, panelHall[1], 1,0.8));
+level[24].wallPanels.push(new Panel(400,300, panelHall[1], 1,0.8));
+level[24].wallPanels.push(new Panel(300,300, panelHall[1], 1,0.8));
+level[24].wallPanels.push(new Panel(200,300, panelHall[1], 1,0.8));
+level[24].wallPanels.push(new Panel(100,300, panelHall[1], 1,0.8));
+level[24].wallPanels.push(new Panel(100,500, panelHall[1], 2,0.8));
+level[24].wallPanels.push(new Panel(300,500, panelHall[1], 2,0.8));
+level[24].wallPanels.push(new Panel(500,500, panelHall[1], 2,0.8));
+level[24].wallPanels.push(new Panel(600,500, panelHall[1], 2,0.8));
+level[24].wallPanels.push(new Panel(100,400, panelHall[0], 0,0.8));
+level[24].wallPanels.push(new Panel(200,400, panelHall[0], 0,0.8));
+level[24].wallPanels.push(new Panel(300,400, panelHall[0], 0,0.8));
+level[24].wallPanels.push(new Panel(400,400, panelHall[0], 0,0.8));
+level[24].wallPanels.push(new Panel(500,400, panelHall[0], 0,0.8));
+level[24].wallPanels.push(new Panel(600,400, panelHall[0], 0,0.8));
+level[24].wallPanels.push(new Panel(200,500, panelHall[0], 2,0.8));
+level[24].wallPanels.push(new Panel(400,500, panelHall[0], 2,0.8));
+level[24].wall.push(createWall(100,600, 100,30,floor[5]));
+level[24].wall.push(createWall(1400,600, 100,30,floor[5]));
+level[24].wall.push(createWall(800,600, 100,30,floor[0]));
+level[24].wall.push(createWall(900,600, 100,30,floor[0]));
+level[24].wall.push(createWall(1000,600, 100,30,floor[0]));
+level[24].wall.push(createWall(1100,600, 100,30,floor[0]));
+level[24].wall.push(createWall(1300,600, 100,30,floor[0]));
+level[24].wall.push(createWall(600,600, 100,30,floor[0]));
+level[24].wall.push(createWall(100,290, 100,30,floor[6]));
+level[24].wall.push(createWall(600,290, 100,30,floor[6]));
+level[24].wall.push(createWall(1400,190, 100,30,floor[6]));
+level[24].wall.push(createWall(1300,190, 100,50,ceiling[0]));
+level[24].wall.push(createWall(1200,190, 100,50,ceiling[0]));
+level[24].wall.push(createWall(1100,290, 100,50,ceiling[0]));
+level[24].wall.push(createWall(1170,190, 30,100,sideWall[2]));
+level[24].wall.push(createWall(1900,200, 30,100,sideWall[8]));
+level[24].wall.push(createWall(1900,190, 30,100,sideWall[5]));
+level[24].wall.push(createWall(1900,600, 30,100,sideWall[5]));
+level[24].wall.push(createWall(70,500, 30,100,sideWall[0]));
+level[24].wall.push(createWall(70,400, 30,100,sideWall[0]));
+level[24].wall.push(createWall(70,300, 30,100,sideWall[0]));
+level[24].wall.push(createWall(70,600, 30,100,sideWall[5]));
+level[24].wall.push(createWall(70,290, 30,100,sideWall[5]));
+level[24].elevators.push(new elevator(1200,600, 60,220));
+level[24].wall.push(createWall(1200,600, 100,30,ceiling[0]));
+level[24].wallPanels.push(new ForeGround(140,400, wallFeatures[21]));
+level[24].foreGround.push(new ForeGround(260,550, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(260,500, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(260,450, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(260,400, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(260,350, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(260,300, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(830,550, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(830,500, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(830,450, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(830,400, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(830,350, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(830,300, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(360,500, foreGPic[0]));
+level[24].foreGround.push(new ForeGround(460,500, foreGPic[1]));
+level[24].foreGround.push(new ForeGround(390,480, foreGPic[3]));
+level[24].foreGround.push(new ForeGround(440,400, bioPic[18]));
+level[24].items.push(messageTrap(570,510, blankPic, 'LOG', 'Reseach Log ~Reptile Geneline Division ~~I have increasing concerns regarding DNA stability in the latest batch of subjects. ~~In my opinion stability, both genetic and psychological, have been compromised in the name of expediency. ~~I understand the ship will reach the Manticore-C Iron Refinery in a few weeks, but the time frame provided to develop and produce these workers has cut away any semblance of safety and reliability in the new population. ~~Dr Grant has ignored my warnings on this matter. ~~Let the record show I follow my orders under protest. ~~Dr H. Markus'));
+level[24].items.push(medItem(170,570));
+level[24].items.push(medItem(110,570));level[24].items.push(pistolItem(490,500));
+level[24].items.push(armorItem(1870,320));level[24].wallPanels.push(new ForeGround(1710,400, bioPic[19]));
+level[24].items.push(messageTrap(1860,460, recorder, 'LAB REPORT', 'RESEARCH LOG ~Reptile Geneline Division ~~The current batch of prototypes are thus far still tolerant of their human supervisors.  ~~That situation is changing, certain DNA instabilities has resulted physical and psychological anomalies.  ~~In light of managements insistance on continuing this geneline I strongly advise we maintain strict social regulation in the reptile population. ~~If they ever grasp the concept of freedom we could have a full scale revolt on our hands. ~~Dr. K. Grant'));
+level[24].items.push(medItem(170,570));
+level[24].items.push(medItem(110,570));level[24].items.push(pistolItem(490,500));
+level[24].items.push(armorItem(1870,320));level[24].wallPanels.push(new ForeGround(1710,400, bioPic[19]));
+level[24].items.push(messageTrap(1860,460, recorder, 'LAB REPORT', 'RESEARCH LOG ~Reptile Geneline Division ~~The current batch of prototypes are thus far still tolerant of their human supervisors.  ~~That situation is changing, certain DNA instabilities has resulted physical and psychological anomalies.  ~~In light of managements insistance on continuing this geneline I strongly advise we maintain strict social regulation in the reptile population. ~~If they ever grasp the concept of freedom we could have a full scale revolt on our hands. ~~Dr.3 K. Grant'));
+level[24].lamps.push(new deadLamp(420,420));
+level[24].lamps.push(new deadLamp(520,420));
+level[24].lamps.push(new deadLamp(620,420));level[24].foreGround.push(new ForeGround(730,500, wallFeatures[0]));
+level[24].foreGround.push(new ForeGround(670,500, wallFeatures[0]));
+level[24].foreGround.push(new ForeGround(670,400, wallFeatures[0]));
+level[24].foreGround.push(new ForeGround(730,400, wallFeatures[0]));
+level[24].foreGround.push(new ForeGround(730,300, wallFeatures[0]));
+level[24].foreGround.push(new ForeGround(670,300, wallFeatures[0]));
+level[24].foreGround.push(new ForeGround(620,550, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(620,500, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(620,450, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(620,400, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(620,350, wallFeatures[38]));
+level[24].foreGround.push(new ForeGround(620,300, wallFeatures[38]));
+level[24].wallPanels.push(new Panel(700,600, panelHall[2], 0,0.8));
+level[24].wallPanels.push(new Panel(700,700, panelHall[2], 0,0.7));
+level[24].wallPanels.push(new Panel(700,800, panelHall[2], 0,0.6));
+level[24].wallPanels.push(new Panel(700,900, panelHall[2], 0,0.5));level[24].wallPanels.push(new Panel(700,1000, panelHall[2], 0,0.4));
+level[24].elevators.push(new elevator(700,1100, 500,500));
+level[24].wall.push(createWall(700,1100, 100,30,ceiling[0]));
+level[24].wall.push(createWall(670,600, 30,100,sideWall[7]));
+level[24].wall.push(createWall(800,600, 30,100,sideWall[7]));
+level[24].wall.push(createWall(670,1000, 30,100,sideWall[2]));
+level[24].wall.push(createWall(800,1000, 30,100,sideWall[2]));
+level[24].wall.push(createWall(670,1100, 30,100,sideWall[5]));
+level[24].wall.push(createWall(800,1100, 30,100,sideWall[5]));
+level[24].wall.push(createWall(670,990, 30,100,sideWall[6]));
+level[24].wall.push(createWall(800,990, 30,100,sideWall[6]));
+level[24].wall.push(createWall(810,600, 30,100,sideWall[6]));
+level[24].wall.push(createWall(660,600, 30,100,sideWall[6]));
+level[24].wallPanels.push(new ForeGround(400,300, wallFeatures[9]));
+level[24].wallPanels.push(new ForeGround(550,450, wallFeatures[10]));
+level[24].wallPanels.push(new ForeGround(1650,550, wallFeatures[10]));
+level[24].wallPanels.push(new ForeGround(1500,480, wallFeatures[13]));
+level[24].lamps.push(new sparker(1140,540));
+level[24].lamps.push(new sparker(1380,320));
+level[24].lamps.push(new sparker(1580,320));
+level[24].lamps.push(new sparker(1780,320));
+level[24].lamps.push(new sparker(420,430));
+level[24].wallPanels.push(new wordWall(810,450, 'maint.',5));
+level[24].wallPanels.push(new wordWall(810,460, 'Access 4D',5));
+level[24].exits.push(new Exit(1000, 500,  21, true, 200, 500));
+level[24].exits.push(new Exit(750, 1000,  26, true, 500, 300));
+
+
+
+level[25] = new Level('Insect Lab')
+level[25].wallPanels.push(new Panel(600,400, panelHall[1], 2,0.8));
+level[25].wallPanels.push(new Panel(700,400, panelHall[1], 2,0.8));
+level[25].wallPanels.push(new Panel(800,400, panelHall[1], 2,0.8));
+level[25].wallPanels.push(new Panel(500,400, panelHall[1], 2,0.8));
+level[25].wallPanels.push(new Panel(500,300, panelHall[1], 0,0.8));
+level[25].wallPanels.push(new Panel(600,300, panelHall[1], 0,0.8));
+level[25].wallPanels.push(new Panel(700,300, panelHall[1], 0,0.8));
+level[25].wallPanels.push(new Panel(800,300, panelHall[1], 0,0.8));
+level[25].wallPanels.push(new Panel(500,200, panelHall[1], 1,0.8));
+level[25].wallPanels.push(new Panel(600,200, panelHall[1], 1,0.8));
+level[25].wallPanels.push(new Panel(700,200, panelHall[1], 1,0.8));
+level[25].wallPanels.push(new Panel(800,200, panelHall[1], 1,0.8));
+level[25].wallPanels.push(new AniDoor(600,300, 0,0));level[25].wallPanels.push(new wordWall(810,360, 'Dev.',5));
+level[25].wallPanels.push(new wordWall(810,350, 'Gene-line',5));
+level[25].wallPanels.push(new wordWall(810,340, 'Insect',5));
+level[25].wallPanels.push(new ForeGround(800,300, wallFeatures[3]));
+level[25].wallPanels.push(new Panel(900,400, panelHall[0], 2,0.8));
+level[25].wallPanels.push(new Panel(1000,400, panelHall[0], 2,0.8));
+level[25].wallPanels.push(new Panel(1100,400, panelHall[0], 2,0.8));
+level[25].wallPanels.push(new Panel(1200,400, panelHall[0], 2,0.8));
+level[25].wallPanels.push(new Panel(1300,400, panelHall[0], 2,0.8));
+level[25].wallPanels.push(new Panel(1400,400, panelHall[0], 2,0.8));
+level[25].wallPanels.push(new Panel(1500,400, panelHall[0], 2,0.8));
+level[25].wallPanels.push(new Panel(1600,400, panelHall[0], 2,0.8));
+level[25].wallPanels.push(new Panel(1700,400, panelHall[0], 2,0.8));
+level[25].wallPanels.push(new Panel(900,300, panelHall[0], 0,0.8));
+level[25].wallPanels.push(new Panel(1700,300, panelHall[0], 0,0.8));
+level[25].wallPanels.push(new Panel(1700,200, panelHall[0], 1,0.8));
+level[25].wallPanels.push(new Panel(900,200, panelHall[0], 1,0.8));
+level[25].wallPanels.push(new Panel(1000,200, panelHall[0], 1,0.8));level[25].wallPanels.push(new Panel(1600,200, panelHall[0], 1,0.8));
+level[25].wallPanels.push(new Panel(1200,200, panelHall[0], 1,0.8));
+level[25].wallPanels.push(new Panel(1300,200, panelHall[0], 1,0.8));
+level[25].wallPanels.push(new Panel(1400,200, panelHall[0], 1,0.8));
+level[25].wallPanels.push(new Panel(1100,200, panelHall[0], 1,0.8));
+level[25].wallPanels.push(new Panel(1500,200, panelHall[0], 1,0.8));
+level[25].items.push(messageTrap(850,360, recorder, 'LAB REPORT', 'Progress Report ~Insect gene-line division ~~This new batch of prototypes from the latest geneline have shown remarkable industriousness.  They have begun forming a strict social hierarchy and have proceeded to further modify their living spaces.  ~~The resemblance to Earth based insect colonies is uncanny. ~~My only concern at this time is lack of attention they pay to the supervisors.  Last week there was a significant injury when a supervisor attempted to "get the attention" of one of the workers.  ~These creatures are highly organised and work tirelessly, normally these would be very profitable traits.  However, interaction of almost any kind with others outside their hierarchy has only one possibility, violence.  Total and brutal violence. ~~I have raised my concerns to management with regards to this behavior.  I have been told to "grow em and sell em" ~~Dr T. Morgan'));
+level[25].wallPanels.push(new Panel(950,250, panelHall[3], 1,0.3));
+level[25].wallPanels.push(new Panel(1050,250, panelHall[3], 1,0.3));
+level[25].wallPanels.push(new Panel(1150,250, panelHall[3], 1,0.3));
+level[25].wallPanels.push(new Panel(950,350, panelHall[3], 2,0.3));
+level[25].wallPanels.push(new Panel(1050,350, panelHall[3], 2,0.3));
+level[25].wallPanels.push(new Panel(1150,350, panelHall[3], 2,0.3));level[25].wallPanels.push(new Panel(1250,350, panelHall[3], 2,0.3));
+level[25].wallPanels.push(new ForeGround(1250,350, bioPic[44]));
+level[25].wallPanels.push(new ForeGround(1190,350, bioPic[25]));
+level[25].wallPanels.push(new Panel(1250,250, panelHall[5], 1,0.3));
+level[25].wallPanels.push(new ForeGround(1190,250, bioPic[26]));
+level[25].wallPanels.push(new Panel(1350,250, panelHall[6], 1,0.3));
+level[25].wallPanels.push(new Panel(1550,250, panelHall[6], 1,0.3));
+level[25].wallPanels.push(new Panel(1650,250, panelHall[4], 1,0.3));
+level[25].wallPanels.push(new Panel(1450,250, panelHall[5], 1,0.3));
+level[25].wallPanels.push(new Panel(1350,350, panelHall[5], 0,0.3));
+level[25].wallPanels.push(new Panel(1650,350, panelHall[5], 0,0.3));
+level[25].wallPanels.push(new Panel(1450,350, panelHall[6], 0,0.3));
+level[25].wallPanels.push(new Panel(1550,350, panelHall[6], 0,0.3));
+level[25].wallPanels.push(new ForeGround(1450,340, bioPic[40]));
+level[25].wallPanels.push(new ForeGround(1550,330, bioPic[42]));level[25].wallPanels.push(new ForeGround(1290,280, bioPic[43]));
+level[25].wallPanels.push(new ForeGround(1350,250, bioPic[39]));
+level[25].wallPanels.push(new ForeGround(1190,230, bioPic[48]));
+level[25].wallPanels.push(new ForeGround(1190,300, bioPic[49]));
+level[25].wallPanels.push(new ForeGround(1000,250, bioPic[26]));
+level[25].wallPanels.push(new ForeGround(1000,350, bioPic[35]));
+level[25].wallPanels.push(new ForeGround(1100,350, bioPic[24]));
+level[25].wallPanels.push(new ForeGround(1200,350, bioPic[23]));
+level[25].wallPanels.push(new ForeGround(1300,350, bioPic[23]));
+level[25].wallPanels.push(new ForeGround(1400,350, bioPic[23]));
+level[25].wallPanels.push(new ForeGround(1500,350, bioPic[23]));
+level[25].wallPanels.push(new ForeGround(1600,350, bioPic[30]));
+level[25].wallPanels.push(new ForeGround(1530,350, bioPic[45]));
+level[25].wallPanels.push(new ForeGround(1350,350, bioPic[47]));
+level[25].wallPanels.push(new ForeGround(1600,370, bioPic[49]));
+level[25].wallPanels.push(new ForeGround(760,300, bioPic[17]));
+level[25].lamps.push(new Lamp(970,220));
+level[25].lamps.push(new Lamp(1720,220));
+level[25].lamps.push(new FlickerLamp(1170,220));
+level[25].lamps.push(new FlickerLamp(1470,220));
+
+level[25].wallPanels.push(new Panel(400,300, panelHall[2], 0,0.8));
+level[25].wallPanels.push(new Panel(300,300, panelHall[2], 0,0.8));
+level[25].wallPanels.push(new Panel(300,400, panelHall[2], 0,0.8));
+level[25].wallPanels.push(new Panel(400,400, panelHall[2], 0,0.8));
+level[25].wallPanels.push(new Panel(400,500, panelHall[2], 0,0.8));
+level[25].wallPanels.push(new Panel(300,500, panelHall[2], 0,0.8));
+level[25].wallPanels.push(new Panel(300,600, panelHall[2], 0,0.7));
+level[25].wallPanels.push(new Panel(400,600, panelHall[2], 0,0.7));
+level[25].wallPanels.push(new Panel(300,700, panelHall[2], 0,0.6));
+level[25].wallPanels.push(new Panel(400,700, panelHall[2], 0,0.6));
+level[25].wallPanels.push(new Panel(300,800, panelHall[2], 0,0.5));
+level[25].wallPanels.push(new Panel(400,800, panelHall[2], 0,0.5));
+level[25].wallPanels.push(new Panel(300,900, panelHall[2], 2,0.4));
+level[25].wallPanels.push(new Panel(400,900, panelHall[2], 2,0.4));
+level[25].elevators.push(new CargoElevator(300,1000, 450,500));
+level[25].wallPanels.push(new Panel(300,200, panelHall[0], 1,0.8));
+level[25].wallPanels.push(new Panel(400,200, panelHall[0], 1,0.8));
+
+level[25].wall.push(createWall(500,500, 100,30,floor[5]));
+level[25].wall.push(createWall(1000,500, 100,30,floor[5]));
+level[25].wall.push(createWall(270,200, 30,100,sideWall[8]));
+level[25].wall.push(createWall(270,600, 30,100,sideWall[8]));
+level[25].wall.push(createWall(500,600, 30,100,sideWall[8]));
+level[25].wall.push(createWall(500,500, 30,100,sideWall[1]));
+level[25].wall.push(createWall(510,500, 30,100,sideWall[6]));
+level[25].wall.push(createWall(300,190, 100,30,floor[6]));
+level[25].wall.push(createWall(800,190, 100,30,floor[6]));
+level[25].wall.push(createWall(1300,190, 100,30,floor[6]));
+level[25].wall.push(createWall(1300,500, 100,30,floor[5]));
+level[25].wall.push(createWall(1800,400, 30,100,sideWall[2]));
+level[25].wall.push(createWall(1800,300, 30,100,sideWall[2]));
+level[25].wall.push(createWall(1800,200, 30,100,sideWall[2]));
+level[25].wall.push(createWall(1800,500, 30,100,sideWall[5]));
+level[25].wall.push(createWall(1800,190, 30,100,sideWall[5]));
+level[25].wall.push(createWall(270,190, 30,100,sideWall[5]));
+level[25].wall.push(createWall(300,1000, 100,30,floor[0]));
+level[25].wall.push(createWall(400,1000, 100,30,floor[0]));
+level[25].wall.push(createWall(500,1000, 30,100,sideWall[5]));
+level[25].wall.push(createWall(270,1000, 30,100,sideWall[5]));
+level[25].wallPanels.push(new ForeGround(950,350, foreGPic[18]));
+level[25].wallPanels.push(new ForeGround(1150,350, foreGPic[18]));
+level[25].wallPanels.push(new ForeGround(1050,350, foreGPic[19]));
+level[25].wallPanels.push(new ForeGround(1250,350, foreGPic[22]));
+level[25].wallPanels.push(new ForeGround(950,250, foreGPic[17]));
+level[25].wallPanels.push(new ForeGround(1050,250, foreGPic[18]));
+level[25].wallPanels.push(new ForeGround(1150,250, foreGPic[19]));
+level[25].wallPanels.push(new ForeGround(1250,250, foreGPic[19]));
+level[25].wallPanels.push(new ForeGround(1350,350, foreGPic[17]));
+level[25].wallPanels.push(new ForeGround(1450,350, foreGPic[21]));
+level[25].wallPanels.push(new ForeGround(1550,350, foreGPic[20]));
+level[25].wallPanels.push(new ForeGround(1650,350, foreGPic[17]));level[25].wallPanels.push(new ForeGround(1350,250, foreGPic[17]));
+level[25].wallPanels.push(new ForeGround(1550,250, foreGPic[17]));
+level[25].wallPanels.push(new ForeGround(1450,250, foreGPic[18]));
+level[25].wallPanels.push(new ForeGround(1650,250, foreGPic[19]));
+level[25].wallPanels.push(new ForeGround(800,400, bioPic[14]));
+level[25].wallPanels.push(new ForeGround(1470,360, bioPic[4]));
+level[25].wallPanels.push(new ForeGround(800,300, wallFeatures[8]));
+level[25].wallPanels.push(new ForeGround(1560,440, bioPic[7]));
+level[25].wallPanels.push(new ForeGround(550,400, bioPic[8]));
+level[25].wallPanels.push(new wordWall(510,340, 'maint.',5));
+level[25].wallPanels.push(new wordWall(510,350, 'access 4C',5));
+level[25].lamps.push(new BigLampFlicker(360,200));
+
+level[25].exits.push(new Exit(700, 400,  21, true, 1600, 500));
+level[25].exits.push(new Exit(400, 900,  26, true, 1300, 300));
+
+
+level[26] = new Level('Maint. Access 4')
+level[26].wallPanels.push(new Panel(900,300, panelHall[0], 1,0.3));
+level[26].wallPanels.push(new Panel(1000,300, panelHall[0], 1,0.3));
+level[26].wallPanels.push(new Panel(800,300, panelHall[2], 1,0.2));
+level[26].wallPanels.push(new Panel(1100,300, panelHall[2], 1,0.2));
+level[26].wallPanels.push(new Panel(700,300, panelHall[0], 1,0.3));
+level[26].wallPanels.push(new Panel(1200,300, panelHall[0], 1,0.3));
+level[26].wallPanels.push(new Panel(600,300, panelHall[2], 1,0.2));
+level[26].wallPanels.push(new Panel(500,300, panelHall[2], 1,0.2));
+level[26].wallPanels.push(new Panel(1300,300, panelHall[2], 1,0.2));
+level[26].wallPanels.push(new Panel(1400,300, panelHall[2], 1,0.2));
+level[26].wallPanels.push(new Panel(400,300, panelHall[1], 1,0.3));
+level[26].wallPanels.push(new Panel(300,300, panelHall[1], 1,0.3));
+level[26].wallPanels.push(new Panel(1500,300, panelHall[1], 1,0.3));
+level[26].wallPanels.push(new Panel(1600,300, panelHall[1], 1,0.3));
+level[26].wallPanels.push(new Panel(1500,400, panelHall[1], 2,0.3));
+level[26].wallPanels.push(new Panel(1600,400, panelHall[1], 2,0.3));
+level[26].wallPanels.push(new Panel(300,400, panelHall[1], 2,0.3));
+level[26].wallPanels.push(new Panel(400,400, panelHall[1], 2,0.3));
+level[26].wallPanels.push(new Panel(500,400, panelHall[2], 2,0.3));
+level[26].wallPanels.push(new Panel(600,400, panelHall[2], 2,0.3));
+level[26].wallPanels.push(new Panel(1400,400, panelHall[2], 2,0.3));
+level[26].wallPanels.push(new Panel(1300,400, panelHall[2], 2,0.3));
+level[26].wallPanels.push(new Panel(700,400, panelHall[0], 2,0.3));
+level[26].wallPanels.push(new Panel(800,400, panelHall[0], 2,0.3));
+level[26].wallPanels.push(new Panel(900,400, panelHall[0], 2,0.3));
+level[26].wallPanels.push(new Panel(1000,400, panelHall[0], 2,0.3));
+level[26].wallPanels.push(new Panel(1100,400, panelHall[0], 2,0.3));
+level[26].wallPanels.push(new Panel(1200,400, panelHall[0], 2,0.3));
+level[26].wallPanels.push(new AniDoor(300,300, 1,0));
+level[26].wallPanels.push(new AniDoor(1500,300, 0,0));
+level[26].elevators.push(new CargoElevator(500,500, 0,0));
+level[26].elevators.push(new CargoElevator(1300,500, 0,0));
+level[26].wall.push(createWall(300,500, 100,30,floor[7]));
+level[26].wall.push(createWall(800,500, 100,30,floor[7]));level[26].wall.push(createWall(1200,500, 100,30,floor[7]));
+level[26].wall.push(createWall(1700,400, 30,100,sideWall[1]));
+level[26].wall.push(createWall(1700,300, 30,100,sideWall[1]));
+level[26].wall.push(createWall(270,300, 30,100,sideWall[1]));
+level[26].wall.push(createWall(270,400, 30,100,sideWall[1]));
+level[26].wall.push(createWall(300,290, 100,30,floor[6]));
+level[26].wall.push(createWall(800,290, 100,30,floor[6]));
+level[26].wall.push(createWall(1200,290, 100,30,floor[6]));
+level[26].wall.push(createWall(1700,500, 30,100,sideWall[5]));
+level[26].wall.push(createWall(1700,290, 30,100,sideWall[5]));
+level[26].wall.push(createWall(270,290, 30,100,sideWall[5]));
+level[26].wall.push(createWall(270,500, 30,100,sideWall[5]));
+level[26].lamps.push(new BigLampFlicker(1560,300));
+level[26].wallPanels.push(new ForeGround(1220,400, wallFeatures[22]));
+level[26].wallPanels.push(new ForeGround(710,400, wallFeatures[22]));
+level[26].wallPanels.push(new ForeGround(800,400, wallFeatures[10]));
+level[26].wallPanels.push(new ForeGround(1050,450, wallFeatures[10]));
+level[26].wallPanels.push(new ForeGround(1250,300, wallFeatures[10]));
+level[26].wallPanels.push(new ForeGround(980,380, wallFeatures[6]));
+level[26].foreGround.push(new ForeGround(1100,300, pipes[2]));
+level[26].foreGround.push(new ForeGround(800,300, pipes[3]));
+level[26].foreGround.push(new ForeGround(900,300, pipes[4]));
+level[26].foreGround.push(new ForeGround(1000,300, pipes[4]));
+level[26].foreGround.push(new ForeGround(300,300, pipes[4]));
+level[26].foreGround.push(new ForeGround(400,300, pipes[4]));
+level[26].foreGround.push(new ForeGround(500,300, pipes[4]));level[26].foreGround.push(new ForeGround(600,300, pipes[1]));
+level[26].foreGround.push(new ForeGround(600,400, wallFeatures[12]));
+level[26].foreGround.push(new ForeGround(1630,300, wallFeatures[12]));
+level[26].foreGround.push(new ForeGround(1630,400, wallFeatures[12]));
+level[26].foreGround.push(new ForeGround(750,300, wallFeatures[38]));
+level[26].foreGround.push(new ForeGround(750,350, wallFeatures[38]));
+level[26].foreGround.push(new ForeGround(750,400, wallFeatures[38]));
+level[26].foreGround.push(new ForeGround(750,450, wallFeatures[38]));
+level[26].foreGround.push(new ForeGround(1200,400, wallFeatures[38]));
+level[26].foreGround.push(new ForeGround(1200,450, wallFeatures[38]));
+level[26].foreGround.push(new ForeGround(1200,350, wallFeatures[38]));
+level[26].foreGround.push(new ForeGround(1200,300, wallFeatures[38]));
+level[26].lamps.push(new pulseLight(300,500));
+level[26].lamps[1].addPLight(400, 500);
+level[26].lamps[1].addPLight(500, 500);
+level[26].lamps[1].addPLight(600, 500);
+level[26].lamps[1].addPLight(700, 500);
+level[26].lamps[1].addPLight(800, 500);
+level[26].lamps[1].addPLight(900, 500);
+level[26].lamps[1].addPLight(1000, 500);
+level[26].lamps[1].addPLight(1100, 500);
+level[26].lamps[1].addPLight(1200, 500);
+level[26].lamps[1].addPLight(1300, 500);
+level[26].lamps[1].addPLight(1400, 500);
+level[26].lamps[1].addPLight(1500, 500);
+level[26].lamps[1].addPLight(1600, 500);
+level[26].exits.push(new Exit(1600,400,27,true, 200,500));
+level[26].exits.push(new Exit(1400,400,25,true,500,300));
+level[26].exits.push(new Exit(600,400,24,true,800, 400));
+
+level[27] = new Level('Maint. Tunnel A')
+level[27].wallPanels.push(new Panel(200,500, panelHall[1], 1,0.2));
+level[27].wallPanels.push(new Panel(300,500, panelHall[1], 1,0.2));
+level[27].wallPanels.push(new Panel(400,500, panelHall[2], 1,0.2));
+level[27].wallPanels.push(new Panel(500,500, panelHall[0], 1,0.2));
+level[27].wallPanels.push(new Panel(600,500, panelHall[0], 1,0.2));
+level[27].wallPanels.push(new Panel(700,500, panelHall[0], 1,0.2));
+level[27].wallPanels.push(new Panel(800,500, panelHall[0], 1,0.2));
+level[27].wallPanels.push(new Panel(900,500, panelHall[0], 1,0.2));
+level[27].wallPanels.push(new Panel(200,600, panelHall[1], 2,0.2));
+level[27].wallPanels.push(new Panel(300,600, panelHall[1], 2,0.2));
+level[27].wallPanels.push(new Panel(400,600, panelHall[2], 2,0.2));
+level[27].wallPanels.push(new Panel(500,600, panelHall[0], 2,0.2));
+level[27].wallPanels.push(new Panel(600,600, panelHall[0], 2,0.2));
+level[27].wallPanels.push(new Panel(700,600, panelHall[0], 2,0.2));
+level[27].wallPanels.push(new Panel(800,600, panelHall[0], 2,0.2));
+level[27].wallPanels.push(new Panel(900,600, panelHall[0], 2,0.2));
+level[27].wallPanels.push(new AniDoor(200,500, 0,0));
+level[27].wallPanels.push(new ForeGround(1000,600, bioPic[38]));
+level[27].wallPanels.push(new ForeGround(1000,500, bioPic[38]));
+level[27].wallPanels.push(new ForeGround(950,600, bioPic[25]));
+level[27].wallPanels.push(new ForeGround(950,500, bioPic[25]));
+level[27].wallPanels.push(new Panel(1100,600, panelHall[0], 2,0.2));
+level[27].wallPanels.push(new Panel(1200,600, panelHall[0], 2,0.2));
+level[27].wallPanels.push(new Panel(1100,500, panelHall[0], 1,0.2));
+level[27].wallPanels.push(new Panel(1200,500, panelHall[0], 1,0.2));
+level[27].wallPanels.push(new ForeGround(1050,600, bioPic[27]));
+level[27].wallPanels.push(new ForeGround(1050,500, bioPic[27]));
+level[27].lamps.push(new waterDrop(1100,520));
+level[27].lamps.push(new waterDrop(990,590));
+level[27].lamps.push(new waterDrop(1020,540));
+level[27].lamps.push(new waterDrop(1040,570));
+level[27].lamps.push(new waterDrop(1070,640));
+level[27].lamps.push(new waterDrop(1060,530));
+level[27].dLights.push(new steamJet(990,600));
+level[27].dLights.push(new steamJet(1100,540));
+level[27].lamps.push(new deadLamp(920,520));
+level[27].lamps.push(new deadLamp(1170,520));
+level[27].lamps.push(new sparker(920,530));
+level[27].lamps.push(new sparker(1170,530));
+level[27].lamps.push(new FlickerLamp(770,520));
+level[27].lamps.push(new Lamp(620,520));
+level[27].lamps.push(new BigLampDead(260,500));
+level[27].wall.push(createWall(200,700, 100,30,floor[5]));
+level[27].wall.push(createWall(700,700, 100,30,floor[5]));
+level[27].wall.push(createWall(1200,700, 100,30,floor[5]));
+level[27].wall.push(createWall(170,600, 30,100,sideWall[1]));
+level[27].wall.push(createWall(170,500, 30,100,sideWall[1]));
+level[27].wall.push(createWall(170,700, 30,100,sideWall[5]));
+level[27].wall.push(createWall(200,490, 100,30,floor[6]));
+level[27].wall.push(createWall(700,490, 100,30,floor[6]));
+level[27].wall.push(createWall(1200,490, 100,30,floor[6]));
+level[27].wall.push(createWall(1700,600, 30,100,sideWall[1]));
+level[27].wall.push(createWall(1700,500, 30,100,sideWall[1]));
+level[27].wall.push(createWall(1700,500, 30,100,sideWall[1]));
+level[27].wall.push(createWall(1700,700, 30,100,sideWall[5]));
+level[27].wall.push(createWall(1700,490, 30,100,sideWall[5]));
+level[27].wallPanels.push(new ForeGround(500,500, wallFeatures[12]));
+level[27].wallPanels.push(new ForeGround(500,600, pipes[3]));
+level[27].wallPanels.push(new ForeGround(600,600, pipes[4]));
+level[27].wallPanels.push(new ForeGround(700,600, pipes[4]));
+level[27].wallPanels.push(new ForeGround(800,600, pipes[4]));
+level[27].wallPanels.push(new ForeGround(900,600, pipes[4]));
+level[27].wallPanels.push(new ForeGround(990,600, pipes[4]));
+level[27].wallPanels.push(new ForeGround(1090,600, pipes[4]));
+level[27].wallPanels.push(new ForeGround(1190,600, pipes[1]));
+level[27].wallPanels.push(new ForeGround(460,650, wallFeatures[40]));
+level[27].foreGround.push(new ForeGround(700,500, wallFeatures[12]));
+level[27].foreGround.push(new ForeGround(700,600, wallFeatures[12]));
+level[27].foreGround.push(new ForeGround(400,650, wallFeatures[38]));
+level[27].foreGround.push(new ForeGround(400,600, wallFeatures[38]));
+level[27].foreGround.push(new ForeGround(400,550, wallFeatures[38]));
+level[27].foreGround.push(new ForeGround(400,500, wallFeatures[38]));
+level[27].foreGround.push(new ForeGround(450,500, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(450,600, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(550,600, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(550,500, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(650,500, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(650,600, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(750,600, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(750,500, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(850,500, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(850,600, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(950,600, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(950,500, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(1050,500, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(1050,600, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(1150,600, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(1150,500, wallFeatures[0]));
+level[27].wall.push(createWall(170,490, 30,100,sideWall[5]));
+level[27].items.push(steamTrap(550,600));level[27].wallPanels.push(new ForeGround(650,500, bioPic[12]));level[27].wallPanels.push(new ForeGround(330,500, bioPic[17]));
+level[27].wallPanels.push(new ForeGround(1070,500, bioPic[19]));
+level[27].foreGround.push(new ForeGround(900,510, bioPic[13]));
+level[27].foreGround.push(new ForeGround(440,600, bioPic[9]));
+level[27].wallPanels.push(new ForeGround(320,580, bioPic[43]));level[27].wallPanels.push(new Panel(1500,500, panelHall[1], 1,0.2));
+level[27].wallPanels.push(new Panel(1600,500, panelHall[1], 1,0.2));
+level[27].wallPanels.push(new Panel(1400,500, panelHall[1], 1,0.2));
+level[27].wallPanels.push(new Panel(1300,500, panelHall[2], 1,0.2));
+level[27].wallPanels.push(new Panel(1300,600, panelHall[2], 2,0.2));
+level[27].wallPanels.push(new Panel(1400,600, panelHall[1], 2,0.2));
+level[27].wallPanels.push(new Panel(1500,600, panelHall[1], 2,0.2));level[27].wallPanels.push(new Panel(1600,600, panelHall[1], 2,0.2));
+level[27].wallPanels.push(new ForeGround(1300,500, wallFeatures[12]));
+level[27].wallPanels.push(new ForeGround(1300,600, wallFeatures[12]));
+level[27].foreGround.push(new ForeGround(700,400, wallFeatures[12]));
+level[27].foreGround.push(new ForeGround(700,300, wallFeatures[12]));
+level[27].foreGround.push(new ForeGround(700,200, wallFeatures[12]));
+level[27].wallPanels.push(new AniDoor(1500,500, 0,0));level[27].wallPanels.push(new wordWall(1410,570, 'Maint.',5));
+level[27].wallPanels.push(new wordWall(1410,580, 'access',5));
+level[27].items.push(spawnTrap(1350,600, recorder, '0', '5','300,600'));
+level[27].items.push(spawnTrap(1350,600, recorder, '0', '5','300,600'));
+level[27].items.push(spawnTrap(1350,600, recorder, '0', '5','300,600'));
+level[27].items.push(spawnTrap(1350,600, recorder, '0', '5','300,600'));
+level[27].items.push(spawnTrap(1350,600, recorder, '0', '5','300,600'));
+level[27].items.push(spawnTrap(1350,600, recorder, '0', '5','300,600'));
+level[27].foreGround.push(new ForeGround(1250,500, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(1350,500, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(1250,600, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(1350,600, wallFeatures[0]));
+level[27].foreGround.push(new ForeGround(1450,650, wallFeatures[38]));
+level[27].foreGround.push(new ForeGround(1450,600, wallFeatures[38]));
+level[27].foreGround.push(new ForeGround(1450,550, wallFeatures[38]));
+level[27].foreGround.push(new ForeGround(1450,500, wallFeatures[38]));
+level[27].lamps.push(new pulseLight(200,700));
+level[27].lamps[13].addPLight(300, 700);
+level[27].lamps[13].addPLight(400, 700);
+level[27].lamps[13].addPLight(500, 700);
+level[27].lamps[13].addPLight(600, 700);
+level[27].lamps[13].addPLight(700, 700);
+level[27].lamps[13].addPLight(800, 700);
+level[27].lamps[13].addPLight(900, 700);
+level[27].lamps[13].addPLight(1000, 700);
+level[27].lamps[13].addPLight(1100, 700);
+level[27].lamps[13].addPLight(1200, 700);
+level[27].lamps[13].addPLight(1300, 700);
+level[27].lamps[13].addPLight(1400, 700);
+level[27].lamps[13].addPLight(1500, 700);
+level[27].lamps[13].addPLight(1600, 700);
+level[27].dLights.push(new spinLight(1520,530,50,0));
+
+level[27].exits.push(new Exit(1600  ,600  ,28  , true, 100 , 400  ));
+level[27].exits.push(new Exit(300  ,600  , 26 , true,1500  ,300   ));
+
+level[28] = new Level('Tunnel Access B')
+level[28].wallPanels.push(new Panel(200,400, panelHall[1], 1,0.2));
+level[28].wallPanels.push(new Panel(300,400, panelHall[1], 1,0.2));
+level[28].wallPanels.push(new Panel(100,400, panelHall[1], 1,0.2));
+level[28].wallPanels.push(new Panel(100,500, panelHall[1], 2,0.2));
+level[28].wallPanels.push(new Panel(200,500, panelHall[1], 2,0.2));
+level[28].wallPanels.push(new Panel(300,500, panelHall[1], 2,0.2));
+level[28].wallPanels.push(new AniDoor(100,400, 1,0));
+level[28].items.push(messageTrap(200,500, blankPic, 'Jammed', 'The doors jammed... ~~Only one way out now, across that bridge. $0 '));
+level[28].wallPanels.push(new Panel(400,400, panelHall[0], 1,0.2));
+level[28].wallPanels.push(new Panel(500,400, panelHall[0], 1,0.2));
+level[28].wallPanels.push(new Panel(400,500, panelHall[0], 2,0.2));
+level[28].wallPanels.push(new Panel(500,500, panelHall[0], 2,0.2));level[28].wallPanels.push(new Panel(600,500, panelHall[2], 2,0.2));
+level[28].wallPanels.push(new ForeGround(600,500, wallFeatures[12]));level[28].wall.push(createWall(100,600, 100,30,floor[5]));
+level[28].wall.push(createWall(600,600, 100,30,floor[0]));
+level[28].wall.push(createWall(700,600, 100,30,floor[7]));
+level[28].wall.push(createWall(1200,600, 100,30,floor[7]));level[28].foreGround.push(new ForeGround(800,500, wallFeatures[0]));
+level[28].foreGround.push(new ForeGround(800,400, wallFeatures[0]));
+level[28].foreGround.push(new ForeGround(1500,500, wallFeatures[0]));
+level[28].foreGround.push(new ForeGround(1500,400, wallFeatures[0]));
+level[28].foreGround.push(new ForeGround(700,500, wallFeatures[2]));
+level[28].foreGround.push(new ForeGround(700,400, wallFeatures[2]));
+level[28].foreGround.push(new ForeGround(1600,500, wallFeatures[1]));
+level[28].foreGround.push(new ForeGround(1600,400, wallFeatures[1]));
+level[28].foreGround.push(new ForeGround(1520,480, wallFeatures[4]));
+level[28].foreGround.push(new ForeGround(1450,550, wallFeatures[38]));
+level[28].foreGround.push(new ForeGround(1450,500, wallFeatures[38]));
+level[28].foreGround.push(new ForeGround(1450,450, wallFeatures[38]));
+level[28].foreGround.push(new ForeGround(1450,400, wallFeatures[38]));
+level[28].foreGround.push(new ForeGround(900,550, wallFeatures[38]));
+level[28].foreGround.push(new ForeGround(900,500, wallFeatures[38]));
+level[28].foreGround.push(new ForeGround(900,450, wallFeatures[38]));
+level[28].foreGround.push(new ForeGround(900,400, wallFeatures[38]));
+level[28].foreGround.push(new ForeGround(950,500, wallFeatures[33]));
+level[28].foreGround.push(new ForeGround(1050,500, wallFeatures[33]));
+level[28].foreGround.push(new ForeGround(1150,500, wallFeatures[33]));
+level[28].foreGround.push(new ForeGround(1250,500, wallFeatures[33]));
+level[28].foreGround.push(new ForeGround(1350,500, wallFeatures[33]));
+level[28].wallPanels.push(new ForeGround(700,500, wallFeatures[35]));
+level[28].wallPanels.push(new ForeGround(700,400, wallFeatures[35]));
+level[28].wall.push(createWall(100,390, 100,30,floor[6]));
+level[28].wall.push(createWall(70,500, 30,100,sideWall[2]));
+level[28].wall.push(createWall(70,400, 30,100,sideWall[2]));
+level[28].wall.push(createWall(70,600, 30,100,sideWall[5]));
+level[28].wall.push(createWall(70,390, 30,100,sideWall[5]));
+level[28].wall.push(createWall(1700,600, 100,30,floor[0]));
+level[28].wall.push(createWall(1800,600, 100,30,floor[0]));
+level[28].wallPanels.push(new Panel(1700,500, panelHall[6], 0,0.5));
+level[28].wallPanels.push(new Panel(1700,400, panelHall[5], 0,0.5));
+level[28].wallPanels.push(new Panel(1800,500, panelHall[5], 0,0.5));
+level[28].wallPanels.push(new Panel(1800,400, panelHall[6], 0,0.5));level[28].wallPanels.push(new AniDoor(1700,400, 0,0));
+level[28].wallPanels.push(new ForeGround(1600,500, bioPic[51]));
+level[28].wallPanels.push(new ForeGround(1600,400, bioPic[51]));
+level[28].wall.push(createWall(1900,500, 30,100,sideWall[1]));
+level[28].wall.push(createWall(1900,400, 30,100,sideWall[1]));
+level[28].wall.push(createWall(1900,600, 30,100,sideWall[5]));
+level[28].wall.push(createWall(1400,390, 100,30,floor[6]));
+level[28].wall.push(createWall(900,390, 100,30,floor[6]));
+level[28].wall.push(createWall(500,390, 100,30,floor[6]));
+level[28].wallPanels.push(new Panel(600,400, panelHall[2], 1,0.2));
+level[28].wallPanels.push(new ForeGround(600,400, wallFeatures[12]));
+level[28].wall.push(createWall(1900,390, 30,100,sideWall[5]));level[28].foreGround.push(new ForeGround(1690,600, sideWall[6]));
+level[28].foreGround.push(new ForeGround(680,600, sideWall[6]));
+
+level[28].wallPanels.push(new ForeGround(1650,500, bioPic[8]));
+level[28].wallPanels.push(new ForeGround(1350,400, bioPic[12]));
+level[28].wallPanels.push(new ForeGround(1610,400, bioPic[11]));level[28].foreGround.push(new ForeGround(1500,520, bioPic[13]));
+level[28].wallPanels.push(new ForeGround(390,470, bioPic[0]));
+level[28].wallPanels.push(new ForeGround(530,430, bioPic[5]));
+level[28].wallPanels.push(new ForeGround(1730,400, bioPic[15]));
+level[28].wallPanels.push(new ForeGround(1800,540, bioPic[7]));
+level[28].wallPanels.push(new ForeGround(1610,400, bioPic[20]));
+level[28].wallPanels.push(new ForeGround(320,440, wallFeatures[6]));
+level[28].items.push(messageTrap(1500,500, blankPic, 'Growth', 'Looks like the insects have been busy here too. ~~Going to have to push on. $0'));
+level[28].wallPanels.push(new ForeGround(1640,400, bioPic[19]));
+level[28].exits.push(new Exit(1800,500,29,true,300,100));
+
+
+
+level[29] = new Level('Maint. Access C')
+level[29].wallPanels.push(new Panel(300,200, panelHall[6], 2,0.5));
+level[29].wallPanels.push(new Panel(400,200, panelHall[7], 2,0.5));
+level[29].wallPanels.push(new Panel(500,200, panelHall[9], 2,0.5));
+level[29].wallPanels.push(new Panel(600,200, panelHall[5], 2,0.5));
+level[29].wallPanels.push(new Panel(700,200, panelHall[8], 2,0.5));
+level[29].wallPanels.push(new Panel(300,100, panelHall[5], 1,0.5));
+level[29].wallPanels.push(new Panel(400,100, panelHall[7], 1,0.5));
+level[29].wallPanels.push(new Panel(700,100, panelHall[7], 1,0.5));
+level[29].wallPanels.push(new Panel(500,100, panelHall[5], 1,0.5));
+level[29].wallPanels.push(new Panel(600,100, panelHall[6], 1,0.5));
+level[29].wall.push(createWall(300,300, 100,30,floor[9]));
+level[29].wall.push(createWall(270,300, 100,30,floor[10]));
+level[29].wall.push(createWall(270,70, 100,30,floor[10]));
+level[29].wall.push(createWall(300,70, 100,30,floor[9]));
+level[29].wallPanels.push(new AniDoor(300,100, 0,0));
+level[29].wallPanels.push(new ForeGround(440,200, bioPic[9]));
+level[29].wallPanels.push(new ForeGround(550,150, bioPic[39]));
+level[29].wallPanels.push(new ForeGround(600,100, bioPic[41]));
+level[29].wall.push(createWall(270,200, 30,100,sideWall[10]));
+level[29].wall.push(createWall(270,100, 30,100,sideWall[10]));
+level[29].wall.push(createWall(800,300, 100,30,floor[9]));
+level[29].wall.push(createWall(800,70, 100,30,floor[9]));
+level[29].wallPanels.push(new Panel(800,200, panelHall[7], 2,0.5));
+level[29].wallPanels.push(new Panel(1100,200, panelHall[7], 2,0.5));
+level[29].wallPanels.push(new Panel(900,200, panelHall[6], 2,0.2));
+level[29].wallPanels.push(new Panel(1200,200, panelHall[6], 2,0.2));
+level[29].wallPanels.push(new Panel(1000,200, panelHall[5], 2,0.5));
+level[29].wallPanels.push(new Panel(800,100, panelHall[5], 1,0.5));
+level[29].wallPanels.push(new Panel(1000,100, panelHall[10], 1,0.5));
+level[29].wallPanels.push(new Panel(1100,100, panelHall[5], 1,0.2));
+level[29].wallPanels.push(new Panel(900,100, panelHall[7], 1,0.2));
+level[29].wallPanels.push(new Panel(1200,100, panelHall[7], 1,0.2));
+level[29].wallPanels.push(new ForeGround(900,190, bioPic[40]));
+level[29].wallPanels.push(new ForeGround(1200,180, bioPic[42]));
+level[29].wallPanels.push(new ForeGround(860,130, bioPic[41]));
+level[29].wallPanels.push(new ForeGround(840,210, bioPic[43]));
+level[29].wallPanels.push(new ForeGround(770,200, bioPic[26]));
+level[29].wallPanels.push(new ForeGround(770,100, bioPic[26]));
+level[29].wallPanels.push(new ForeGround(770,100, bioPic[48]));
+level[29].wallPanels.push(new ForeGround(770,240, bioPic[45]));
+level[29].wallPanels.push(new ForeGround(1050,200, floor[1]));
+level[29].wallPanels.push(new ForeGround(1150,270, floor[2]));
+level[29].wallPanels.push(new ForeGround(1090,170, floor[2]));
+level[29].wallPanels.push(new ForeGround(1060,130, bioPic[49]));
+level[29].wallPanels.push(new ForeGround(970,200, bioPic[8]));
+level[29].wallPanels.push(new ForeGround(1060,200, bioPic[13]));
+level[29].wallPanels.push(new ForeGround(710,100, bioPic[18]));
+level[29].dLights.push(new GenLight(1030,130,10, 0.2));
+level[29].dLights.push(new GenLight(730,230,10, 0.2));
+level[29].foreGround.push(new ForeGround(1210,100, bioPic[54]));
+level[29].lamps.push(new waterDrop(1220,150));
+level[29].lamps.push(new waterDrop(500,100));
+level[29].lamps.push(new waterDrop(850,100));
+level[29].wall.push(createWall(1300,300, 100,30,floor[7]));
+level[29].wall.push(createWall(1300,70, 100,30,floor[8]));
+level[29].wall.push(createWall(1400,90, 100,30,floor[3]));
+//level[29].wall.push(createWall(1500,90, 100,30,floor[6]));
+level[29].foreGround.push(new ForeGround(1400,70, bioPic[55]));
+level[29].foreGround.push(new ForeGround(1300,300, bioPic[55]));
+level[29].wallPanels.push(new Panel(1300,200, panelHall[0], 0,0.5));
+level[29].wallPanels.push(new ForeGround(1300,200, bioPic[44]));
+level[29].wallPanels.push(new ForeGround(1260,200, wallFeatures[22]));
+level[29].wallPanels.push(new Panel(1300,100, panelHall[5], 1,0.8));
+level[29].wallPanels.push(new Panel(1400,100, panelHall[8], 1,0.8));
+level[29].wallPanels.push(new Panel(1400,200, panelHall[7], 2,0.2));
+level[29].wallPanels.push(new Panel(1500,200, panelHall[0], 2,0.3));
+level[29].wallPanels.push(new Panel(1600,200, panelHall[0], 2,0.3));
+level[29].wallPanels.push(new Panel(1700,200, panelHall[0], 2,0.3));
+level[29].wallPanels.push(new Panel(1500,100, panelHall[1], 1,0.3));
+level[29].wallPanels.push(new Panel(1600,100, panelHall[1], 1,0.3));
+level[29].wallPanels.push(new Panel(1700,100, panelHall[1], 1,0.3));
+level[29].wallPanels.push(new ForeGround(1500,200, bioPic[50]));
+level[29].wallPanels.push(new ForeGround(1500,100, bioPic[50]));
+level[29].wallPanels.push(new ForeGround(1500,100, wallFeatures[9]));
+level[29].wallPanels.push(new ForeGround(1400,100, wallFeatures[12]));
+level[29].wallPanels.push(new ForeGround(1400,200, wallFeatures[12]));
+level[29].wallPanels.push(new ForeGround(1380,270, floor[2]));
+level[29].wallPanels.push(new ForeGround(1370,240, floor[2]));
+level[29].wallPanels.push(new ForeGround(1350,270, floor[2]));
+level[29].dLights.push(new GenLight(1430,130,10, 0.2));
+level[29].lamps.push(new BigLampFlicker(1560,100));
+level[29].lamps.push(new BigLampFlicker(1760,100));
+level[29].wallPanels.push(new ForeGround(1400,220, bioPic[49]));
+level[29].wallPanels.push(new ForeGround(1170,110, bioPic[19]));
+level[29].wallPanels.push(new ForeGround(1210,100, bioPic[19]));
+level[29].wallPanels.push(new ForeGround(1460,100, bioPic[11]));
+level[29].wallPanels.push(new ForeGround(1340,100, bioPic[12]));
+level[29].lamps.push(new sparker(1540,150));
+level[29].lamps.push(new sparker(1560,130));
+level[29].wallPanels.push(new Panel(1800,100, panelHall[1], 1,0.3));
+level[29].wallPanels.push(new Panel(1800,200, panelHall[0], 2,0.3));
+
+level[29].wallPanels.push(new AniDoor(1700,100, 0,0));
+level[29].items.push(spawnTrap(1400,200, recorder, '0', '5','760,200'));
+level[29].items.push(spawnTrap(1400,200, recorder, '0', '4','750,200'));
+level[29].items.push(spawnTrap(1400,200, recorder, '0', '4','730,200'));
+level[29].items.push(spawnTrap(1400,200, recorder, '0', '3','710,200'));
+
+level[29].wall.push(createWall(1400,90, 100,30,floor[6]));
+level[29].wall.push(createWall(1800,300, 100,30,floor[4]));
+level[29].wall.push(createWall(1900,200, 30,100,sideWall[1]));
+level[29].wall.push(createWall(1900,100, 30,100,sideWall[1]));
+level[29].wall.push(createWall(1900,300, 30,100,sideWall[5]));
+level[29].wall.push(createWall(1900,90, 30,100,sideWall[5]));
+level[29].wallPanels.push(new ForeGround(1500,200, bioPic[59]));
+level[29].foreGround.push(new ForeGround(640,200, bioPic[25]));
+level[29].foreGround.push(new ForeGround(640,100, bioPic[25]));
+level[29].foreGround.push(new ForeGround(1130,200, bioPic[25]));
+level[29].foreGround.push(new ForeGround(1130,100, bioPic[25]));
+level[29].foreGround.push(new ForeGround(710,200, pipes[11]));
+level[29].foreGround.push(new ForeGround(710,100, pipes[11]));
+level[29].foreGround.push(new ForeGround(1200,200, pipes[11]));
+level[29].foreGround.push(new ForeGround(1200,100, pipes[11]));
+level[29].foreGround.push(new ForeGround(1600,200, pipes[5]));
+level[29].foreGround.push(new ForeGround(1600,100, pipes[5]));
+level[29].foreGround.push(new ForeGround(1670,200, pipes[11]));
+level[29].foreGround.push(new ForeGround(1670,100, pipes[11]));
+level[29].foreGround.push(new ForeGround(1700,90, ceiling[0]));
+level[29].foreGround.push(new ForeGround(1600,90, ceiling[0]));
+level[29].foreGround.push(new ForeGround(1800,90, ceiling[0]));
+level[29].foreGround.push(new ForeGround(1500,90, ceiling[0]));
+
+level[29].exits.push(new Exit(1800, 200, 30, true, 200,200));
+
+
+level[30] = new Level('Armory')
+level[30].wallPanels.push(new Panel(200,200, panelHall[1], 1,0.4));
+level[30].wallPanels.push(new Panel(300,200, panelHall[1], 1,0.4));
+level[30].wallPanels.push(new Panel(200,300, panelHall[1], 2,0.4));
+level[30].wallPanels.push(new Panel(300,300, panelHall[1], 2,0.4));
+level[30].wallPanels.push(new Panel(400,200, panelHall[2], 1,0.4));
+level[30].wallPanels.push(new Panel(500,200, panelHall[2], 1,0.4));
+level[30].wallPanels.push(new Panel(400,300, panelHall[2], 0,0.4));
+level[30].wallPanels.push(new Panel(500,300, panelHall[2], 0,0.4));
+level[30].wallPanels.push(new Panel(400,400, panelHall[2], 0,0.4));
+level[30].wallPanels.push(new Panel(500,400, panelHall[2], 0,0.4));
+level[30].wallPanels.push(new Panel(400,500, panelHall[2], 0,0.4));
+level[30].wallPanels.push(new Panel(500,500, panelHall[2], 0,0.4));
+level[30].wallPanels.push(new Panel(400,600, panelHall[2], 0,0.4));
+level[30].wallPanels.push(new Panel(500,600, panelHall[2], 0,0.4));level[30].wallPanels.push(new Panel(400,1000, panelHall[2], 2,0.4));
+level[30].wallPanels.push(new Panel(500,1000, panelHall[2], 2,0.4));
+level[30].wallPanels.push(new Panel(400,700, panelHall[2], 0,0.4));
+level[30].wallPanels.push(new Panel(500,700, panelHall[2], 0,0.4));
+level[30].wallPanels.push(new Panel(400,800, panelHall[2], 0,0.4));
+level[30].wallPanels.push(new Panel(500,800, panelHall[2], 0,0.4));
+level[30].wallPanels.push(new Panel(500,900, panelHall[2], 0,0.4));
+level[30].wallPanels.push(new Panel(400,900, panelHall[2], 0,0.4));
+level[30].rLights.push(new staticLight(400,900, 20));
+level[30].rLights.push(new staticLight(600,900, 20));
+level[30].rLights.push(new staticLight(600,800, 20));
+level[30].rLights.push(new staticLight(400,800, 20));
+level[30].rLights.push(new staticLight(400,700, 20));
+level[30].rLights.push(new staticLight(600,700, 20));
+level[30].rLights.push(new staticLight(600,600, 20));
+level[30].rLights.push(new staticLight(400,600, 20));
+level[30].rLights.push(new staticLight(400,500, 20));
+level[30].rLights.push(new staticLight(600,500, 20));
+level[30].rLights.push(new staticLight(600,400, 20));
+level[30].rLights.push(new staticLight(400,400, 20));
+
+level[30].wallPanels.push(new Panel(600,900, panelHall[1], 1,0.3));
+level[30].wallPanels.push(new Panel(700,900, panelHall[1], 1,0.3));
+level[30].wallPanels.push(new Panel(600,1000, panelHall[1], 2,0.3));
+level[30].wallPanels.push(new Panel(700,1000, panelHall[1], 2,0.3));
+level[30].wallPanels.push(new Panel(800,900, panelHall[11], 1,0.3));
+level[30].wallPanels.push(new Panel(900,900, panelHall[11], 1,0.3));
+level[30].wallPanels.push(new Panel(1000,900, panelHall[11], 1,0.3));
+
+level[30].wallPanels.push(new Panel(1200,900, panelHall[11], 1,0.3));
+level[30].wallPanels.push(new Panel(800,1000, panelHall[0], 2,0.3));
+level[30].wallPanels.push(new Panel(900,1000, panelHall[0], 2,0.3));
+level[30].wallPanels.push(new Panel(1000,1000, panelHall[0], 2,0.3));
+level[30].wallPanels.push(new Panel(1100,1000, panelHall[0], 2,0.3));
+level[30].wallPanels.push(new Panel(1200,1000, panelHall[0], 2,0.3));
+
+level[30].wallPanels.push(new ForeGround(850,900, bioPic[38]));
+level[30].wallPanels.push(new ForeGround(850,1000, bioPic[38]));
+level[30].wallPanels.push(new ForeGround(750,1000, bioPic[36]));
+level[30].wallPanels.push(new ForeGround(750,900, bioPic[36]));
+level[30].wallPanels.push(new ForeGround(950,1000, bioPic[37]));
+level[30].wallPanels.push(new ForeGround(950,900, bioPic[37]));
+level[30].wallPanels.push(new ForeGround(1100,1000, bioPic[44]));
+level[30].wallPanels.push(new ForeGround(1200,1000, bioPic[50]));
+level[30].wallPanels.push(new ForeGround(1000,1000, bioPic[51]));
+level[30].wallPanels.push(new Panel(1100,900, panelHall[7], 0,0.5));
+level[30].wallPanels.push(new ForeGround(1020,920, wallFeatures[39]));
+level[30].wallPanels.push(new ForeGround(1000,900, bioPic[51]));
+level[30].wallPanels.push(new ForeGround(1200,900, bioPic[50]));
+level[30].wallPanels.push(new ForeGround(900,910, bioPic[49]));
+level[30].wallPanels.push(new ForeGround(850,1000, bioPic[48]));
+level[30].wallPanels.push(new ForeGround(790,920, bioPic[45]));
+level[30].wallPanels.push(new ForeGround(1060,910, bioPic[43]));
+
+
+level[30].wallPanels.push(new ForeGround(1000,900, bioPic[58]));
+level[30].wallPanels.push(new ForeGround(1200,1000, bioPic[59]));
+level[30].foreGround.push(new ForeGround(750,1000, foreGPic[0]));
+level[30].foreGround.push(new ForeGround(850,1000, foreGPic[1]));
+level[30].foreGround.push(new ForeGround(780,980, foreGPic[2]));
+level[30].dLights.push(new GenLight(800,1000,10, 0.2));
+level[30].wallPanels.push(new ForeGround(1220,920, wallFeatures[39]));
+level[30].wallPanels.push(new Monitor(700,900, 'security breach sector-4',0));level[30].wallPanels.push(new wordWall(620,960, 'armory',5));
+level[30].wallPanels.push(new wordWall(620,970, '3-C',5));
+level[30].wallPanels.push(new ForeGround(630,1020, wallFeatures[5]));level[30].wall.push(createWall(400,1100, 100,30,floor[7]));
+level[30].wall.push(createWall(900,1100, 100,30,floor[9]));
+level[30].wall.push(createWall(1400,1100, 100,30,floor[7]));level[30].foreGround.push(new ForeGround(1400,1100, bioPic[55]));
+level[30].foreGround.push(new ForeGround(800,1100, bioPic[56]));level[30].wall.push(createWall(600,890, 100,50,ceiling[0]));
+level[30].wall.push(createWall(700,890, 100,50,ceiling[0]));
+level[30].wall.push(createWall(800,880, 100,30,floor[9]));
+level[30].foreGround.push(new ForeGround(700,880, bioPic[56]));
+level[30].foreGround.push(new ForeGround(1300,880, bioPic[55]));
+level[30].wall.push(createWall(1300,890, 100,30,floor[6]));
+level[30].wall.push(createWall(1800,890, 100,30,floor[3]));
+level[30].foreGround.push(new ForeGround(1800,900, wallFeatures[12]));
+level[30].foreGround.push(new ForeGround(1800,1000, wallFeatures[12]));level[30].wallPanels.push(new Panel(1300,1000, panelHall[0], 2,0.3));
+level[30].wallPanels.push(new Panel(1300,900, panelHall[11], 1,0.3));
+level[30].wallPanels.push(new Panel(1400,900, panelHall[1], 1,0.3));
+level[30].wallPanels.push(new Panel(1700,900, panelHall[1], 1,0.3));
+level[30].wallPanels.push(new Panel(1600,900, panelHall[1], 1,0.3));
+level[30].wallPanels.push(new Panel(1400,1000, panelHall[1], 2,0.3));
+level[30].wallPanels.push(new Panel(1600,1000, panelHall[1], 2,0.3));
+level[30].wallPanels.push(new Panel(1700,1000, panelHall[1], 2,0.3));
+level[30].wallPanels.push(new Panel(1500,1000, panelHall[1], 2,0.3));
+level[30].wallPanels.push(new Panel(1500,900, panelHall[1], 1,0.3));
+level[30].wallPanels.push(new Panel(1800,900, panelHall[2], 1,0.3));
+level[30].wallPanels.push(new Panel(1800,1000, panelHall[2], 2,0.3));
+level[30].wall.push(createWall(1900,1000, 30,100,sideWall[2]));
+level[30].wall.push(createWall(1900,900, 30,100,sideWall[2]));
+level[30].wall.push(createWall(1900,1100, 30,100,sideWall[5]));
+level[30].wall.push(createWall(1900,890, 30,100,sideWall[5]));
+level[30].wallPanels.push(new ForeGround(1800,1000, bioPic[60]));
+level[30].wallPanels.push(new ForeGround(1800,900, bioPic[51]));
+level[30].wall.push(createWall(200,400, 100,30,floor[0]));
+level[30].wall.push(createWall(300,400, 100,30,floor[0]));
+level[30].wall.push(createWall(100,190, 100,30,floor[6]));
+level[30].wallPanels.push(new Panel(100,200, panelHall[2], 1,0.3));
+level[30].wallPanels.push(new Panel(100,300, panelHall[2], 2,0.3));
+level[30].wall.push(createWall(100,400, 100,30,floor[0]));
+level[30].wall.push(createWall(70,200, 30,100,sideWall[1]));
+level[30].wall.push(createWall(70,300, 30,100,sideWall[1]));
+level[30].wall.push(createWall(70,400, 30,100,sideWall[5]));
+level[30].wall.push(createWall(70,190, 30,100,sideWall[5]));
+level[30].wall.push(createWall(600,200, 30,100,sideWall[7]));
+level[30].wall.push(createWall(600,500, 30,100,sideWall[7]));
+level[30].wall.push(createWall(370,400, 30,100,sideWall[7]));
+level[30].wall.push(createWall(370,700, 30,100,sideWall[7]));
+level[30].wall.push(createWall(370,1100, 30,100,sideWall[5]));
+level[30].foreGround.push(new ForeGround(600,870, sideWall[5]));
+level[30].wallPanels.push(new AniDoor(1600,900, 0,1));
+level[30].foreGround.push(new ForeGround(1230,1000, wallFeatures[34]));
+level[30].foreGround.push(new ForeGround(1230,900, wallFeatures[34]));
+level[30].foreGround.push(new ForeGround(1330,1000, wallFeatures[0]));
+level[30].foreGround.push(new ForeGround(1330,900, wallFeatures[0]));
+level[30].foreGround.push(new ForeGround(1430,900, wallFeatures[0]));
+level[30].foreGround.push(new ForeGround(1430,1000, wallFeatures[0]));
+level[30].foreGround.push(new ForeGround(1530,1000, wallFeatures[35]));
+level[30].foreGround.push(new ForeGround(1530,900, wallFeatures[35]));
+level[30].items.push(pistolItem(1200,920));
+level[30].items.push(pistolItem(1200,940));
+level[30].wallPanels.push(new wordWall(1510,970, 'checkpoint',5));
+level[30].wallPanels.push(new wordWall(1520,980, '4-C',5));
+level[30].wallPanels.push(new ForeGround(1290,1000, bioPic[61]));
+level[30].lamps.push(new BigLampFlicker(1660,900));
+level[30].dLights.push(new spinLight(670,970,50,0));
+level[30].elevators.push(new CargoElevator(400,1100, 400,700));
+level[30].foreGround.push(new ForeGround(600,190, sideWall[5]));
+level[30].wallPanels.push(new ForeGround(100,200, bioPic[26]));
+level[30].wallPanels.push(new ForeGround(100,300, bioPic[26]));
+level[30].wallPanels.push(new AniDoor(200,200, 0,0));
+level[30].items.push(messageTrap(1600,1010, blankPic, 'Redeploy', 'To all UASA Personel: ~~~This rally point has been declared compromised as of 0430.~~ Attempts to engage the insect prototypes in this sector have been unsuccessful.  They either fight in overwhelming numbers, or disappear entirely through a network of channels built into the bio growth that is now spreading all over the ship. ~~As of this moment we are abandoning this deck and barricading its entrances. ~~Proceed to rally point Gamma. ~~-Col DeQuesne '));
+
+level[30].items.push(spawnTrap(600,1000, recorder, '0', '2','1700,1000'));
+level[30].items.push(messageTrap(600,1000, blankPic, 'Meat!', 'More prey for the queen! $99'));
+level[30].items.push(messageTrap(600,1000, blankPic, 'Stop!', 'Stop shooting! ~~We want to get off this ship just as bad as you do! $0'));
+level[30].items.push(messageTrap(600,1000, blankPic, 'Stop!', 'The hive cares only for its own! ~~You taste just like those other humans. $99'));
+level[30].items.push(messageTrap(600,1000, blankPic, 'Stop!', 'Dammit! $0'));
+level[30].lamps.push(new UpLamp(1020,1070));
+level[30].lamps.push(new UpLamp(1270,1070));
+level[30].lamps.push(new waterDrop(780,900));
+level[30].lamps.push(new waterDrop(980,900));
+level[30].lamps.push(new waterDrop(1000,900));
+level[30].lamps.push(new waterDrop(1130,900));
+level[30].lamps.push(new waterDrop(1310,900));
+level[30].exits.push(new Exit(1700,1000, 31, true, 100,500))
+level[30].exits.push(new Exit(300,300, 29, true, 1700,100))
+
+
+level[31] = new Level('Rally Point Gamma')
+level[31].wallPanels.push(new Panel(100,600, panelHall[0], 2,0.3));
+level[31].wallPanels.push(new Panel(200,600, panelHall[0], 2,0.3));
+level[31].wallPanels.push(new Panel(300,600, panelHall[2], 2,0.4));
+level[31].wallPanels.push(new Panel(300,400, panelHall[2], 1,0.4));
+level[31].wallPanels.push(new Panel(100,400, panelHall[1], 1,0.4));
+level[31].wallPanels.push(new Panel(200,400, panelHall[1], 1,0.4));
+level[31].wallPanels.push(new Panel(100,500, panelHall[1], 0,0.4));
+level[31].wallPanels.push(new Panel(200,500, panelHall[1], 0,0.4));
+level[31].wallPanels.push(new Panel(300,500, panelHall[2], 0,0.4));
+level[31].wallPanels.push(new AniDoor(100,500, 0,1));level[31].wallPanels.push(new fan(120,420, 0.1,0,1));
+level[31].wallPanels.push(new fan(220,420, 0.2,0,1));
+level[31].wallPanels.push(new ForeGround(300,600, wallFeatures[12]));
+level[31].wallPanels.push(new ForeGround(300,500, wallFeatures[12]));
+level[31].wallPanels.push(new ForeGround(300,400, wallFeatures[12]));
+level[31].wallPanels.push(new Panel(400,600, panelHall[11], 2,0.4));
+level[31].wallPanels.push(new Panel(500,600, panelHall[11], 2,0.4));level[31].wallPanels.push(new ForeGround(520,620, wallFeatures[11]));
+level[31].wallPanels.push(new ForeGround(420,620, wallFeatures[28]));
+level[31].wallPanels.push(new Panel(400,500, panelHall[1], 1,0.4));
+level[31].wallPanels.push(new Panel(500,500, panelHall[1], 1,0.4));
+level[31].wallPanels.push(new Panel(700,500, panelHall[1], 1,0.4));
+level[31].wallPanels.push(new Panel(800,500, panelHall[1], 1,0.4));
+level[31].wallPanels.push(new Panel(700,600, panelHall[1], 2,0.4));
+level[31].wallPanels.push(new Panel(800,600, panelHall[1], 2,0.4));
+level[31].wallPanels.push(new AniDoor(700,500, 1,0));level[31].wallPanels.push(new Panel(600,500, panelHall[6], 0,0));
+level[31].wallPanels.push(new Panel(600,600, panelHall[5], 0,0));
+level[31].wallPanels.push(new ForeGround(500,500, bioPic[58]));
+level[31].wallPanels.push(new ForeGround(500,600, bioPic[51]));
+level[31].wallPanels.push(new Panel(700,500, panelHall[7], 0,0.5));
+level[31].wallPanels.push(new ForeGround(700,600, bioPic[44]));level[31].wallPanels.push(new ForeGround(800,500, bioPic[57]));
+level[31].wallPanels.push(new ForeGround(800,600, bioPic[50]));
+level[31].dLights.push(new GenLight(650,500,15, 0.05));
+level[31].dLights.push(new GenLight(650,600,15, 0.05));
+level[31].dLights.push(new GenLight(650,700,15, 0.05));
+level[31].dLights.push(new GenLight(750,500,15, 0.05));
+level[31].dLights.push(new GenLight(750,550,15, 0.05));
+level[31].dLights.push(new GenLight(750,700,15, 0.05));
+level[31].dLights.push(new GenLight(700,500,15, 0.05));
+level[31].dLights.push(new GenLight(700,550,15, 0.05));
+level[31].dLights.push(new GenLight(700,600,15, 0.05));
+level[31].dLights.push(new GenLight(700,650,15, 0.05));
+level[31].dLights.push(new GenLight(700,700,15, 0.05));
+level[31].wall.push(createWall(600,700, 100,30,floor[8]));
+level[31].wall.push(createWall(700,700, 100,30,floor[8]));
+level[31].wall.push(createWall(500,470, 100,30,floor[9]));
+level[31].wall.push(createWall(100,700, 100,30,floor[5]));
+level[31].wall.push(createWall(400,470, 100,30,floor[0]));
+level[31].wall.push(createWall(300,370, 100,30,floor[0]));
+level[31].wall.push(createWall(200,370, 100,30,floor[0]));
+level[31].wall.push(createWall(100,370, 100,30,floor[0]));
+level[31].wall.push(createWall(70,600, 30,100,sideWall[2]));
+level[31].wall.push(createWall(70,500, 30,100,sideWall[2]));
+level[31].wall.push(createWall(70,400, 30,100,sideWall[2]));
+level[31].wall.push(createWall(70,700, 30,100,sideWall[5]));
+level[31].wall.push(createWall(70,370, 30,100,sideWall[5]));
+level[31].wall.push(createWall(400,370, 30,100,sideWall[2]));
+level[31].foreGround.push(new ForeGround(610,500, foreGPic[6]));
+level[31].foreGround.push(new ForeGround(860,500, foreGPic[7]));level[31].foreGround.push(new ForeGround(400,370, sideWall[6]));
+level[31].foreGround.push(new ForeGround(400,470, sideWall[6]));
+level[31].wallPanels.push(new ForeGround(600,500, bioPic[39]));
+level[31].wallPanels.push(new ForeGround(650,530, bioPic[42]));
+level[31].foreGround.push(new ForeGround(500,700, bioPic[56]));
+level[31].foreGround.push(new ForeGround(800,700, bioPic[55]));
+level[31].foreGround.push(new ForeGround(400,470, bioPic[56]));
+level[31].foreGround.push(new ForeGround(1000,470, bioPic[55]));
+
+level[31].wall.push(createWall(800,700, 100,30,floor[5]));
+level[31].wall.push(createWall(1000,470, 100,30,floor[5]));
+level[31].wallPanels.push(new Panel(900,500, panelHall[0], 1,0.4));
+level[31].wallPanels.push(new Panel(1000,500, panelHall[0], 1,0.4));
+level[31].wallPanels.push(new Panel(1100,500, panelHall[0], 1,0.4));
+level[31].wallPanels.push(new Panel(1200,500, panelHall[0], 1,0.4));
+level[31].wallPanels.push(new Panel(900,600, panelHall[1], 2,0.4));
+level[31].wallPanels.push(new Panel(1000,600, panelHall[1], 2,0.4));
+level[31].wallPanels.push(new Panel(1100,600, panelHall[1], 2,0.4));
+level[31].wallPanels.push(new Panel(1200,600, panelHall[1], 2,0.4));
+level[31].foreGround.push(new ForeGround(950,600, floor[1]));
+level[31].foreGround.push(new ForeGround(990,570, floor[2]));
+level[31].foreGround.push(new ForeGround(870,600, bioPic[8]));
+level[31].foreGround.push(new ForeGround(930,500, bioPic[18]));
+level[31].wallPanels.push(new ForeGround(1110,500, bioPic[26]));
+level[31].wallPanels.push(new ForeGround(1110,550, bioPic[52]));
+level[31].wallPanels.push(new ForeGround(910,560, bioPic[3]));
+level[31].lamps.push(new Lamp(970,520));
+level[31].lamps.push(new FlickerLamp(1120,520));
+level[31].lamps.push(new FlickerLamp(1270,520));
+level[31].lamps.push(new BigLamp(160,510));
+level[31].wall.push(createWall(1300,700, 100,30,floor[5]));
+level[31].wall.push(createWall(1300,470, 100,30,floor[5]));
+level[31].wall.push(createWall(1800,600, 30,100,sideWall[1]));
+level[31].wall.push(createWall(1800,500, 30,100,sideWall[1]));
+level[31].wall.push(createWall(1800,700, 30,100,sideWall[5]));
+level[31].wall.push(createWall(1800,470, 30,100,sideWall[5]));
+level[31].wallPanels.push(new Panel(1300,600, panelHall[1], 2,0.4));
+level[31].wallPanels.push(new Panel(1400,600, panelHall[1], 2,0.4));
+level[31].wallPanels.push(new Panel(1500,600, panelHall[1], 2,0.4));
+level[31].wallPanels.push(new Panel(1600,600, panelHall[1], 2,0.4));
+level[31].wallPanels.push(new Panel(1700,600, panelHall[1], 2,0.4));
+level[31].wallPanels.push(new Panel(1300,500, panelHall[0], 1,0.4));
+level[31].wallPanels.push(new Panel(1400,500, panelHall[0], 1,0.4));
+level[31].wallPanels.push(new Panel(1500,500, panelHall[0], 1,0.4));
+level[31].wallPanels.push(new Panel(1600,500, panelHall[0], 1,0.4));
+level[31].wallPanels.push(new Panel(1700,500, panelHall[0], 1,0.4));
+level[31].wallPanels.push(new AniDoor(1400,500, 0,0));
+level[31].wall.push(createWall(1680,600, 100,30,floor[1]));
+level[31].wall.push(createWall(1580,600, 100,30,floor[1]));
+level[31].wall.push(createWall(1620,570, 100,30,floor[2]));
+level[31].wall.push(createWall(1700,570, 100,30,floor[2]));
+level[31].wall.push(createWall(1740,570, 100,30,floor[2]));
+level[31].wall.push(createWall(1730,540, 100,30,floor[2]));
+level[31].wallPanels.push(new ForeGround(1300,600, wallFeatures[42]));
+level[31].foreGround.push(new ForeGround(1560,600, pipes[5]));
+level[31].foreGround.push(new ForeGround(1560,500, pipes[5]));
+level[31].wallPanels.push(new ForeGround(1610,500, pipes[11]));
+level[31].foreGround.push(new ForeGround(1590,600, pipes[11]));
+level[31].wallPanels.push(new ForeGround(1610,600, pipes[11]));
+level[31].wallPanels.push(new ForeGround(1180,600, pipes[17]));level[31].wallPanels.push(new ForeGround(1180,500, pipes[17]));
+level[31].wallPanels.push(new ForeGround(1210,430, pipes[11]));
+level[31].foreGround.push(new ForeGround(500,600, pipes[5]));
+level[31].foreGround.push(new ForeGround(500,500, pipes[5]));level[31].foreGround.push(new ForeGround(560,600, pipes[11]));
+level[31].foreGround.push(new ForeGround(560,500, pipes[11]));
+level[31].lamps.push(new Lamp(1420,520));
+level[31].lamps.push(new Lamp(1570,520));
+level[31].exits.push(new Exit(200,600, 30, true, 1600, 900));
+level[31].exits.push(new Exit(1500,600, 32,true, 200, 900));
+
+
+level[32] = new Level('Security Bridge')
+level[32].wallPanels.push(new Panel(200,1000, panelHall[1], 2,0.4));
+level[32].wallPanels.push(new Panel(300,1000, panelHall[1], 2,0.4));
+level[32].wallPanels.push(new Panel(400,1000, panelHall[1], 2,0.4));
+level[32].wallPanels.push(new Panel(200,900, panelHall[1], 0,0.4));
+level[32].wallPanels.push(new Panel(300,900, panelHall[1], 0,0.4));
+level[32].wallPanels.push(new Panel(400,900, panelHall[1], 0,0.4));
+level[32].wallPanels.push(new Panel(200,800, panelHall[1], 1,0.4));
+level[32].wallPanels.push(new Panel(300,800, panelHall[1], 1,0.4));
+level[32].wallPanels.push(new Panel(400,800, panelHall[1], 1,0.4));
+level[32].wallPanels.push(new Panel(1400,1000, panelHall[12], 2,0.4));
+level[32].wallPanels.push(new Panel(1500,1000, panelHall[12], 2,0.4));
+level[32].wallPanels.push(new Panel(1600,1000, panelHall[12], 2,0.4));
+level[32].wallPanels.push(new Panel(1700,1000, panelHall[12], 2,0.4));
+level[32].wallPanels.push(new Panel(1800,1000, panelHall[12], 2,0.4));
+level[32].wallPanels.push(new Panel(1400,900, panelHall[12], 0,0.4));
+level[32].wallPanels.push(new Panel(1500,900, panelHall[12], 0,0.4));
+level[32].wallPanels.push(new Panel(1600,900, panelHall[12], 0,0.4));
+level[32].wallPanels.push(new Panel(1700,900, panelHall[12], 0,0.4));
+level[32].wallPanels.push(new Panel(1800,900, panelHall[12], 0,0.4));
+level[32].wallPanels.push(new Panel(1400,800, panelHall[12], 0,0.4));
+level[32].wallPanels.push(new Panel(1500,800, panelHall[12], 0,0.4));
+level[32].wallPanels.push(new Panel(1600,800, panelHall[12], 0,0.4));
+level[32].wallPanels.push(new Panel(1700,800, panelHall[12], 0,0.4));
+level[32].wallPanels.push(new Panel(1800,800, panelHall[12], 0,0.4));
+level[32].wallPanels.push(new Panel(1400,700, panelHall[12], 1,0.4));
+level[32].wallPanels.push(new Panel(1500,700, panelHall[12], 1,0.4));
+level[32].wallPanels.push(new Panel(1600,700, panelHall[12], 1,0.4));
+level[32].wallPanels.push(new Panel(1700,700, panelHall[12], 1,0.4));
+level[32].wallPanels.push(new Panel(1800,700, panelHall[12], 1,0.4));
+level[32].wall.push(createWall(500,1100, 100,30,floor[7]));
+level[32].wall.push(createWall(1000,1100, 100,30,floor[7]));
+level[32].wall.push(createWall(1400,1100, 100,30,floor[7]));
+level[32].wall.push(createWall(200,1100, 100,30,floor[0]));
+level[32].wall.push(createWall(300,1100, 100,30,floor[0]));
+level[32].wall.push(createWall(400,1100, 100,30,floor[0]));
+level[32].wallPanels.push(new Panel(600,1000, panelHall[11], 2,0.5));
+level[32].wallPanels.push(new Panel(1200,1000, panelHall[11], 2,0.5));
+level[32].wallPanels.push(new Panel(600,900, panelHall[11], 1,0.5));
+level[32].wallPanels.push(new Panel(1200,900, panelHall[11], 1,0.5));
+level[32].wallPanels.push(new ForeGround(200,800, pipes[4]));
+level[32].wallPanels.push(new ForeGround(300,800, pipes[4]));
+level[32].wallPanels.push(new ForeGround(400,800, pipes[4]));
+level[32].wallPanels.push(new ForeGround(500,800, pipes[4]));
+level[32].wallPanels.push(new ForeGround(600,800, pipes[4]));
+level[32].wallPanels.push(new ForeGround(700,800, pipes[4]));
+level[32].wallPanels.push(new ForeGround(1100,800, pipes[4]));
+level[32].wallPanels.push(new ForeGround(1200,800, pipes[4]));
+level[32].wallPanels.push(new ForeGround(1300,800, pipes[4]));
+
+level[32].foreGround.push(new ForeGround(600,1050, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(650,1050, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(650,1000, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(600,1000, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(600,950, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(650,950, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(650,900, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(600,900, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(1200,1000, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(1200,1050, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(1250,1050, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(1250,1000, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(1250,950, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(1200,950, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(1200,900, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(1250,900, wallFeatures[38]));
+level[32].foreGround.push(new ForeGround(700,1000, wallFeatures[33]));
+level[32].foreGround.push(new ForeGround(800,1000, wallFeatures[33]));
+level[32].foreGround.push(new ForeGround(900,1000, wallFeatures[33]));
+level[32].foreGround.push(new ForeGround(1000,1000, wallFeatures[33]));
+level[32].foreGround.push(new ForeGround(1100,1000, wallFeatures[33]));
+level[32].foreGround.push(new ForeGround(500,890, floor[6]));
+level[32].foreGround.push(new ForeGround(900,890, floor[6]));
+level[32].wall.push(createWall(170,700, 30,100,sideWall[9]));
+level[32].wall.push(createWall(500,800, 30,100,sideWall[1]));
+level[32].wall.push(createWall(500,700, 30,100,sideWall[1]));
+level[32].wall.push(createWall(200,690, 100,50,ceiling[0]));
+level[32].wall.push(createWall(300,690, 100,50,ceiling[0]));
+level[32].wall.push(createWall(400,690, 100,50,ceiling[0]));
+level[32].foreGround.push(new ForeGround(170,690, sideWall[5]));
+level[32].foreGround.push(new ForeGround(500,690, sideWall[5]));
+level[32].foreGround.push(new ForeGround(500,870, sideWall[6]));level[32].wallPanels.push(new Panel(400,700, panelHall[2], 1,0.1));
+level[32].wallPanels.push(new Panel(300,700, panelHall[2], 1,0.1));
+level[32].wallPanels.push(new Panel(200,700, panelHall[2], 1,0.1));
+
+level[32].wallPanels.push(new AniDoor(200,900, 0,1));
+level[32].wallPanels.push(new AniDoor(1550,800, 0,1));level[32].wall.push(createWall(1530,1020, 30,100,sideWall[5]));level[32].wall.push(createWall(1500,1030, 30,100,sideWall[5]));
+level[32].wall.push(createWall(1470,1040, 30,100,sideWall[5]));
+level[32].wall.push(createWall(1440,1050, 30,100,sideWall[5]));
+level[32].wall.push(createWall(1410,1060, 30,100,sideWall[5]));
+level[32].wall.push(createWall(1380,1070, 30,100,sideWall[5]));
+level[32].wall.push(createWall(1550,1000, 100,30,floor[4]));
+level[32].wall.push(createWall(1650,1000, 100,30,floor[4]));
+level[32].wall.push(createWall(1750,1000, 100,30,floor[4]));
+level[32].wall.push(createWall(1870,700, 30,100,sideWall[9]));
+level[32].wall.push(createWall(1850,1000, 30,100,sideWall[6]));
+level[32].wall.push(createWall(170,1100, 30,100,sideWall[5]));
+level[32].wallPanels.push(new ForeGround(500,1000, wallFeatures[35]));
+level[32].wallPanels.push(new ForeGround(500,900, wallFeatures[35]));
+level[32].wallPanels.push(new ForeGround(1300,1000, wallFeatures[34]));
+level[32].wallPanels.push(new ForeGround(1300,900, wallFeatures[34]));
+level[32].wallPanels.push(new ForeGround(500,1000, wallFeatures[0]));
+level[32].wallPanels.push(new ForeGround(500,900, wallFeatures[0]));
+level[32].wallPanels.push(new ForeGround(1300,900, wallFeatures[0]));
+level[32].wallPanels.push(new ForeGround(1300,1000, wallFeatures[0]));
+level[32].wallPanels.push(new Monitor(1450,850, 'defences intact security station gamma online and holding',0));
+
+level[32].wallPanels.push(new ForeGround(1400,800, pipes[2]));
+level[32].wallPanels.push(new ForeGround(1400,700, pipes[0]));
+level[32].wallPanels.push(new ForeGround(1500,700, pipes[4]));
+level[32].wallPanels.push(new ForeGround(1600,700, pipes[4]));
+level[32].wallPanels.push(new ForeGround(1700,700, pipes[4]));
+level[32].wallPanels.push(new ForeGround(1800,700, pipes[4]));
+level[32].wallPanels.push(new ForeGround(1730,900, wallFeatures[22]));level[32].wallPanels.push(new ForeGround(530,950, wallFeatures[4]));
+level[32].wallPanels.push(new ForeGround(1320,950, wallFeatures[4]));
+level[32].wall.push(createWall(500,690, 100,30,floor[6]));
+level[32].wall.push(createWall(900,690, 100,30,floor[6]));
+level[32].wall.push(createWall(1370,800, 30,100,sideWall[1]));
+level[32].wall.push(createWall(1370,700, 30,100,sideWall[1]));
+level[32].wall.push(createWall(1400,690, 100,30,floor[6]));
+level[32].wall.push(createWall(1370,690, 30,100,sideWall[5]));
+level[32].wallPanels.push(new ForeGround(500,760, pipes[4]));
+level[32].wallPanels.push(new ForeGround(600,760, pipes[4]));
+level[32].wallPanels.push(new ForeGround(700,760, pipes[4]));
+level[32].wallPanels.push(new ForeGround(800,760, pipes[4]));
+level[32].wallPanels.push(new ForeGround(900,760, pipes[2]));
+level[32].wallPanels.push(new ForeGround(500,730, pipes[4]));
+level[32].wallPanels.push(new ForeGround(600,730, pipes[4]));
+level[32].wallPanels.push(new ForeGround(700,730, pipes[4]));
+level[32].wallPanels.push(new ForeGround(800,730, pipes[2]));
+level[32].wallPanels.push(new ForeGround(1270,720, pipes[4]));
+level[32].wallPanels.push(new ForeGround(1170,720, pipes[4]));
+level[32].wallPanels.push(new ForeGround(1070,720, pipes[3]));
+level[32].wallPanels.push(new ForeGround(800,630, wallFeatures[12]));
+level[32].wallPanels.push(new ForeGround(800,530, wallFeatures[12]));
+level[32].wallPanels.push(new ForeGround(900,660, wallFeatures[12]));
+level[32].wallPanels.push(new ForeGround(900,560, wallFeatures[12]));
+level[32].wallPanels.push(new ForeGround(900,460, wallFeatures[12]));
+level[32].wallPanels.push(new ForeGround(1070,620, wallFeatures[12]));
+level[32].wallPanels.push(new ForeGround(1070,520, wallFeatures[12]));
+level[32].wallPanels.push(new ForeGround(800,430, wallFeatures[12]));
+level[32].wallPanels.push(new ForeGround(1070,420, wallFeatures[12]));
+level[32].lamps.push(new pulseLight(500,1100));
+level[32].lamps[0].addPLight(600, 1100);
+level[32].lamps[0].addPLight(700, 1100);
+level[32].lamps[0].addPLight(800, 1100);
+level[32].lamps[0].addPLight(900, 1100);
+level[32].lamps[0].addPLight(1000, 1100);
+level[32].lamps[0].addPLight(1100, 1100);
+level[32].lamps[0].addPLight(1200, 1100);
+level[32].lamps[0].addPLight(1300, 1100);
+level[32].lamps[0].addPLight(1400, 1100);
+level[32].lamps.push(new pulseLight(550,910));
+level[32].lamps[1].addPLight(650, 910);
+level[32].lamps[1].addPLight(750, 910);
+level[32].lamps[1].addPLight(850, 910);
+level[32].lamps[1].addPLight(950, 910);
+level[32].lamps[1].addPLight(1050, 910);
+level[32].lamps[1].addPLight(1150, 910);
+level[32].lamps[1].addPLight(1250, 910);
+level[32].lamps[1].addPLight(1350, 910);
+level[32].lamps.push(new Lamp(220,940));
+level[32].wallPanels.push(new wordWall(420,950, 'armory',5));
+level[32].wallPanels.push(new ForeGround(410,900, wallFeatures[3]));
+level[32].lamps.push(new sparker(1100,850));level[32].lamps.push(new sparker(790,850));
+level[32].lamps.push(new deadLamp(620,920));
+level[32].lamps.push(new FlickerLamp(670,920));
+level[32].lamps.push(new sparker(620,930));
+level[32].lamps.push(new deadLamp(1220,920));level[32].lamps.push(new Lamp(1270,920));
+level[32].wallPanels.push(new ForeGround(510,990, bioPic[13]));level[32].wallPanels.push(new ForeGround(140,900, bioPic[17]));
+level[32].wallPanels.push(new ForeGround(700,900, bioPic[11]));
+level[32].wallPanels.push(new ForeGround(310,850, bioPic[0]));
+
+level[32].wallPanels.push(new ForeGround(1770,820, wallFeatures[3]));
+level[32].foreGround.push(new ForeGround(1470,900, wallFeatures[2]));
+level[32].foreGround.push(new ForeGround(1470,800, wallFeatures[2]));
+level[32].foreGround.push(new ForeGround(1470,700, wallFeatures[2]));
+level[32].foreGround.push(new ForeGround(1820,900, wallFeatures[1]));
+level[32].foreGround.push(new ForeGround(1820,800, wallFeatures[1]));
+level[32].foreGround.push(new ForeGround(1820,700, wallFeatures[1]));
+level[32].wallPanels.push(new wordWall(420,960, 'station',5));
+level[32].dLights.push(new spinLight(1540,840,50,0));
+level[32].dLights.push(new spinLight(1750,840,50,0));
+level[32].foreGround.push(new ForeGround(1370,870, sideWall[6]));
+level[32].items.push(spawnTrap(1350,1000, recorder, '3', '0','1650,900'));
+level[32].wallPanels.push(new Animator(420,700, animators[2].pic));
+level[32].wallPanels.push(new Animator(400,800, animators[1].pic));
+level[32].wallPanels.push(new Animator(450,800, animators[1].pic));
+level[32].wallPanels.push(new Animator(400,900, animators[2].pic));
+level[32].wallPanels.push(new Animator(450,900, animators[2].pic));
+level[32].wallPanels.push(new Animator(450,1000, animators[2].pic));
+level[32].wallPanels.push(new Animator(400,1000, animators[2].pic));
+level[32].wallPanels.push(new Animator(400,1000, animators[5].pic));
+level[32].wallPanels.push(new Animator(450,1000, animators[5].pic));
+level[32].wallPanels.push(new Animator(420,700, animators[5].pic));
+level[32].wallPanels.push(new ForeGround(200,770, pipes[6]));
+level[32].wallPanels.push(new ForeGround(300,770, pipes[6]));
+level[32].wallPanels.push(new ForeGround(400,770, pipes[6]));
+level[32].wallPanels.push(new Animator(800,860, animators[6].pic));
+level[32].wallPanels.push(new Animator(800,960, animators[8].pic));
+level[32].wallPanels.push(new Animator(800,1000, animators[8].pic));
+level[32].wallPanels.push(new Animator(800,1000, animators[9].pic));
+level[32].foreGround.push(new Animator(780,1100, animators[1].pic));
+level[32].wallPanels.push(new ForeGround(1370,670, pipes[8]));
+level[32].wallPanels.push(new ForeGround(1370,770, pipes[9]));
+level[32].wallPanels.push(new ForeGround(1470,670, pipes[6]));
+level[32].wallPanels.push(new ForeGround(1570,670, pipes[6]));
+level[32].wallPanels.push(new ForeGround(1670,670, pipes[6]));
+level[32].wallPanels.push(new ForeGround(1770,670, pipes[6]));
+level[32].exits.push(new Exit(1650, 900, 5, false, 100,100));
+level[32].items.push(messageTrap(1350,1000, blankPic, 'Incoming!', "Christ! ~~RP Gamma! ~~We've got armed prototypes out here right now! $99"));
+level[32].items.push(messageTrap(1350,1000, blankPic, 'Bring it!', "Doesn't feel good to be on the wrong end does it! $0"));
+cutscene.push(new Cutscene('Rally Point Gamma'))
+cutscene[5].lev.wallPanels.push(new Panel(500,300, panelHall[11], 2,0.7));
+cutscene[5].lev.wallPanels.push(new Panel(800,300, panelHall[11], 2,0.7));
+cutscene[5].lev.wallPanels.push(new Panel(500,200, panelHall[11], 1,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(800,200, panelHall[11], 1,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(100,300, panelHall[2], 2,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(100,200, panelHall[2], 1,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(200,200, panelHall[1], 1,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(300,200, panelHall[1], 1,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(400,200, panelHall[1], 1,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(600,200, panelHall[1], 1,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(700,200, panelHall[1], 1,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(200,300, panelHall[1], 2,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(300,300, panelHall[1], 2,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(400,300, panelHall[1], 2,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(600,300, panelHall[0], 2,0.6));
+cutscene[5].lev.wallPanels.push(new Panel(700,300, panelHall[0], 2,0.6));
+cutscene[5].lev.wall.push(createWall(100,400, 100,30,floor[5]));
+cutscene[5].lev.wall.push(createWall(600,400, 100,30,floor[5]));
+cutscene[5].lev.wall.push(createWall(70,300, 30,100,sideWall[2]));
+cutscene[5].lev.wall.push(createWall(70,200, 30,100,sideWall[2]));
+cutscene[5].lev.wall.push(createWall(70,400, 30,100,sideWall[5]));
+cutscene[5].lev.wallPanels.push(new AniDoor(200,200, 1,1));
+cutscene[5].lev.wallPanels.push(new ForeGround(520,220, wallFeatures[28]));
+cutscene[5].lev.wallPanels.push(new ForeGround(820,220, wallFeatures[28]));
+cutscene[5].lev.wallPanels.push(new fan(520,320, 0.2,0,1));
+cutscene[5].lev.wallPanels.push(new fan(820,320, 0.2,0,1));
+cutscene[5].lev.wallPanels.push(new ForeGround(400,300, wallFeatures[26]));
+cutscene[5].lev.wallPanels.push(new ForeGround(570,300, floor[1]));
+cutscene[5].lev.wallPanels.push(new ForeGround(540,370, floor[2]));
+cutscene[5].lev.creature.push(Marine(630,200,3));
+cutscene[5].lev.creature.push(Marine(750,200,3));
+cutscene[5].lev.wallPanels.push(new Panel(900,300, panelHall[2], 2,0.5));
+cutscene[5].lev.wallPanels.push(new Panel(1000,300, panelHall[2], 2,0.5));
+cutscene[5].lev.wallPanels.push(new Panel(900,200, panelHall[2], 1,0.5));
+cutscene[5].lev.wallPanels.push(new Panel(1000,200, panelHall[2], 1,0.5));
+cutscene[5].lev.wall.push(createWall(100,190, 100,30,floor[6]));
+cutscene[5].lev.wall.push(createWall(600,190, 100,30,floor[6]));
+cutscene[5].lev.wall.push(createWall(70,190, 30,100,sideWall[5]));
+cutscene[5].lev.wallPanels.push(new Monitor(400,200, 'condition red',0));
+cutscene[5].lev.wallPanels.push(new ForeGround(620,220, wallFeatures[39]));
+cutscene[5].lev.wallPanels.push(new ForeGround(720,220, wallFeatures[39]));
+cutscene[5].lev.items.push(pistolItem(590,220));
+cutscene[5].lev.items.push(pistolItem(590,240));
+cutscene[5].lev.items.push(smgItem(700,230));
+cutscene[5].lev.wallPanels.push(new ForeGround(100,300, pipes[17]));
+cutscene[5].lev.wallPanels.push(new ForeGround(100,200, pipes[17]));
+cutscene[5].lev.wallPanels.push(new ForeGround(900,300, pipes[17]));
+cutscene[5].lev.wallPanels.push(new ForeGround(900,200, pipes[17]));
+cutscene[5].lev.wallPanels.push(new ForeGround(130,130, pipes[11]));
+cutscene[5].lev.wallPanels.push(new ForeGround(930,130, pipes[11]));
+cutscene[5].lev.lamps.push(new BigLamp(660,200));
+cutscene[5].lev.lamps.push(new BigLamp(860,200));
+cutscene[5].lev.lamps.push(new BigLamp(470,200));
+cutscene[5].lev.lamps.push(new FlickerLamp(220,230));
+cutscene[5].lev.lamps.push(new deadLamp(370,230));
+
+
+cutscene[5].endFrame = 240;
+cutscene[5].darkForeground = true;
+cutscene[5].shaded = true;
+cutscene[5].nextLevel = 33
+cutscene[5].draw = function(){
+	ctxOx = 0
+	ctxOy = 0
+	if(this.frame == 0){
+		creature[0].aimer = {x:800, y:400}
+		creature[0].taimer = {x:800, y:400}
+		creature[1].aimer = {x:800, y:400}
+		creature[1].taimer = {x:800, y:400}
+	}
+	if(this.frame == 10){
+		creature[0].speak("Report!");
+
+	}else if(this.frame == 50){
+		creature[1].speak("No answer sir!");
+		creature[0].sw = 2
+		creature[0].taimer = {x:300, y:300}
+	}else if(this.frame == 70){
+		creature[0].sw = 2
+		creature[0].speak("Gear up!");
+		creature[0].taimer = {x:300, y:300}
+	}else if(this.frame == 80){
+		creature[1].sw = 2
+		creature[1].crouch();
+		creature[1].speak("CIC! RP Gamma is Code Zulu!");
+	}else if(this.frame == 130){
+		creature[0].speak("Just have to hold on.");
+		creature[1].taimer = {x:-300, y:300}
+	}else if(this.frame == 180){
+		creature[1].speak("Not many of us left sir.");
+		
+	}
+}
+
+
+
+//OmniBus Pipe shadow Patch
+level[1].wallPanels.push(new ForeGround(600,300, pipes[14]));
+level[2].wallPanels.push(new ForeGround(80,80, pipes[8]));
+level[2].wallPanels.push(new ForeGround(80,180, pipes[11]));
+level[2].wallPanels.push(new ForeGround(80,280, pipes[11]));
+level[2].wallPanels.push(new ForeGround(80,380, pipes[11]));
+level[2].wallPanels.push(new ForeGround(180,80, pipes[6]));
+level[2].wallPanels.push(new ForeGround(280,80, pipes[6]));
+level[2].wallPanels.push(new ForeGround(380,80, pipes[9]));
+level[4].wallPanels.push(new ForeGround(600,300, pipes[14]));
+level[5].wallPanels.push(new ForeGround(170,70, pipes[8]));
+level[5].wallPanels.push(new ForeGround(270,70, pipes[6]));
+level[5].wallPanels.push(new ForeGround(370,70, pipes[6]));
+level[5].wallPanels.push(new ForeGround(470,70, pipes[9]));
+level[5].wallPanels.push(new ForeGround(170,170, pipes[11]));
+level[5].wallPanels.push(new ForeGround(170,270, pipes[11]));
+level[5].wallPanels.push(new ForeGround(170,370, pipes[11]));
+level[5].wallPanels.push(new ForeGround(170,470, pipes[11]));
+level[5].wallPanels.push(new ForeGround(170,570, pipes[11]));
+level[5].wallPanels.push(new ForeGround(270,270, pipes[9]));
+level[5].wallPanels.push(new ForeGround(170,270, pipes[6]));
+level[5].wallPanels.push(new ForeGround(270,170, pipes[11]));
+level[5].wallPanels.push(new ForeGround(270,70, pipes[11]));
+level[5].wallPanels.push(new ForeGround(1800,800, pipes[16]));
+level[5].wallPanels.push(new ForeGround(1830,730, pipes[11]));
+level[5].wallPanels.push(new ForeGround(1390,900, pipes[17]));
+level[5].wallPanels.push(new ForeGround(1390,800, pipes[17]));
+level[5].wallPanels.push(new ForeGround(1420,730, pipes[11]));
+level[5].wallPanels.push(new ForeGround(290,900, pipes[17]));
+level[5].wallPanels.push(new ForeGround(290,800, pipes[17]));
+level[5].wallPanels.push(new ForeGround(320,730, pipes[11]));
+level[6].wallPanels.push(new ForeGround(100,470, pipes[6]));
+level[6].wallPanels.push(new ForeGround(200,470, pipes[6]));
+level[6].wallPanels.push(new ForeGround(300,470, pipes[6]));
+level[6].wallPanels.push(new ForeGround(400,470, pipes[6]));
+level[6].wallPanels.push(new ForeGround(500,470, pipes[6]));
+level[6].wallPanels.push(new ForeGround(600,470, pipes[6]));
+level[6].wallPanels.push(new ForeGround(700,470, pipes[6]));
+level[6].wallPanels.push(new ForeGround(800,470, pipes[6]));level[6].foreGround.push(new ForeGround(1750,1000, pipes[5]));
+level[6].foreGround.push(new ForeGround(1750,900, pipes[5]));
+level[6].foreGround.push(new ForeGround(1750,800, pipes[5]));level[6].foreGround.push(new ForeGround(1720,800, pipes[11]));
+level[6].foreGround.push(new ForeGround(1720,900, pipes[11]));
+level[6].foreGround.push(new ForeGround(1720,1000, pipes[11]));level[6].foreGround.push(new ForeGround(640,1000, pipes[5]));
+level[6].foreGround.push(new ForeGround(640,900, pipes[5]));
+level[6].foreGround.push(new ForeGround(640,800, pipes[5]));
+level[6].foreGround.push(new ForeGround(680,1000, pipes[11]));
+level[6].foreGround.push(new ForeGround(680,900, pipes[11]));
+level[6].foreGround.push(new ForeGround(680,800, pipes[11]));
+level[7].foreGround.push(new ForeGround(460,200, pipes[5]));
+level[7].foreGround.push(new ForeGround(460,100, pipes[5]));
+level[7].foreGround.push(new ForeGround(430,200, pipes[11]));
+level[7].foreGround.push(new ForeGround(430,100, pipes[11]));level[7].foreGround.push(new ForeGround(1350,200, pipes[5]));
+level[7].foreGround.push(new ForeGround(1350,100, pipes[5]));
+level[7].foreGround.push(new ForeGround(1320,200, pipes[11]));
+level[7].foreGround.push(new ForeGround(1320,100, pipes[11]));level[8].foreGround.push(new ForeGround(1260,200, pipes[11]));
+level[8].foreGround.push(new ForeGround(1260,90, pipes[11]));
+level[8].wallPanels.push(new ForeGround(660,370, pipes[8]));
+level[8].foreGround.push(new ForeGround(660,470, pipes[11]));
+level[8].foreGround.push(new ForeGround(660,570, pipes[11]));
+level[8].foreGround.push(new ForeGround(660,670, pipes[11]));
+level[8].wallPanels.push(new ForeGround(750,370, pipes[6]));
+level[8].wallPanels.push(new ForeGround(850,370, pipes[6]));
+level[8].wallPanels.push(new ForeGround(950,370, pipes[6]));
+level[8].wallPanels.push(new ForeGround(1050,370, pipes[6]));
+level[8].wallPanels.push(new ForeGround(1150,370, pipes[6]));
+level[8].wallPanels.push(new ForeGround(360,440, pipes[7]));
+level[8].foreGround.push(new ForeGround(360,540, pipes[11]));
+level[8].foreGround.push(new ForeGround(360,640, pipes[11]));
+level[8].wallPanels.push(new ForeGround(260,440, pipes[6]));
+level[8].wallPanels.push(new ForeGround(160,440, pipes[6]));
+level[8].wallPanels.push(new ForeGround(60,440, pipes[6]));
+level[10].wall.push(createWall(1200,100, 100,30,floor[6]));
+level[10].wall.push(createWall(1000,100, 100,30,floor[6]));
+level[10].wall.push(createWall(500,-10, 100,30,floor[6]));
+level[10].wall.push(createWall(100,-10, 100,30,floor[6]));level[10].wall.push(createWall(70,-10, 30,100,sideWall[5]));
+level[10].wall.push(createWall(40,-10, 30,100,sideWall[5]));
+level[10].wallPanels.push(new ForeGround(450,-30, pipes[9]));
+level[10].wallPanels.push(new ForeGround(350,-30, pipes[6]));
+level[10].wallPanels.push(new ForeGround(250,-30, pipes[6]));
+level[10].wallPanels.push(new ForeGround(150,-30, pipes[6]));
+level[10].wallPanels.push(new ForeGround(50,-30, pipes[6]));
+level[10].wall.push(createWall(990,0, 30,100,sideWall[1]));
+level[10].wall.push(createWall(990,-10, 30,100,sideWall[5]));
+level[12].wall.push(createWall(1400,590, 100,30,floor[6]));
+level[12].wall.push(createWall(1900,590, 30,100,sideWall[5]));
+level[12].wallPanels.push(new ForeGround(1500,600, wallFeatures[42]));
+level[12].wallPanels.push(new ForeGround(1600,600, wallFeatures[42]));
+level[12].wallPanels.push(new ForeGround(1800,600, wallFeatures[42]));level[12].wallPanels.push(new ForeGround(1750,700, pipes[11]));
+level[12].wallPanels.push(new ForeGround(1750,600, pipes[11]));
+level[12].wallPanels.push(new ForeGround(1750,800, pipes[11]));
+level[12].wallPanels.push(new ForeGround(1750,900, pipes[11]));
+level[12].wallPanels.push(new ForeGround(70,900, pipes[11]));
+level[12].wallPanels.push(new ForeGround(70,800, pipes[11]));level[13].wallPanels.push(new ForeGround(1540,300, pipes[11]));
+level[13].wallPanels.push(new ForeGround(1540,200, pipes[11]));
+level[13].wallPanels.push(new ForeGround(800,900, pipes[13]));
+level[13].wallPanels.push(new ForeGround(730,930, pipes[6]));level[13].wallPanels.push(new ForeGround(1410,800, pipes[17]));
+level[13].wallPanels.push(new ForeGround(1410,900, pipes[17]));
+level[13].wallPanels.push(new ForeGround(1190,800, pipes[17]));
+level[13].wallPanels.push(new ForeGround(1190,900, pipes[17]));
+level[13].wallPanels.push(new ForeGround(1440,730, pipes[11]));level[13].wallPanels.push(new ForeGround(1820,300, pipes[14]));
+level[13].foreGround.push(new ForeGround(1190,300, pipes[5]));
+level[13].foreGround.push(new ForeGround(1190,200, pipes[5]));level[13].wallPanels.push(new ForeGround(1180,200, pipes[11]));
+level[13].wallPanels.push(new ForeGround(1220,730, pipes[11]));
+level[15].wallPanels.push(new ForeGround(1360,960, pipes[6]));
+level[15].wallPanels.push(new ForeGround(1460,960, pipes[6]));
+level[15].wallPanels.push(new ForeGround(1560,960, pipes[6]));
+level[15].wallPanels.push(new ForeGround(1660,960, pipes[6]));
+level[15].wallPanels.push(new ForeGround(1760,960, pipes[6]));
+level[15].wallPanels.push(new ForeGround(1860,960, pipes[6]));
+level[15].wallPanels.push(new ForeGround(1320,1010, pipes[11]));
+level[15].wallPanels.push(new ForeGround(1520,1020, pipes[11]));
+level[15].wallPanels.push(new ForeGround(1720,1020, pipes[11]));
+level[16].wallPanels.push(new ForeGround(1800,500, pipes[14]));level[16].wallPanels.push(new ForeGround(1180,580, pipes[17]));
+level[16].wallPanels.push(new ForeGround(1180,480, pipes[17]));
+level[16].wallPanels.push(new ForeGround(1180,380, pipes[17]));
+level[16].wallPanels.push(new ForeGround(1180,280, pipes[17]));
+
+
+level[19].wallPanels.push(new ForeGround(160,730, pipes[7]));
+level[19].wallPanels.push(new ForeGround(70,730, pipes[6]));level[19].wallPanels.push(new ForeGround(160,820, pipes[11]));level[19].foreGround.push(new ForeGround(260,800, pipes[11]));
+level[19].foreGround.push(new ForeGround(260,700, pipes[11]));
+level[19].foreGround.push(new ForeGround(260,600, pipes[11]));
+level[19].foreGround.push(new ForeGround(260,500, pipes[11]));
+level[19].foreGround.push(new ForeGround(260,400, pipes[11]));level[19].wallPanels.push(new ForeGround(400,800, pipes[11]));
+level[19].wallPanels.push(new ForeGround(500,800, pipes[11]));
+level[19].wallPanels.push(new ForeGround(1260,800, pipes[11]));
+level[19].wallPanels.push(new ForeGround(1360,800, pipes[11]));
+level[19].wallPanels.push(new ForeGround(1600,820, pipes[11]));
+level[19].wallPanels.push(new ForeGround(1600,720, pipes[8]));
+level[19].foreGround.push(new ForeGround(1500,800, pipes[11]));
+level[19].foreGround.push(new ForeGround(1500,690, pipes[11]));
+level[19].foreGround.push(new ForeGround(1500,590, pipes[11]));
+level[19].foreGround.push(new ForeGround(1500,490, pipes[11]));
+level[19].foreGround.push(new ForeGround(1500,390, pipes[11]));
+level[26].wallPanels.push(new ForeGround(820,310, pipes[10]));
+level[26].wallPanels.push(new ForeGround(920,310, pipes[6]));
+level[26].wallPanels.push(new ForeGround(1020,310, pipes[6]));
+level[26].wallPanels.push(new ForeGround(1120,310, pipes[9]));level[26].foreGround.push(new ForeGround(570,330, pipes[7]));
+level[26].foreGround.push(new ForeGround(470,330, pipes[6]));
+level[26].foreGround.push(new ForeGround(370,330, pipes[6]));
+level[26].foreGround.push(new ForeGround(270,330, pipes[6]));
+level[26].foreGround.push(new ForeGround(570,430, pipes[11]));
+level[27].foreGround.push(new ForeGround(770,600, pipes[11]));
+level[27].foreGround.push(new ForeGround(770,500, pipes[11]));level[27].wallPanels.push(new ForeGround(520,620, pipes[10]));
+level[27].wallPanels.push(new ForeGround(520,520, pipes[11]));
+level[27].wallPanels.push(new ForeGround(520,420, pipes[11]));
+level[27].wallPanels.push(new ForeGround(500,600, pipes[3]));
+level[27].wallPanels.push(new ForeGround(620,620, pipes[6]));
+level[27].wallPanels.push(new ForeGround(700,620, pipes[6]));
+level[27].wallPanels.push(new ForeGround(800,620, pipes[6]));
+level[27].wallPanels.push(new ForeGround(900,620, pipes[6]));
+level[27].wallPanels.push(new ForeGround(1000,620, pipes[6]));
+level[27].wallPanels.push(new ForeGround(1100,620, pipes[6]));
+level[27].wallPanels.push(new ForeGround(1190,620, pipes[7]));
+level[27].wallPanels.push(new ForeGround(1190,600, pipes[1]));
+level[30].wallPanels.push(new ForeGround(140,300, pipes[11]));
+level[30].wallPanels.push(new ForeGround(140,200, pipes[11]));
+level[30].foreGround.push(new ForeGround(400,410, pipes[12]));
+level[30].foreGround.push(new ForeGround(500,410, pipes[12]));
+level[30].foreGround.push(new ForeGround(400,580, pipes[12]));
+level[30].foreGround.push(new ForeGround(500,580, pipes[12]));
+level[30].foreGround.push(new ForeGround(400,770, pipes[12]));
+level[30].foreGround.push(new ForeGround(500,770, pipes[12]));
+level[30].foreGround.push(new ForeGround(330,800, pipes[6]));
+level[30].foreGround.push(new ForeGround(330,610, pipes[6]));
+
+
+level[31].wallPanels.push(new ForeGround(1470,500, bioPic[73]));
+level[31].wallPanels.push(new ForeGround(360,500, bioPic[71]));
+level[31].wallPanels.push(new ForeGround(810,600, bioPic[65]));
+level[32].wallPanels.push(new ForeGround(1040,900, bioPic[72]));
+level[32].wallPanels.push(new ForeGround(1200,900, bioPic[74]));
+level[32].wallPanels.push(new ForeGround(780,900, bioPic[73]));level[32].wallPanels.push(new ForeGround(520,900, bioPic[75]));
+level[32].wallPanels.push(new ForeGround(1510,800, bioPic[73]));level[32].foreGround.push(new Animator(1590,1000, animators[0].pic));level[14].wallPanels.push(new ForeGround(610,400, bioPic[70]));
+level[15].wallPanels.push(new ForeGround(770,130, bioPic[72]));
+
+level[15].wallPanels.push(new ForeGround(740,900, bioPic[70]));
+level[30].wallPanels.push(new ForeGround(1440,900, bioPic[73]));level[30].wallPanels.push(new ForeGround(970,1000, bioPic[65]));
+level[30].wallPanels.push(new ForeGround(1260,1000, bioPic[65]));
+level[3].foreGround.push(new ForeGround(1390,850, bioPic[18]));level[5].foreGround.push(new ForeGround(590,330, bioPic[70]));
+level[5].wallPanels.push(new ForeGround(800,410, bioPic[4]));
+level[5].wallPanels.push(new ForeGround(950,440, bioPic[1]));
+level[6].wallPanels.push(new ForeGround(680,650, bioPic[1]));
+level[6].wallPanels.push(new ForeGround(1530,900, bioPic[66]));level[17].foreGround.push(new ForeGround(650,200, bioPic[74]));
+level[23].foreGround.push(new ForeGround(680,110, bioPic[74]));
+level[23].wallPanels.push(new ForeGround(210,600, bioPic[68]));level[24].foreGround.push(new ForeGround(1330,180, bioPic[70]));level[25].wallPanels.push(new ForeGround(1110,300, bioPic[73]));
+level[26].wallPanels.push(new ForeGround(820,300, bioPic[75]));
+level[27].wallPanels.push(new ForeGround(1370,500, bioPic[68]));
+
+
+mainMenuLevel.wallPanels.push(new ForeGround(130,100, pipes[11]));
+mainMenuLevel.wallPanels.push(new ForeGround(130,0, pipes[11]));
+mainMenuLevel.wallPanels.push(new ForeGround(830,100, pipes[11]));
+mainMenuLevel.wallPanels.push(new ForeGround(830,0, pipes[11]));
+
+
+level[33] = new Level('Title')
+level[33].start = {x:200,y:200};
+level[33].wallPanels.push(new Panel(500,300, panelHall[11], 2,0.7));
+level[33].wallPanels.push(new Panel(800,300, panelHall[11], 2,0.7));
+level[33].wallPanels.push(new Panel(500,200, panelHall[11], 1,0.6));
+level[33].wallPanels.push(new Panel(800,200, panelHall[11], 1,0.6));
+level[33].wallPanels.push(new Panel(100,300, panelHall[2], 2,0.6));
+level[33].wallPanels.push(new Panel(100,200, panelHall[2], 1,0.6));
+level[33].wallPanels.push(new Panel(200,200, panelHall[1], 1,0.6));
+level[33].wallPanels.push(new Panel(300,200, panelHall[1], 1,0.6));
+level[33].wallPanels.push(new Panel(400,200, panelHall[1], 1,0.6));
+level[33].wallPanels.push(new Panel(600,200, panelHall[1], 1,0.6));
+level[33].wallPanels.push(new Panel(700,200, panelHall[1], 1,0.6));
+level[33].wallPanels.push(new Panel(200,300, panelHall[1], 2,0.6));
+level[33].wallPanels.push(new Panel(300,300, panelHall[1], 2,0.6));
+level[33].wallPanels.push(new Panel(400,300, panelHall[1], 2,0.6));
+level[33].wallPanels.push(new Panel(600,300, panelHall[0], 2,0.6));
+level[33].wallPanels.push(new Panel(700,300, panelHall[0], 2,0.6));
+level[33].wall.push(createWall(100,400, 100,30,floor[5]));
+level[33].wall.push(createWall(600,400, 100,30,floor[5]));
+level[33].wall.push(createWall(70,300, 30,100,sideWall[2]));
+level[33].wall.push(createWall(70,200, 30,100,sideWall[2]));
+level[33].wall.push(createWall(70,400, 30,100,sideWall[5]));
+level[33].wallPanels.push(new AniDoor(200,200, 1,1));
+level[33].wallPanels.push(new fan(520,320, 0.2,0,1));
+level[33].wallPanels.push(new fan(820,320, 0.2,0,1));
+level[33].wallPanels.push(new ForeGround(400,300, wallFeatures[26]));
+level[33].wallPanels.push(new ForeGround(570,300, floor[1]));
+level[33].wallPanels.push(new ForeGround(540,370, floor[2]));
+level[33].wallPanels.push(new Panel(900,300, panelHall[2], 2,0.5));
+level[33].wallPanels.push(new Panel(1000,300, panelHall[2], 2,0.5));
+level[33].wallPanels.push(new Panel(900,200, panelHall[2], 1,0.5));
+level[33].wallPanels.push(new Panel(1000,200, panelHall[2], 1,0.5));
+level[33].wall.push(createWall(100,190, 100,30,floor[6]));
+level[33].wall.push(createWall(600,190, 100,30,floor[6]));
+level[33].wall.push(createWall(70,190, 30,100,sideWall[5]));
+level[33].wallPanels.push(new Monitor(400,200, 'condition red',0));
+level[33].wallPanels.push(new ForeGround(620,220, wallFeatures[39]));
+level[33].wallPanels.push(new ForeGround(720,220, wallFeatures[39]));
+level[33].items.push(pistolItem(590,220));
+level[33].items.push(pistolItem(590,240));
+level[33].items.push(smgItem(700,230));
+level[33].wallPanels.push(new ForeGround(100,300, pipes[17]));
+level[33].wallPanels.push(new ForeGround(100,200, pipes[17]));
+level[33].wallPanels.push(new ForeGround(900,300, pipes[17]));
+level[33].wallPanels.push(new ForeGround(900,200, pipes[17]));
+level[33].wallPanels.push(new ForeGround(130,130, pipes[11]));
+level[33].wallPanels.push(new ForeGround(930,130, pipes[11]));
+level[33].wallPanels.push(new ForeGround(520,220, wallFeatures[11]));
+level[33].wallPanels.push(new ForeGround(820,220, wallFeatures[11]));
+level[33].wallPanels.push(new ForeGround(650,270, bioPic[3]));
+level[33].wallPanels.push(new ForeGround(720,250, bioPic[4]));
+level[33].wallPanels.push(new ForeGround(470,250, bioPic[1]));
+level[33].lamps.push(new FlickerLamp(220,240));
+level[33].lamps.push(new deadLamp(370,240));
+level[33].lamps.push(new BigLampFlicker(460,200));level[33].lamps.push(new BigLampFlicker(660,200));
+level[33].lamps.push(new BigLampFlicker(860,200));
+level[33].wallPanels.push(new ForeGround(710,300, bioPic[0]));
+level[33].wallPanels.push(new ForeGround(650,340, bioPic[7]));
+level[33].items.push(messageTrap(400,300, blankPic, 'Gamma', 'Where are they!? $0'));
+level[33].items.push(messageTrap(400,300, blankPic, 'Gamma', "I don't see the guards anywhere, but the weapons are still here. $1"));
+level[33].items.push(messageTrap(400,300, blankPic, 'Gamma', "You don't suppose they went on a coffee break? $0"));
+level[33].items.push(messageTrap(400,300, blankPic, 'Gamma', "Somehow I don't think we're that lucky. $1"));
+level[33].items.push(messageTrap(400,300, blankPic, 'Gamma', "I dunno, today's been pretty pleasant so far. $0"));
+level[33].items.push(spawnTrap(750,300, recorder, '0', '6','950,350'));
+level[33].items.push(rifleItem(670,370));
+level[33].lamps.push(new pulseLight(300,400));
+level[33].lamps[5].addPLight(400, 400);
+level[33].lamps[5].addPLight(500, 400);
+level[33].lamps[5].addPLight(600, 400);
+level[33].lamps[5].addPLight(700, 400);
+level[33].lamps[5].addPLight(800, 400);
+level[33].lamps[5].addPLight(900, 400);
+level[33].lamps[5].addPLight(1000, 400);
+level[33].lamps[5].addPLight(1100, 400);
+level[33].wallPanels.push(new Animator(820,280, animators[0].pic));
+level[33].wallPanels.push(new Panel(1100,300, panelHall[0], 2,0.3));
+level[33].wallPanels.push(new Panel(1200,300, panelHall[0], 2,0.3));
+level[33].wallPanels.push(new Panel(1300,300, panelHall[0], 2,0.3));
+level[33].wallPanels.push(new Panel(1400,300, panelHall[0], 2,0.3));
+level[33].wallPanels.push(new Panel(1500,300, panelHall[0], 2,0.3));
+level[33].wallPanels.push(new Panel(1600,300, panelHall[0], 2,0.3));
+level[33].wallPanels.push(new Panel(1100,200, panelHall[1], 1,0.3));
+level[33].wallPanels.push(new Panel(1200,200, panelHall[1], 1,0.3));
+level[33].wallPanels.push(new Panel(1300,200, panelHall[1], 1,0.3));
+level[33].wallPanels.push(new Panel(1400,200, panelHall[1], 1,0.3));
+level[33].wallPanels.push(new Panel(1500,200, panelHall[1], 1,0.3));
+level[33].wallPanels.push(new Panel(1600,200, panelHall[1], 1,0.3));
+level[33].wallPanels.push(new ForeGround(1130,300, foreGPic[0]));
+level[33].wallPanels.push(new ForeGround(1230,300, foreGPic[1]));
+level[33].wallPanels.push(new ForeGround(1470,300, foreGPic[0]));
+level[33].wallPanels.push(new ForeGround(1570,300, foreGPic[1]));
+level[33].wallPanels.push(new ForeGround(1520,280, foreGPic[5]));
+level[33].wallPanels.push(new ForeGround(1580,280, foreGPic[3]));
+level[33].wallPanels.push(new ForeGround(1180,280, foreGPic[4]));
+level[33].wallPanels.push(new ForeGround(1240,280, foreGPic[3]));
+level[33].wallPanels.push(new ForeGround(1200,280, foreGPic[14]));
+level[33].wallPanels.push(new ForeGround(1540,280, foreGPic[15]));
+level[33].wallPanels.push(new ForeGround(1200,200, foreGPic[20]));
+level[33].wallPanels.push(new ForeGround(1500,200, foreGPic[21]));
+level[33].wallPanels.push(new ForeGround(1200,300, foreGPic[19]));
+level[33].wallPanels.push(new ForeGround(1100,300, foreGPic[17]));
+level[33].wallPanels.push(new ForeGround(1100,200, foreGPic[18]));
+level[33].wallPanels.push(new ForeGround(1500,300, foreGPic[18]));
+level[33].wallPanels.push(new ForeGround(1600,300, foreGPic[19]));
+level[33].wallPanels.push(new ForeGround(1600,200, foreGPic[17]));
+level[33].wallPanels.push(new ForeGround(1400,300, wallFeatures[2]));
+level[33].wallPanels.push(new ForeGround(1400,200, wallFeatures[2]));
+level[33].wallPanels.push(new ForeGround(1300,300, wallFeatures[1]));
+level[33].wallPanels.push(new ForeGround(1300,200, wallFeatures[1]));level[33].lamps.push(new FlickerLamp(1310,210));
+level[33].lamps.push(new FlickerLamp(1480,210));
+level[33].wallPanels.push(new ForeGround(1100,300, wallFeatures[35]));
+level[33].wallPanels.push(new ForeGround(1100,200, wallFeatures[35]));
+level[33].wallPanels.push(new ForeGround(1600,200, wallFeatures[34]));
+level[33].wallPanels.push(new ForeGround(1600,300, wallFeatures[34]));
+level[33].wallPanels.push(new ForeGround(1200,300, wallFeatures[34]));
+level[33].wallPanels.push(new ForeGround(1200,200, wallFeatures[34]));
+level[33].wallPanels.push(new ForeGround(1500,300, wallFeatures[35]));
+level[33].wallPanels.push(new ForeGround(1500,200, wallFeatures[35]));
+level[33].wallPanels.push(new Panel(1700,200, panelHall[1], 1,0.5));
+level[33].wallPanels.push(new Panel(1800,200, panelHall[1], 1,0.5));
+level[33].wallPanels.push(new Panel(1700,300, panelHall[1], 2,0.5));
+level[33].wallPanels.push(new Panel(1800,300, panelHall[1], 2,0.5));
+level[33].wallPanels.push(new AniDoor(1700,200, 0,1));
+level[33].wall.push(createWall(1100,400, 100,30,floor[5]));
+level[33].wall.push(createWall(1400,400, 100,30,floor[5]));
+level[33].wall.push(createWall(1100,190, 100,30,floor[6]));
+level[33].wall.push(createWall(1400,190, 100,30,floor[6]));
+level[33].wall.push(createWall(1900,300, 30,100,sideWall[1]));
+level[33].wall.push(createWall(1900,200, 30,100,sideWall[1]));
+level[33].wall.push(createWall(1900,400, 30,100,sideWall[5]));
+level[33].wall.push(createWall(1900,190, 30,100,sideWall[5]));
+level[33].foreGround.push(new ForeGround(1000,300, pipes[17]));
+level[33].foreGround.push(new ForeGround(1000,200, pipes[17]));
+level[33].foreGround.push(new ForeGround(1000,190, floor[3]));
+level[33].wallPanels.push(new wordTicker(250,210, 'ALERT'));
+level[33].wallPanels.push(new wordTicker(1750,210, 'ALERT'));
+level[33].exits.push(new Exit(1800,300, 34, true, 300, 200));
+
+level[34] = new Level('Human Territory')
+level[34].wallPanels.push(new Panel(200,100, panelHall[1], 1,0.6));
+level[34].wallPanels.push(new Panel(300,100, panelHall[1], 1,0.6));
+level[34].wallPanels.push(new Panel(400,100, panelHall[1], 1,0.6));
+level[34].wallPanels.push(new Panel(500,100, panelHall[1], 1,0.6));
+level[34].wallPanels.push(new Panel(200,200, panelHall[1], 0,0.6));
+level[34].wallPanels.push(new Panel(300,200, panelHall[1], 0,0.6));
+level[34].wallPanels.push(new Panel(400,200, panelHall[1], 0,0.6));
+level[34].wallPanels.push(new Panel(500,200, panelHall[1], 0,0.6));
+level[34].wallPanels.push(new Panel(200,300, panelHall[0], 2,0.6));
+level[34].wallPanels.push(new Panel(300,300, panelHall[0], 2,0.6));
+level[34].wallPanels.push(new Panel(400,300, panelHall[0], 2,0.6));
+level[34].wallPanels.push(new Panel(500,300, panelHall[0], 2,0.6));
+level[34].wallPanels.push(new AniDoor(300,200, 0,1));
+level[34].wallPanels.push(new Panel(600,300, panelHall[12], 2,0.3));
+level[34].wallPanels.push(new Panel(700,300, panelHall[12], 2,0.3));
+level[34].wallPanels.push(new Panel(800,300, panelHall[12], 2,0.3));
+level[34].wallPanels.push(new Panel(900,300, panelHall[12], 2,0.3));
+level[34].wallPanels.push(new Panel(600,200, panelHall[12], 0,0.3));
+level[34].wallPanels.push(new Panel(700,200, panelHall[12], 0,0.3));
+level[34].wallPanels.push(new Panel(800,200, panelHall[12], 0,0.3));
+level[34].wallPanels.push(new Panel(900,200, panelHall[12], 0,0.3));
+level[34].wallPanels.push(new Panel(600,100, panelHall[12], 1,0.3));
+level[34].wallPanels.push(new Panel(700,100, panelHall[12], 1,0.3));
+level[34].wallPanels.push(new Panel(800,100, panelHall[12], 1,0.3));
+level[34].wallPanels.push(new Panel(900,100, panelHall[12], 1,0.3));
+level[34].wallPanels.push(new ForeGround(650,300, pipes[17]));
+level[34].wallPanels.push(new ForeGround(650,200, pipes[17]));
+level[34].wallPanels.push(new ForeGround(650,100, pipes[17]));
+level[34].wallPanels.push(new ForeGround(750,100, pipes[17]));
+level[34].wallPanels.push(new ForeGround(750,200, pipes[17]));
+level[34].wallPanels.push(new ForeGround(750,300, pipes[17]));
+level[34].wallPanels.push(new ForeGround(850,300, pipes[17]));
+level[34].wallPanels.push(new ForeGround(850,200, pipes[17]));
+level[34].wallPanels.push(new ForeGround(850,100, pipes[17]));
+level[34].wallPanels.push(new ForeGround(680,30, pipes[11]));
+level[34].wallPanels.push(new ForeGround(780,30, pipes[11]));
+level[34].wallPanels.push(new ForeGround(880,30, pipes[11]));
+level[34].wallPanels.push(new Panel(1000,300, panelHall[0], 2,0.6));
+level[34].wallPanels.push(new Panel(1100,300, panelHall[0], 2,0.6));
+level[34].wallPanels.push(new Panel(1200,300, panelHall[0], 2,0.6));
+level[34].wallPanels.push(new Panel(1000,200, panelHall[1], 0,0.6));
+level[34].wallPanels.push(new Panel(1100,200, panelHall[1], 0,0.6));
+level[34].wallPanels.push(new Panel(1200,200, panelHall[1], 0,0.6));level[34].wallPanels.push(new Panel(1000,100, panelHall[1], 1,0.6));
+level[34].wallPanels.push(new Panel(1100,100, panelHall[1], 1,0.6));
+level[34].wallPanels.push(new Panel(1200,100, panelHall[1], 1,0.6));
+level[34].wallPanels.push(new ForeGround(1020,220, wallFeatures[11]));
+level[34].wallPanels.push(new ForeGround(1120,220, wallFeatures[28]));
+level[34].wallPanels.push(new ForeGround(1220,220, wallFeatures[28]));level[34].wallPanels.push(new fan(520,120, 0.2,0,1));
+level[34].wallPanels.push(new fan(420,120, 0.2,0,1));
+level[34].wallPanels.push(new fan(320,120, 0.2,0,1));
+level[34].wallPanels.push(new fan(220,120, 0.2,0,1));
+level[34].wallPanels.push(new ForeGround(600,300, wallFeatures[0]));
+level[34].wallPanels.push(new ForeGround(700,300, wallFeatures[0]));
+level[34].wallPanels.push(new ForeGround(800,300, wallFeatures[0]));
+level[34].wallPanels.push(new ForeGround(900,300, wallFeatures[0]));
+level[34].wallPanels.push(new ForeGround(630,230, wallFeatures[6]));
+level[34].wallPanels.push(new ForeGround(600,200, wallFeatures[0]));
+level[34].wallPanels.push(new ForeGround(700,200, wallFeatures[0]));
+level[34].wallPanels.push(new ForeGround(800,200, wallFeatures[0]));
+level[34].wallPanels.push(new ForeGround(900,200, wallFeatures[0]));
+level[34].wallPanels.push(new ForeGround(900,100, wallFeatures[0]));
+level[34].wallPanels.push(new ForeGround(800,100, wallFeatures[0]));
+level[34].wallPanels.push(new ForeGround(700,100, wallFeatures[0]));
+level[34].wallPanels.push(new ForeGround(600,100, wallFeatures[0]));
+level[34].wallPanels.push(new ForeGround(900,300, wallFeatures[2]));
+level[34].wallPanels.push(new ForeGround(900,200, wallFeatures[2]));
+level[34].wallPanels.push(new ForeGround(900,100, wallFeatures[2]));
+level[34].wallPanels.push(new ForeGround(600,300, wallFeatures[1]));
+level[34].wallPanels.push(new ForeGround(600,200, wallFeatures[1]));
+level[34].wallPanels.push(new ForeGround(600,100, wallFeatures[1]));
+level[34].wall.push(createWall(200,400, 100,30,floor[7]));
+level[34].wall.push(createWall(700,400, 100,30,floor[7]));
+level[34].wall.push(createWall(1200,400, 100,30,floor[7]));
+level[34].wall.push(createWall(200,90, 100,30,floor[6]));
+level[34].wall.push(createWall(700,90, 100,30,floor[6]));
+level[34].wall.push(createWall(1200,90, 100,30,floor[6]));
+level[34].wall.push(createWall(170,300, 30,100,sideWall[2]));
+level[34].wall.push(createWall(170,200, 30,100,sideWall[2]));
+level[34].wall.push(createWall(170,100, 30,100,sideWall[2]));
+level[34].wall.push(createWall(1700,100, 30,100,sideWall[2]));
+level[34].wall.push(createWall(1700,200, 30,100,sideWall[2]));
+level[34].wall.push(createWall(1700,300, 30,100,sideWall[2]));
+level[34].wall.push(createWall(1700,400, 30,100,sideWall[5]));
+level[34].wall.push(createWall(1700,90, 30,100,sideWall[5]));
+level[34].wall.push(createWall(170,400, 30,100,sideWall[5]));
+level[34].wall.push(createWall(170,90, 30,100,sideWall[5]));
+level[34].lamps.push(new UpLamp(270,370));
+level[34].lamps.push(new UpLamp(520,370));
+level[34].lamps.push(new UpLamp(1070,370));level[34].lamps.push(new UpLamp(1220,370));
+level[34].wallPanels.push(new Panel(1300,100, panelHall[1], 1,0.6));
+level[34].wallPanels.push(new Panel(1400,100, panelHall[1], 1,0.6));
+level[34].wallPanels.push(new Panel(1500,100, panelHall[1], 1,0.6));
+level[34].wallPanels.push(new Panel(1600,100, panelHall[1], 1,0.6));
+level[34].wallPanels.push(new Panel(1300,200, panelHall[1], 0,0.6));
+level[34].wallPanels.push(new Panel(1400,200, panelHall[1], 0,0.6));
+level[34].wallPanels.push(new Panel(1500,200, panelHall[1], 0,0.6));
+level[34].wallPanels.push(new Panel(1600,200, panelHall[1], 0,0.6));
+level[34].wallPanels.push(new Panel(1300,300, panelHall[0], 2,0.6));
+level[34].wallPanels.push(new Panel(1400,300, panelHall[0], 2,0.6));
+level[34].wallPanels.push(new Panel(1500,300, panelHall[0], 2,0.6));
+level[34].wallPanels.push(new Panel(1600,300, panelHall[0], 2,0.6));
+level[34].wallPanels.push(new AniDoor(1300,200, 0,1));
+level[34].wallPanels.push(new AniDoor(1500,200, 0,0));
+level[34].lamps.push(new UpLamp(1520,370));
+level[34].lamps.push(new UpLamp(1470,370));
+level[34].lamps.push(new deadLamp(1670,370));
+level[34].lamps.push(new deadLamp(1320,370));
+level[34].items.push(spawnTrap(1150,300, recorder, '3', '1','1300,200'));
+level[34].exits.push(new Exit(1400,300, 35, true, 500, 600));
+level[34].exits.push(new Exit(400,300, 33, true, 1700, 200));
+level[34].exits.push(new Exit(1600,300, 36, true, 200, 200));
+
+
+
+level[35] = new Level('Guard Room')
+level[35].wallPanels.push(new Panel(900,600, panelHall[11], 0,0.5));
+level[35].wallPanels.push(new Panel(1000,600, panelHall[11], 0,0.5));
+level[35].wallPanels.push(new Panel(800,600, panelHall[11], 0,0.5));
+level[35].wallPanels.push(new Panel(800,500, panelHall[0], 1,0.5));
+level[35].wallPanels.push(new Panel(900,500, panelHall[0], 1,0.5));
+level[35].wallPanels.push(new Panel(1000,500, panelHall[0], 1,0.5));
+level[35].wallPanels.push(new Panel(800,700, panelHall[0], 2,0.5));
+level[35].wallPanels.push(new Panel(900,700, panelHall[0], 2,0.5));
+level[35].wallPanels.push(new Panel(1000,700, panelHall[0], 2,0.5));
+level[35].wallPanels.push(new Panel(700,600, panelHall[1], 0,0.5));
+level[35].wallPanels.push(new Panel(600,600, panelHall[1], 0,0.5));
+level[35].wallPanels.push(new Panel(500,600, panelHall[1], 0,0.5));
+level[35].wallPanels.push(new Panel(500,500, panelHall[1], 1,0.5));
+level[35].wallPanels.push(new Panel(600,500, panelHall[1], 1,0.5));
+level[35].wallPanels.push(new Panel(700,500, panelHall[1], 1,0.5));
+level[35].wallPanels.push(new Panel(500,700, panelHall[1], 2,0.5));
+level[35].wallPanels.push(new Panel(600,700, panelHall[1], 2,0.5));
+level[35].wallPanels.push(new Panel(700,700, panelHall[1], 2,0.5));level[35].wallPanels.push(new Panel(400,500, panelHall[2], 1,0.3));
+level[35].wallPanels.push(new Panel(400,700, panelHall[2], 2,0.3));
+level[35].wallPanels.push(new Panel(400,600, panelHall[2], 0,0.3));
+level[35].wallPanels.push(new ForeGround(400,700, wallFeatures[12]));
+level[35].wallPanels.push(new ForeGround(400,600, wallFeatures[12]));
+level[35].wallPanels.push(new ForeGround(400,500, wallFeatures[12]));
+level[35].wallPanels.push(new ForeGround(400,700, wallFeatures[0]));
+level[35].wallPanels.push(new ForeGround(400,600, wallFeatures[0]));
+level[35].wallPanels.push(new ForeGround(400,500, wallFeatures[0]));
+level[35].wallPanels.push(new ForeGround(500,700, wallFeatures[1]));
+level[35].wallPanels.push(new ForeGround(500,600, wallFeatures[1]));
+level[35].wallPanels.push(new ForeGround(500,500, wallFeatures[1]));
+level[35].foreGround.push(new ForeGround(880,430, pipes[11]));
+level[35].foreGround.push(new ForeGround(920,430, pipes[11]));
+level[35].foreGround.push(new ForeGround(850,700, pipes[17]));
+level[35].foreGround.push(new ForeGround(850,600, pipes[17]));
+level[35].foreGround.push(new ForeGround(850,500, pipes[17]));
+level[35].foreGround.push(new ForeGround(890,700, pipes[17]));
+level[35].foreGround.push(new ForeGround(890,600, pipes[17]));
+level[35].foreGround.push(new ForeGround(890,500, pipes[17]));
+level[35].wallPanels.push(new ForeGround(820,620, wallFeatures[39]));
+level[35].wallPanels.push(new ForeGround(920,620, wallFeatures[39]));
+level[35].wallPanels.push(new ForeGround(1020,620, wallFeatures[39]));
+level[35].items.push(pistolItem(790,620));
+level[35].items.push(pistolItem(790,640));
+level[35].items.push(smgItem(900,640));
+level[35].items.push(armorItem(1030,620));
+level[35].items.push(armorItem(1050,620));
+level[35].wallPanels.push(new Panel(1100,700, panelHall[3], 2,0.3));
+level[35].wallPanels.push(new Panel(1200,700, panelHall[3], 2,0.3));
+level[35].wallPanels.push(new Panel(1300,700, panelHall[3], 2,0.3));
+level[35].wallPanels.push(new Panel(1400,700, panelHall[3], 2,0.3));
+level[35].wallPanels.push(new Panel(1100,600, panelHall[3], 1,0.3));
+level[35].wallPanels.push(new Panel(1200,600, panelHall[3], 1,0.3));
+level[35].wallPanels.push(new Panel(1300,600, panelHall[3], 1,0.3));
+level[35].wallPanels.push(new Panel(1400,600, panelHall[3], 1,0.3));
+level[35].wallPanels.push(new Panel(1100,500, panelHall[1], 1,0.5));
+level[35].wallPanels.push(new Panel(1200,500, panelHall[1], 1,0.5));
+level[35].wallPanels.push(new Panel(1300,500, panelHall[1], 1,0.5));
+level[35].wallPanels.push(new Panel(1400,500, panelHall[1], 1,0.5));
+level[35].wallPanels.push(new ForeGround(780,700, wallFeatures[30]));
+level[35].wallPanels.push(new ForeGround(1410,700, wallFeatures[44]));
+level[35].wallPanels.push(new ForeGround(1310,700, wallFeatures[44]));
+level[35].wallPanels.push(new ForeGround(1210,700, wallFeatures[44]));
+level[35].lamps.push(new BigLamp(1160,620));
+level[35].wallPanels.push(new AniDoor(500,600, 0,1));
+level[35].wallPanels.push(new wordWall(710,640, 'guard',5));
+level[35].wallPanels.push(new wordWall(710,650, 'room 2H',5));
+level[35].wallPanels.push(new ForeGround(700,600, wallFeatures[3]));
+level[35].wallPanels.push(new ForeGround(720,720, wallFeatures[11]));
+level[35].wallPanels.push(new fan(1120,520, 0.2,0,1));
+level[35].wallPanels.push(new fan(1420,520, 0.2,0,1));
+level[35].wallPanels.push(new Panel(1500,600, panelHall[2], 0,0.5));
+level[35].wallPanels.push(new Panel(1500,500, panelHall[0], 1,0.5));
+level[35].wallPanels.push(new Panel(1600,500, panelHall[0], 1,0.5));
+level[35].wallPanels.push(new Panel(1700,500, panelHall[0], 1,0.5));
+level[35].wallPanels.push(new Panel(1800,500, panelHall[0], 1,0.5));
+level[35].wallPanels.push(new Panel(1600,600, panelHall[1], 0,0.5));
+level[35].wallPanels.push(new Panel(1700,600, panelHall[1], 0,0.5));
+level[35].wallPanels.push(new Panel(1800,600, panelHall[1], 0,0.5));level[35].wallPanels.push(new Panel(1500,800, panelHall[1], 2,0.5));
+level[35].wallPanels.push(new Panel(1600,800, panelHall[1], 2,0.5));
+level[35].wallPanels.push(new Panel(1700,800, panelHall[1], 2,0.5));
+level[35].wallPanels.push(new Panel(1800,800, panelHall[1], 2,0.5));
+level[35].wallPanels.push(new Panel(1500,700, panelHall[2], 0,0.5));
+level[35].wallPanels.push(new Panel(1600,700, panelHall[1], 0,0.5));
+level[35].wallPanels.push(new Panel(1700,700, panelHall[1], 0,0.5));
+level[35].wallPanels.push(new Panel(1800,700, panelHall[1], 0,0.5));
+level[35].wall.push(createWall(400,800, 100,30,floor[7]));
+level[35].wall.push(createWall(900,800, 100,30,floor[7]));
+level[35].wall.push(createWall(1400,900, 100,30,floor[7]));level[35].wall.push(createWall(1460,870, 30,100,sideWall[5]));
+level[35].wall.push(createWall(1430,840, 30,100,sideWall[5]));
+level[35].wall.push(createWall(1400,810, 30,100,sideWall[5]));
+level[35].wall.push(createWall(1400,840, 30,100,sideWall[5]));
+level[35].wall.push(createWall(1400,870, 30,100,sideWall[5]));
+level[35].wall.push(createWall(1430,870, 30,100,sideWall[5]));level[35].wallPanels.push(new Panel(1400,800, panelHall[1], 2,0.5));level[35].foreGround.push(new ForeGround(1500,800, pipes[17]));
+level[35].foreGround.push(new ForeGround(1500,700, pipes[17]));
+level[35].foreGround.push(new ForeGround(1500,600, pipes[17]));
+level[35].foreGround.push(new ForeGround(1500,500, pipes[14]));
+level[35].foreGround.push(new ForeGround(1600,500, pipes[12]));
+level[35].foreGround.push(new ForeGround(1700,500, pipes[12]));
+level[35].foreGround.push(new ForeGround(1800,500, pipes[12]));level[35].wallPanels.push(new ForeGround(1720,820, wallFeatures[29]));
+level[35].wallPanels.push(new ForeGround(1820,800, wallFeatures[30]));
+level[35].wallPanels.push(new ForeGround(1770,800, wallFeatures[30]));level[35].wallPanels.push(new ForeGround(1800,670, posterArt[1]));
+level[35].wallPanels.push(new ForeGround(1570,700, wallFeatures[32]));
+level[35].wallPanels.push(new Monitor(1600,700, 'All units to RP Gamma',0));
+level[35].wall.push(createWall(1900,500, 30,100,sideWall[8]));
+level[35].wall.push(createWall(1900,900, 30,100,sideWall[5]));
+level[35].wall.push(createWall(1400,490, 100,30,floor[6]));
+level[35].wall.push(createWall(1900,490, 30,100,sideWall[5]));
+level[35].wall.push(createWall(900,490, 100,30,floor[6]));
+level[35].wall.push(createWall(400,490, 100,30,floor[6]));
+level[35].wall.push(createWall(370,700, 30,100,sideWall[1]));
+level[35].wall.push(createWall(370,600, 30,100,sideWall[1]));
+level[35].wall.push(createWall(370,500, 30,100,sideWall[1]));
+level[35].wall.push(createWall(370,800, 30,100,sideWall[5]));
+level[35].wall.push(createWall(370,490, 30,100,sideWall[5]));
+level[35].lamps.push(new BigLamp(560,620));level[35].lamps.push(new UpLamp(870,770));
+level[35].lamps.push(new UpLamp(1070,770));level[35].wallPanels.push(new ForeGround(1590,500, wallFeatures[2]));
+level[35].wallPanels.push(new ForeGround(1590,550, wallFeatures[2]));
+level[35].wallPanels.push(new ForeGround(1690,550, wallFeatures[1]));
+level[35].wallPanels.push(new ForeGround(1690,500, wallFeatures[1]));
+level[35].lamps.push(new BigLamp(1610,650));
+level[35].lamps.push(new BigLamp(1690,650));
+level[35].items.push(medItem(1680,800));
+level[35].items.push(medItem(1680,770));
+level[35].items.push(rifleItem(1610,800));
+level[35].wallPanels.push(new ForeGround(1300,700, wallFeatures[0]));
+level[35].wallPanels.push(new ForeGround(1400,700, wallFeatures[0]));
+level[35].wallPanels.push(new ForeGround(1400,600, wallFeatures[0]));
+level[35].wallPanels.push(new ForeGround(1300,600, wallFeatures[0]));
+level[35].wallPanels.push(new ForeGround(1200,700, wallFeatures[2]));
+level[35].wallPanels.push(new ForeGround(1200,600, wallFeatures[2]));
+level[35].foreGround.push(new ForeGround(900,490, ceiling[0]));
+level[35].exits.push(new Exit(600,700, 34, true, 1300, 200));
+
+
+level[36] = new Level('Gamma Bridge')
+level[36].wallPanels.push(new Panel(200,100, panelHall[1], 1,0.6));
+level[36].wallPanels.push(new Panel(300,100, panelHall[1], 1,0.6));
+level[36].wallPanels.push(new Panel(400,100, panelHall[1], 1,0.6));
+level[36].wallPanels.push(new Panel(200,200, panelHall[1], 0,0.6));
+level[36].wallPanels.push(new Panel(300,200, panelHall[1], 0,0.6));
+level[36].wallPanels.push(new Panel(400,200, panelHall[1], 0,0.6));
+level[36].wallPanels.push(new Panel(200,300, panelHall[1], 2,0.6));
+level[36].wallPanels.push(new Panel(300,300, panelHall[1], 2,0.6));
+level[36].wallPanels.push(new Panel(400,300, panelHall[1], 2,0.6));
+level[36].wallPanels.push(new Panel(500,300, panelHall[1], 2,0.6));
+level[36].wallPanels.push(new Panel(600,300, panelHall[1], 2,0.6));
+level[36].wallPanels.push(new Panel(500,200, panelHall[0], 0,0.6));
+level[36].wallPanels.push(new Panel(600,200, panelHall[0], 0,0.6));
+level[36].wallPanels.push(new Panel(500,100, panelHall[1], 1,0.6));
+level[36].wallPanels.push(new Panel(600,100, panelHall[1], 1,0.6));
+level[36].wall.push(createWall(200,400, 100,30,floor[7]));
+level[36].wall.push(createWall(700,300, 100,30,floor[7]));level[36].wall.push(createWall(610,370, 30,100,sideWall[5]));
+level[36].wall.push(createWall(640,340, 30,100,sideWall[5]));
+level[36].wall.push(createWall(670,310, 30,100,sideWall[5]));
+level[36].wallPanels.push(new ForeGround(670,340, sideWall[5]));
+level[36].wallPanels.push(new ForeGround(670,370, sideWall[5]));
+level[36].wallPanels.push(new ForeGround(640,370, sideWall[5]));
+level[36].wallPanels.push(new AniDoor(200,200, 0,1));
+level[36].wall.push(createWall(200,90, 100,30,floor[6]));
+level[36].wall.push(createWall(170,300, 30,100,sideWall[2]));
+level[36].wall.push(createWall(170,200, 30,100,sideWall[2]));level[36].wall.push(createWall(170,100, 30,100,sideWall[2]));
+level[36].wall.push(createWall(170,400, 30,100,sideWall[5]));
+level[36].wall.push(createWall(170,90, 30,100,sideWall[5]));
+level[36].wallPanels.push(new wordWall(410,250, 'gamma',5));
+level[36].wallPanels.push(new wordWall(410,260, 'security',5));
+level[36].wallPanels.push(new wordWall(410,270, 'bridge',5));
+level[36].wallPanels.push(new ForeGround(520,310, wallFeatures[4]));
+level[36].lamps.push(new Lamp(520,220));
+level[36].lamps.push(new Lamp(570,220));
+level[36].items.push(messageTrap(510,260, recorder, 'Report!', 'This is Col Dequesne! ~~Gamma station report! ~~ repeat! ~~Gamma station report!'));
+level[36].items.push(messageTrap(510,260, blankPic, 'Report!', 'Hello? $99'));
+level[36].items.push(messageTrap(510,260, blankPic, 'Report!', 'Who is this!?  ~~Is gamma station still holding?'));
+level[36].items.push(messageTrap(510,260, blankPic, 'Report!', 'My name is uh... Jenkins ... sir.  ~~Gamma station seems fine to me. $99'));
+level[36].items.push(messageTrap(510,260, blankPic, 'Report!', "Who?  ~~Doesn't matter, fire team Kilo will reach your position in a matter of minutes. ~~Hold those doors soldier! ~~We don't have much time before the insects go full on phase 2."));
+level[36].items.push(messageTrap(510,260, blankPic, 'Report!', 'And what about the reptiles? $99'));
+level[36].items.push(messageTrap(510,260, blankPic, 'Report!', "Have you been paying any attention?! ~~The reptiles have no phase 2, there's no such thing as a reptile hive or a lizard queen! ~~In any case wipe those freaks out before we reach a populated system! ~~Dequesne Out."));
+level[36].lamps.push(new BigLampFlicker(330,200));
+level[36].wallPanels.push(new ForeGround(270,100, wallFeatures[2]));
+level[36].wallPanels.push(new ForeGround(370,100, wallFeatures[1]));
+level[36].wall.push(createWall(1200,300, 100,30,floor[7]));
+level[36].wall.push(createWall(700,90, 100,30,floor[7]));
+level[36].wall.push(createWall(1200,90, 100,30,floor[7]));
+level[36].wallPanels.push(new ForeGround(700,100, foreGPic[26]));
+level[36].wallPanels.push(new ForeGround(800,200, foreGPic[26]));
+level[36].wallPanels.push(new ForeGround(700,200, foreGPic[25]));
+level[36].wallPanels.push(new ForeGround(800,100, foreGPic[24]));
+level[36].wallPanels.push(new ForeGround(900,200, foreGPic[27]));
+level[36].wallPanels.push(new ForeGround(1000,100, foreGPic[27]));
+level[36].wallPanels.push(new ForeGround(1300,200, foreGPic[27]));
+level[36].wallPanels.push(new ForeGround(1400,100, foreGPic[27]));
+level[36].wallPanels.push(new ForeGround(1100,100, foreGPic[26]));
+level[36].wallPanels.push(new ForeGround(1200,200, foreGPic[26]));
+level[36].wallPanels.push(new ForeGround(1500,100, foreGPic[26]));
+level[36].wallPanels.push(new ForeGround(1600,200, foreGPic[26]));
+level[36].wallPanels.push(new ForeGround(1100,200, foreGPic[25]));
+level[36].wallPanels.push(new ForeGround(1200,100, foreGPic[24]));
+level[36].wallPanels.push(new ForeGround(900,100, foreGPic[23]));
+level[36].wallPanels.push(new ForeGround(1000,200, foreGPic[23]));
+level[36].wallPanels.push(new ForeGround(1300,100, foreGPic[23]));
+level[36].wallPanels.push(new ForeGround(1500,200, foreGPic[23]));
+level[36].wallPanels.push(new ForeGround(1400,200, foreGPic[24]));
+level[36].wallPanels.push(new ForeGround(1600,100, foreGPic[25]));level[36].foreGround.push(new ForeGround(750,200, wallFeatures[33]));
+level[36].foreGround.push(new ForeGround(850,200, wallFeatures[33]));
+level[36].foreGround.push(new ForeGround(950,200, wallFeatures[33]));
+level[36].foreGround.push(new ForeGround(1100,200, wallFeatures[33]));
+level[36].foreGround.push(new ForeGround(1200,200, wallFeatures[33]));
+level[36].foreGround.push(new ForeGround(1300,200, wallFeatures[33]));
+level[36].foreGround.push(new ForeGround(1450,200, wallFeatures[33]));
+level[36].foreGround.push(new ForeGround(1550,200, wallFeatures[33]));
+level[36].foreGround.push(new ForeGround(1650,200, wallFeatures[33]));
+level[36].foreGround.push(new ForeGround(1400,250, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(1400,200, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(1400,150, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(1400,100, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(1750,250, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(1750,200, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(1750,150, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(1750,100, wallFeatures[38]));level[36].foreGround.push(new ForeGround(1050,250, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(1050,200, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(1050,150, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(1050,100, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(700,250, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(700,200, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(700,150, wallFeatures[38]));
+level[36].foreGround.push(new ForeGround(700,100, wallFeatures[38]));
+level[36].wallPanels.push(new Panel(1700,100, panelHall[1], 1,0.6));
+level[36].wallPanels.push(new Panel(1800,100, panelHall[1], 1,0.6));
+level[36].wallPanels.push(new Panel(1700,200, panelHall[1], 2,0.6));
+level[36].wallPanels.push(new Panel(1800,200, panelHall[1], 2,0.6));
+level[36].wall.push(createWall(1400,300, 100,30,floor[7]));
+level[36].wall.push(createWall(1400,90, 100,30,floor[7]));
+level[36].wall.push(createWall(1900,200, 30,100,sideWall[1]));
+level[36].wall.push(createWall(1900,100, 30,100,sideWall[1]));
+level[36].wall.push(createWall(1900,300, 30,100,sideWall[5]));
+level[36].wall.push(createWall(1900,90, 30,100,sideWall[5]));
+level[36].wallPanels.push(new AniDoor(1700,100, 0,1));
+level[36].items.push(spawnTrap(1370,200, recorder, '3', '2','1800,200'));
+level[36].items.push(spawnTrap(1370,200, recorder, '3', '2','1800,200'));
+level[36].items.push(spawnTrap(1370,200, recorder, '3', '2','1800,200'));
+level[36].items.push(spawnTrap(1370,200, recorder, '3', '2','1800,200'));
+level[36].lamps.push(new UpLamp(1390,280));
+level[36].lamps.push(new UpLamp(1100,280));
+level[36].lamps.push(new UpLamp(700,280));
+level[36].lamps.push(new UpLamp(1690,280));level[36].lamps.push(new pulseLight(700,120));
+level[36].lamps[7].addPLight(800, 120);
+level[36].lamps[7].addPLight(900, 120);
+level[36].lamps[7].addPLight(1000, 120);
+level[36].lamps[7].addPLight(1100, 120);
+level[36].lamps[7].addPLight(1200, 120);
+level[36].lamps[7].addPLight(1300, 120);
+level[36].lamps[7].addPLight(1400, 120);
+level[36].lamps[7].addPLight(1500, 120);
+level[36].lamps[7].addPLight(1600, 120);
+level[36].lamps[7].addPLight(1700, 120);
+level[36].exits.push(new Exit(1800, 200, 37, true, 200,300));
+level[36].exits.push(new Exit(300, 300, 34, true, 1500,200));
+level[37] = new Level('Situation')
+
+level[37].wallPanels.push(new Panel(200,100, panelHall[11], 1,0.7));
+level[37].wallPanels.push(new Panel(300,100, panelHall[11], 1,0.7));
+level[37].wallPanels.push(new Panel(700,100, panelHall[11], 1,0.7));
+level[37].wallPanels.push(new Panel(800,100, panelHall[11], 1,0.7));
+level[37].wallPanels.push(new Panel(100,100, panelHall[2], 1,0.7));
+level[37].wallPanels.push(new Panel(900,100, panelHall[2], 1,0.7));
+level[37].wallPanels.push(new Panel(400,100, panelHall[0], 1,0.7));
+level[37].wallPanels.push(new Panel(600,100, panelHall[0], 1,0.7));
+level[37].wallPanels.push(new Panel(500,100, panelHall[1], 1,0.7));level[37].wallPanels.push(new Panel(500,300, panelHall[1], 0,0.7));
+level[37].wallPanels.push(new Panel(200,200, panelHall[1], 0,0.7));
+level[37].wallPanels.push(new Panel(300,200, panelHall[1], 0,0.7));
+level[37].wallPanels.push(new Panel(700,200, panelHall[1], 0,0.7));
+level[37].wallPanels.push(new Panel(800,200, panelHall[1], 0,0.7));
+level[37].wallPanels.push(new Panel(300,300, panelHall[1], 0,0.7));
+level[37].wallPanels.push(new Panel(200,300, panelHall[1], 0,0.7));
+level[37].wallPanels.push(new Panel(700,300, panelHall[1], 0,0.7));
+level[37].wallPanels.push(new Panel(800,300, panelHall[1], 0,0.7));
+level[37].wallPanels.push(new Panel(500,400, panelHall[1], 2,0.7));
+level[37].wallPanels.push(new Panel(200,400, panelHall[1], 2,0.7));
+level[37].wallPanels.push(new Panel(300,400, panelHall[1], 2,0.7));
+level[37].wallPanels.push(new Panel(700,400, panelHall[1], 2,0.7));
+level[37].wallPanels.push(new Panel(800,400, panelHall[1], 2,0.7));
+level[37].wallPanels.push(new Panel(400,200, panelHall[0], 0,0.7));
+level[37].wallPanels.push(new Panel(500,200, panelHall[0], 0,0.7));
+level[37].wallPanels.push(new Panel(600,200, panelHall[0], 0,0.7));
+level[37].wallPanels.push(new Panel(600,300, panelHall[0], 0,0.7));
+level[37].wallPanels.push(new Panel(400,300, panelHall[0], 0,0.7));
+level[37].wallPanels.push(new Panel(400,400, panelHall[0], 2,0.7));
+level[37].wallPanels.push(new Panel(600,400, panelHall[0], 2,0.7));
+level[37].wallPanels.push(new Panel(100,200, panelHall[2], 0,0.7));
+level[37].wallPanels.push(new Panel(100,300, panelHall[2], 0,0.7));
+level[37].wallPanels.push(new Panel(900,200, panelHall[2], 0,0.7));
+level[37].wallPanels.push(new Panel(900,300, panelHall[2], 0,0.7));
+level[37].wallPanels.push(new Panel(100,400, panelHall[2], 2,0.7));
+level[37].wallPanels.push(new Panel(900,400, panelHall[2], 2,0.7));
+level[37].foreGround.push(new ForeGround(100,100, pipes[17]));
+level[37].foreGround.push(new ForeGround(100,200, pipes[17]));
+level[37].foreGround.push(new ForeGround(100,300, pipes[17]));
+level[37].foreGround.push(new ForeGround(100,400, pipes[17]));
+level[37].foreGround.push(new ForeGround(900,400, pipes[17]));
+level[37].foreGround.push(new ForeGround(900,300, pipes[17]));
+level[37].foreGround.push(new ForeGround(900,200, pipes[17]));
+level[37].foreGround.push(new ForeGround(900,100, pipes[17]));
+level[37].wallPanels.push(new ForeGround(500,300, wallFeatures[42]));
+level[37].wallPanels.push(new fan(520,420, 0.2,0,1));
+level[37].wall.push(createWall(100,500, 100,30,floor[5]));
+level[37].wall.push(createWall(500,500, 100,30,floor[5]));
+level[37].wall.push(createWall(1000,100, 30,100,sideWall[9]));
+level[37].wall.push(createWall(70,100, 30,100,sideWall[9]));
+level[37].wall.push(createWall(70,500, 30,100,sideWall[5]));
+level[37].wall.push(createWall(1000,500, 30,100,sideWall[5]));
+level[37].wall.push(createWall(500,90, 100,30,floor[6]));
+level[37].wall.push(createWall(100,90, 100,30,floor[6]));
+level[37].wall.push(createWall(70,90, 30,100,sideWall[5]));
+level[37].wall.push(createWall(1000,90, 30,100,sideWall[5]));
+level[37].wallPanels.push(new fan(220,120, 0.1,1,1));
+level[37].wallPanels.push(new fan(320,120, 0.1,1,1));
+level[37].wallPanels.push(new fan(720,120, 0.1,1,1));
+level[37].wallPanels.push(new fan(820,120, 0.1,1,1));
+level[37].wallPanels.push(new AniDoor(200,300, 0,0));
+level[37].wallPanels.push(new AniDoor(700,300, 0,1));
+level[37].foreGround.push(new ForeGround(130,30, pipes[11]));
+level[37].foreGround.push(new ForeGround(930,30, pipes[11]));
+level[37].foreGround.push(new ForeGround(900,90, floor[3]));
+level[37].foreGround.push(new ForeGround(100,90, floor[3]));
+level[37].items.push(spawnTrap(550,400, recorder, '1', '2','550,350'));
+level[37].items.push(messageTrap(550,400, blankPic, 'Friendly!', "Don't shoot! ~~I've been lost in these ducts for hours. ~~I think we're near the main guard barracks.  If we push through theres a way of this ship! $99"));
+level[37].items.push(messageTrap(550,400, blankPic, 'Friendly!', "We just took apart a bunch of guards, there shouldn't be many left. $0"));
+level[37].dLights.push(new spinLight(210,310,50,0));
+level[37].dLights.push(new spinLight(880,310,50,0));
+level[37].lamps.push(new Lamp(470,310));
+level[37].lamps.push(new Lamp(620,310));
+level[37].lamps.push(new pulseLight(300,500));
+level[37].lamps[2].addPLight(400, 500);
+level[37].lamps[2].addPLight(500, 500);
+level[37].lamps[2].addPLight(600, 500);
+level[37].lamps[2].addPLight(700, 500);
+level[37].lamps[2].addPLight(800, 500);
+
+level[37].exits.push(new Exit(300, 400, 37, true, 1700,100));
+level[37].exits.push(new Exit(800, 400, 38, true, 400,300));
+
+level[38] = new Level('Science')
+level[38].wallPanels.push(new Panel(300,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(400,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(500,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(600,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(700,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(800,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(900,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(300,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(400,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(500,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(600,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(700,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(800,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(900,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(300,400, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(400,400, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(500,400, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(600,400, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(700,400, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(800,500, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(900,500, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(1000,500, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(1100,500, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(1200,500, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(1300,500, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(1400,400, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(1500,400, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(1600,400, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(1700,400, panelHall[3], 2,0.8));
+level[38].wallPanels.push(new Panel(800,400, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(900,400, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(1300,400, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(1300,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(1400,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(1500,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(1600,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(1700,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(1300,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(1400,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(1500,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(1600,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(1700,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(1200,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(1200,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(1200,400, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(1000,400, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(1100,400, panelHall[3], 0,0.8));level[38].wallPanels.push(new Panel(1000,300, panelHall[2], 2,0.4));
+level[38].wallPanels.push(new Panel(1100,300, panelHall[2], 2,0.4));
+level[38].wallPanels.push(new Panel(1000,200, panelHall[2], 0,0.4));
+level[38].wallPanels.push(new Panel(1100,200, panelHall[2], 0,0.4));level[38].wallPanels.push(new ForeGround(1010,200, pipes[11]));
+level[38].wallPanels.push(new ForeGround(1010,300, pipes[11]));
+level[38].wallPanels.push(new ForeGround(1110,300, pipes[11]));
+level[38].wallPanels.push(new ForeGround(1110,200, pipes[11]));
+level[38].wallPanels.push(new ForeGround(1000,300, pipes[5]));
+level[38].wallPanels.push(new ForeGround(1000,200, pipes[5]));
+level[38].wallPanels.push(new ForeGround(1100,200, pipes[5]));
+level[38].wallPanels.push(new ForeGround(1100,300, pipes[5]));
+level[38].wallPanels.push(new ForeGround(1000,300, wallFeatures[0]));
+level[38].wallPanels.push(new ForeGround(1100,300, wallFeatures[0]));
+level[38].wallPanels.push(new ForeGround(1100,200, wallFeatures[0]));
+level[38].wallPanels.push(new ForeGround(1000,200, wallFeatures[0]));
+level[38].wallPanels.push(new ForeGround(1100,200, wallFeatures[2]));
+level[38].wallPanels.push(new ForeGround(1100,300, wallFeatures[2]));
+level[38].wallPanels.push(new ForeGround(1000,300, wallFeatures[1]));
+level[38].wallPanels.push(new ForeGround(1000,200, wallFeatures[1]));
+level[38].wall.push(createWall(300,500, 100,30,floor[5]));
+level[38].wall.push(createWall(1400,500, 100,30,floor[5]));
+level[38].wall.push(createWall(850,600, 100,30,floor[7]));level[38].wall.push(createWall(860,570, 30,100,sideWall[5]));
+level[38].wall.push(createWall(830,540, 30,100,sideWall[5]));
+level[38].wall.push(createWall(800,510, 30,100,sideWall[5]));
+level[38].wall.push(createWall(1310,570, 30,100,sideWall[5]));
+level[38].wall.push(createWall(1340,540, 30,100,sideWall[5]));
+level[38].wall.push(createWall(1370,510, 30,100,sideWall[5]));level[38].wallPanels.push(new ForeGround(1050,500, foreGPic[12]));level[38].wallPanels.push(new ForeGround(990,500, foreGPic[11]));
+level[38].wallPanels.push(new ForeGround(1110,500, foreGPic[11]));
+level[38].wallPanels.push(new ForeGround(1170,500, foreGPic[12]));
+level[38].wallPanels.push(new ForeGround(930,500, foreGPic[12]));
+level[38].wallPanels.push(new ForeGround(1010,520, foreGPic[14]));
+level[38].wallPanels.push(new ForeGround(1140,520, foreGPic[15]));
+level[38].wallPanels.push(new AniDoor(400,300, 0,0));level[38].wallPanels.push(new AniDoor(1600,300, 0,1));
+level[38].wallPanels.push(new Panel(1800,200, panelHall[3], 1,0.8));
+level[38].wallPanels.push(new Panel(1800,300, panelHall[3], 0,0.8));
+level[38].wallPanels.push(new Panel(1800,400, panelHall[3], 2,0.8));
+level[38].wall.push(createWall(1900,400, 30,100,sideWall[2]));
+level[38].wall.push(createWall(1900,300, 30,100,sideWall[2]));
+level[38].wall.push(createWall(1900,200, 30,100,sideWall[2]));
+level[38].wall.push(createWall(270,200, 30,100,sideWall[2]));
+level[38].wall.push(createWall(270,300, 30,100,sideWall[2]));
+level[38].wall.push(createWall(270,400, 30,100,sideWall[2]));
+level[38].wall.push(createWall(270,500, 30,100,sideWall[5]));
+level[38].wall.push(createWall(1900,500, 30,100,sideWall[5]));
+level[38].wall.push(createWall(1400,190, 100,30,floor[6]));
+level[38].wall.push(createWall(900,190, 100,30,floor[6]));
+level[38].wall.push(createWall(400,190, 100,30,floor[6]));
+level[38].wall.push(createWall(300,190, 100,30,floor[6]));
+level[38].wall.push(createWall(270,190, 30,100,sideWall[5]));
+level[38].wall.push(createWall(1900,190, 30,100,sideWall[5]));
+level[38].wallPanels.push(new wordWall(1030,430, 'Security ',10));
+level[38].wallPanels.push(new wordWall(1050,450, 'waiting area',5));
+level[38].wallPanels.push(new wordWall(1070,460, 'gamma',5));
+level[38].wallPanels.push(new ForeGround(980,350, wallFeatures[3]));
+level[38].wallPanels.push(new ForeGround(1160,350, wallFeatures[3]));
+level[38].wallPanels.push(new Monitor(700,300, 'security station gamma unsafe please await further orders',0));
+level[38].wallPanels.push(new wordWall(580,360, 'security',5));
+level[38].wallPanels.push(new wordWall(580,370, 'bridge',5));level[38].wallPanels.push(new wordWall(1790,360, 'barracks',5));
+level[38].wallPanels.push(new wordWall(1790,380, 'operations',5));
+level[38].wallPanels.push(new wordWall(1790,370, 'and',5));
+level[38].wallPanels.push(new ForeGround(1780,330, wallFeatures[3]));
+level[38].wallPanels.push(new ForeGround(570,320, wallFeatures[3]));
+level[38].lamps.push(new Lamp(970,410));
+level[38].lamps.push(new Lamp(1210,410));
+level[38].lamps.push(new Lamp(410,340));
+level[38].lamps.push(new Lamp(1620,340));
+level[38].lamps.push(new BigLamp(460,200));
+level[38].lamps.push(new BigLamp(760,200));
+level[38].lamps.push(new BigLamp(1360,200));
+level[38].lamps.push(new BigLamp(1660,200));
+
+level[38].creature.push(Marine(1040,400,3));level[38].creature.push(Scientist(1180,400,3));
+level[38].creature.push(ScientistArmed(1450,300,3));
+level[38].creature.push(ScientistArmed(1550,300,3));
+level[38].creature.push(ScientistArmed(1620,300,3));
+level[38].items.push(messageTrap(500,400, blankPic, 'Get Back!', "Everyone get behind me they've killed the other marines! ~~Get ready to pull ba... $0"));
+level[38].items.push(messageTrap(500,400, blankPic, 'Get Back!', "Dammit if you can't do your job then we'll do it for you! $3"));
+level[38].items.push(messageTrap(500,400, blankPic, 'Get Back!', "Don't be stupid! ~~They just cut down a half dozen of my men! $0"));
+level[38].items.push(messageTrap(500,400, blankPic, 'Get Back!', "You mean your useless men. ~~Come on, bone saws and sledge hammers work wonders on those monsters! $3"));
+level[38].exits.push(new Exit(500, 400, 37, true, 1700,300));
+level[38].exits.push(new Exit(1700, 400, 39, true, 200,300));
+
+
+level[39] = new Level('Barracks & Ops')
+level[39].wallPanels.push(new Panel(200,200, panelHall[0], 1,0.7));
+level[39].wallPanels.push(new Panel(300,200, panelHall[0], 1,0.7));
+level[39].wallPanels.push(new Panel(400,200, panelHall[0], 1,0.7));
+level[39].wallPanels.push(new Panel(500,200, panelHall[0], 1,0.7));level[39].wallPanels.push(new Panel(600,200, panelHall[2], 0,0.3));
+level[39].wallPanels.push(new Panel(600,300, panelHall[2], 0,0.3));
+level[39].wallPanels.push(new Panel(600,400, panelHall[2], 0,0.3));
+level[39].wallPanels.push(new Panel(200,300, panelHall[1], 0,0.7));
+level[39].wallPanels.push(new Panel(300,300, panelHall[1], 0,0.7));
+level[39].wallPanels.push(new Panel(400,300, panelHall[1], 0,0.7));
+level[39].wallPanels.push(new Panel(500,300, panelHall[1], 0,0.7));
+level[39].wallPanels.push(new Panel(700,300, panelHall[1], 0,0.7));
+level[39].wallPanels.push(new Panel(800,300, panelHall[1], 0,0.7));
+level[39].wallPanels.push(new Panel(900,300, panelHall[1], 0,0.7));
+level[39].wallPanels.push(new Panel(1000,300, panelHall[1], 0,0.7));
+level[39].wallPanels.push(new Panel(1100,300, panelHall[1], 0,0.7));
+level[39].wallPanels.push(new Panel(1300,300, panelHall[1], 0,0.7));
+level[39].wallPanels.push(new Panel(1400,300, panelHall[1], 0,0.7));
+level[39].wallPanels.push(new Panel(1500,300, panelHall[1], 0,0.7));
+level[39].wallPanels.push(new Panel(1600,300, panelHall[1], 0,0.7));
+level[39].wall.push(createWall(200,500, 100,30,floor[7]));
+level[39].wall.push(createWall(700,500, 100,30,floor[7]));
+level[39].wall.push(createWall(1200,500, 100,30,floor[7]));
+level[39].wall.push(createWall(200,190, 100,30,floor[6]));
+level[39].wall.push(createWall(700,190, 100,30,floor[6]));
+level[39].wall.push(createWall(1200,190, 100,30,floor[6]));
+level[39].wall.push(createWall(1700,200, 30,100,sideWall[1]));
+level[39].wall.push(createWall(1700,300, 30,100,sideWall[1]));
+level[39].wall.push(createWall(1700,400, 30,100,sideWall[1]));
+level[39].wall.push(createWall(1700,500, 30,100,sideWall[5]));
+level[39].wall.push(createWall(1700,190, 30,100,sideWall[5]));
+level[39].wall.push(createWall(170,200, 30,100,sideWall[2]));
+level[39].wall.push(createWall(170,300, 30,100,sideWall[2]));
+level[39].wall.push(createWall(170,400, 30,100,sideWall[2]));
+level[39].wall.push(createWall(170,500, 30,100,sideWall[5]));
+level[39].wallPanels.push(new Panel(1200,300, panelHall[2], 0,0.3));
+level[39].wallPanels.push(new Panel(1200,200, panelHall[2], 0,0.3));
+level[39].wallPanels.push(new Panel(1200,400, panelHall[2], 0,0.3));
+level[39].wallPanels.push(new Panel(200,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(300,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(400,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(500,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(700,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(800,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(900,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(1000,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(1100,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(1300,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(1400,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(1500,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(1600,400, panelHall[1], 2,0.7));
+level[39].wallPanels.push(new Panel(1300,200, panelHall[0], 1,0.7));
+level[39].wallPanels.push(new Panel(1400,200, panelHall[0], 1,0.7));
+level[39].wallPanels.push(new Panel(1500,200, panelHall[0], 1,0.7));
+level[39].wallPanels.push(new Panel(1600,200, panelHall[0], 1,0.7));
+level[39].wallPanels.push(new Panel(1100,200, panelHall[0], 1,0.7));
+level[39].wallPanels.push(new Panel(1000,200, panelHall[0], 1,0.7));
+level[39].wallPanels.push(new Panel(900,200, panelHall[0], 1,0.7));
+level[39].wallPanels.push(new Panel(800,200, panelHall[0], 1,0.7));
+level[39].wallPanels.push(new Panel(700,200, panelHall[0], 1,0.7));
+level[39].wall.push(createWall(170,190, 30,100,sideWall[5]));
+level[39].wallPanels.push(new ForeGround(600,400, pipes[5]));
+level[39].wallPanels.push(new ForeGround(600,300, pipes[5]));
+level[39].wallPanels.push(new ForeGround(600,200, pipes[5]));
+level[39].wallPanels.push(new ForeGround(1200,400, pipes[5]));
+level[39].wallPanels.push(new ForeGround(1200,300, pipes[5]));
+level[39].wallPanels.push(new ForeGround(1200,200, pipes[5]));
+level[39].foreGround.push(new ForeGround(210,400, pipes[17]));
+level[39].foreGround.push(new ForeGround(210,300, pipes[17]));
+level[39].foreGround.push(new ForeGround(210,200, pipes[17]));
+level[39].wallPanels.push(new AniDoor(300,300, 0,1));
+level[39].wallPanels.push(new AniDoor(800,300, 0,1));
+level[39].wallPanels.push(new AniDoor(1400,300, 0,1));
+level[39].foreGround.push(new ForeGround(1550,400, pipes[17]));
+level[39].foreGround.push(new ForeGround(1550,300, pipes[17]));
+level[39].foreGround.push(new ForeGround(1550,200, pipes[17]));
+level[39].foreGround.push(new ForeGround(1340,400, pipes[17]));
+level[39].foreGround.push(new ForeGround(1340,300, pipes[17]));level[39].foreGround.push(new ForeGround(1340,200, pipes[13]));
+level[39].foreGround.push(new ForeGround(1240,200, pipes[12]));
+level[39].foreGround.push(new ForeGround(1140,200, pipes[12]));
+level[39].foreGround.push(new ForeGround(1040,200, pipes[12]));
+level[39].foreGround.push(new ForeGround(940,200, pipes[12]));
+level[39].foreGround.push(new ForeGround(840,200, pipes[12]));
+level[39].foreGround.push(new ForeGround(740,200, pipes[12]));
+level[39].foreGround.push(new ForeGround(640,200, pipes[12]));
+level[39].foreGround.push(new ForeGround(540,200, pipes[12]));
+level[39].foreGround.push(new ForeGround(440,200, pipes[14]));
+level[39].foreGround.push(new ForeGround(440,300, pipes[17]));
+level[39].foreGround.push(new ForeGround(440,400, pipes[17]));level[39].wallPanels.push(new wordWall(1010,360, 'Barracks',5));
+level[39].wallPanels.push(new wordWall(1570,360, 'operations',5));
+level[39].wallPanels.push(new ForeGround(1000,400, wallFeatures[9]));
+level[39].wallPanels.push(new ForeGround(500,300, wallFeatures[9]));
+level[39].wallPanels.push(new ForeGround(750,250, wallFeatures[10]));
+level[39].wallPanels.push(new ForeGround(300,200, wallFeatures[10]));
+level[39].wallPanels.push(new ForeGround(1450,250, wallFeatures[10]));level[39].wallPanels.push(new ForeGround(750,400, wallFeatures[30]));
+level[39].wallPanels.push(new ForeGround(710,400, wallFeatures[30]));
+level[39].wallPanels.push(new ForeGround(600,400, wallFeatures[0]));
+level[39].wallPanels.push(new ForeGround(600,300, wallFeatures[0]));
+level[39].wallPanels.push(new ForeGround(1200,400, wallFeatures[0]));
+level[39].wallPanels.push(new ForeGround(1200,300, wallFeatures[0]));
+level[39].wallPanels.push(new ForeGround(1200,400, wallFeatures[2]));
+level[39].wallPanels.push(new ForeGround(1200,300, wallFeatures[2]));
+level[39].wallPanels.push(new ForeGround(600,400, wallFeatures[2]));
+level[39].wallPanels.push(new ForeGround(600,300, wallFeatures[2]));
+level[39].wallPanels.push(new ForeGround(600,400, wallFeatures[1]));
+level[39].wallPanels.push(new ForeGround(600,300, wallFeatures[1]));
+level[39].wallPanels.push(new ForeGround(1200,300, wallFeatures[1]));
+level[39].wallPanels.push(new ForeGround(1200,400, wallFeatures[1]));
+level[39].wallPanels.push(new ForeGround(630,350, wallFeatures[4]));
+level[39].wallPanels.push(new ForeGround(1230,350, wallFeatures[6]));
+level[39].foreGround.push(new ForeGround(1170,400, foreGPic[23]));
+level[39].foreGround.push(new ForeGround(1170,300, foreGPic[26]));
+level[39].foreGround.push(new ForeGround(1170,200, foreGPic[27]));
+level[39].foreGround.push(new ForeGround(540,400, foreGPic[27]));
+level[39].foreGround.push(new ForeGround(540,300, foreGPic[23]));level[39].foreGround.push(new ForeGround(540,200, foreGPic[24]));
+level[39].lamps.push(new BigLamp(360,320));
+level[39].lamps.push(new BigLamp(860,320));
+level[39].lamps.push(new BigLamp(1460,320));
+level[39].creature.push(Marine(1150,280,3));
+level[39].creature.push(Marine(1070,280,3));
+level[39].creature.push(ScientistArmed(1300,290,3));
+level[39].items.push(medItem(1510,470));
+level[39].items.push(medItem(1510,440));
+level[39].lamps.push(new pulseLight(650,200));
+level[39].lamps[3].addPLight(650, 300);
+level[39].lamps[3].addPLight(650, 400);
+level[39].lamps[3].addPLight(650, 500);
+level[39].lamps[3].addPLight(1250, 200);
+level[39].lamps[3].addPLight(1250, 300);
+level[39].lamps[3].addPLight(1250, 410);
+level[39].dLights.push(new spinLight(970,320,50,0));
+level[39].dLights.push(new spinLight(1570,320,50,0));level[39].wallPanels.push(new Monitor(700,300, 'sector not secure',0));
+level[39].wallPanels.push(new Monitor(1300,300, 'evac in effect',0));
+level[39].lamps.push(new Lamp(1070,320));
+level[39].lamps.push(new Lamp(1670,320));
+level[39].lamps.push(new Lamp(320,320));
+level[39].lamps.push(new Lamp(470,320));
+level[39].lamps.push(new deadLamp(820,320));
+level[39].lamps.push(new deadLamp(1420,320));
+level[39].exits.push(new Exit(900, 400, 40, true, 100,300));//baracks
+level[39].exits.push(new Exit(1500, 400, 41, true, 200,400));//operations
+level[39].exits.push(new Exit(400, 400, 38, true, 1600,300));
+
+level[40] = new Level('Barracks')
+level[40].wallPanels.push(new Panel(300,400, panelHall[3], 2,0.3));
+level[40].wallPanels.push(new Panel(400,400, panelHall[3], 2,0.3));
+level[40].wallPanels.push(new Panel(500,400, panelHall[3], 2,0.3));
+level[40].wallPanels.push(new Panel(600,400, panelHall[3], 2,0.3));
+level[40].wallPanels.push(new Panel(700,400, panelHall[3], 2,0.3));
+level[40].wallPanels.push(new Panel(300,300, panelHall[3], 1,0.4));
+level[40].wallPanels.push(new Panel(400,300, panelHall[3], 1,0.4));
+level[40].wallPanels.push(new Panel(500,300, panelHall[3], 1,0.4));
+level[40].wallPanels.push(new Panel(600,300, panelHall[3], 1,0.4));
+level[40].wallPanels.push(new Panel(700,300, panelHall[3], 1,0.4));level[40].wallPanels.push(new ForeGround(500,400, wallFeatures[44]));
+level[40].wallPanels.push(new ForeGround(300,310, wallFeatures[45]));
+level[40].wallPanels.push(new ForeGround(600,310, wallFeatures[45]));level[40].wallPanels.push(new fan(520,320, 0.2,0,1));
+level[40].wallPanels.push(new Panel(800,400, panelHall[0], 2,0.7));
+level[40].wallPanels.push(new Panel(1000,400, panelHall[0], 2,0.7));
+level[40].wallPanels.push(new Panel(200,400, panelHall[1], 2,0.7));
+level[40].wallPanels.push(new Panel(100,400, panelHall[1], 2,0.7));level[40].wallPanels.push(new Panel(100,300, panelHall[1], 0,0.7));
+level[40].wallPanels.push(new Panel(200,300, panelHall[1], 0,0.7));
+level[40].wallPanels.push(new Panel(900,400, panelHall[2], 2,0.7));
+level[40].wallPanels.push(new Panel(100,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(200,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(300,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(400,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(500,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(600,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(700,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(1100,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(1200,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(1300,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(1400,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(1500,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(1600,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(1700,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(1800,200, panelHall[1], 1,0.7));
+level[40].wallPanels.push(new Panel(800,200, panelHall[0], 1,0.7));
+level[40].wallPanels.push(new Panel(1000,200, panelHall[0], 1,0.7));
+level[40].wallPanels.push(new Panel(800,300, panelHall[0], 0,0.7));
+level[40].wallPanels.push(new Panel(1000,300, panelHall[0], 0,0.7));
+level[40].wallPanels.push(new Panel(900,300, panelHall[2], 0,0.7));
+level[40].wallPanels.push(new Panel(900,200, panelHall[2], 1,0.7));
+level[40].wallPanels.push(new ForeGround(900,400, pipes[17]));
+level[40].wallPanels.push(new ForeGround(900,300, pipes[17]));
+level[40].wallPanels.push(new ForeGround(900,200, pipes[17]));
+level[40].wallPanels.push(new ForeGround(930,130, pipes[11]));
+level[40].lamps.push(new BigLamp(510,300));
+level[40].wallPanels.push(new Panel(1100,300, panelHall[3], 1,0.4));
+level[40].wallPanels.push(new Panel(1200,300, panelHall[3], 1,0.4));
+level[40].wallPanels.push(new Panel(1300,300, panelHall[3], 1,0.4));level[40].wallPanels.push(new Panel(1400,300, panelHall[0], 1,0.6));
+level[40].wallPanels.push(new Panel(1400,400, panelHall[0], 2,0.6));
+level[40].lamps.push(new BigLamp(1210,300));level[40].wallPanels.push(new Panel(1600,300, panelHall[3], 1,0.4));
+level[40].wallPanels.push(new Panel(1700,300, panelHall[3], 1,0.4));
+level[40].wallPanels.push(new Panel(1800,300, panelHall[3], 1,0.4));
+level[40].wallPanels.push(new Panel(1600,400, panelHall[3], 2,0.4));
+level[40].wallPanels.push(new Panel(1700,400, panelHall[3], 2,0.4));
+level[40].wallPanels.push(new Panel(1800,400, panelHall[3], 2,0.4));
+level[40].wallPanels.push(new Panel(1300,400, panelHall[3], 2,0.4));
+level[40].wallPanels.push(new Panel(1200,400, panelHall[3], 2,0.4));
+level[40].wallPanels.push(new Panel(1100,400, panelHall[3], 2,0.4));level[40].wallPanels.push(new Panel(1500,400, panelHall[0], 2,0.6));
+level[40].wallPanels.push(new Panel(1500,300, panelHall[0], 1,0.6));
+level[40].dLights.push(new spinLight(1420,320,50,0));
+level[40].dLights.push(new spinLight(1570,320,50,0));
+level[40].wallPanels.push(new ForeGround(1120,400, wallFeatures[44]));
+level[40].wallPanels.push(new ForeGround(1220,400, wallFeatures[44]));
+level[40].wallPanels.push(new ForeGround(1290,400, wallFeatures[30]));
+level[40].wallPanels.push(new ForeGround(1120,320, wallFeatures[28]));
+level[40].wallPanels.push(new ForeGround(1550,300, wallFeatures[3]));
+level[40].wallPanels.push(new ForeGround(1400,300, wallFeatures[3]));
+level[40].foreGround.push(new ForeGround(1410,400, wallFeatures[46]));level[40].foreGround.push(new ForeGround(1550,400, wallFeatures[48]));
+level[40].foreGround.push(new ForeGround(1440,400, wallFeatures[48]));
+level[40].foreGround.push(new ForeGround(1550,400, wallFeatures[46]));
+level[40].foreGround.push(new ForeGround(1340,400, wallFeatures[50]));
+level[40].wallPanels.push(new AniDoor(100,300, 0,1));
+level[40].wallPanels.push(new AniDoor(1700,300, 0,1));
+level[40].wall.push(createWall(100,500, 100,30,floor[7]));
+level[40].wall.push(createWall(600,500, 100,30,floor[7]));
+level[40].wall.push(createWall(1100,500, 100,30,floor[7]));
+level[40].wall.push(createWall(1400,500, 100,30,floor[7]));
+level[40].wall.push(createWall(1400,190, 100,30,floor[6]));
+level[40].wall.push(createWall(900,190, 100,30,floor[6]));
+level[40].wall.push(createWall(400,190, 100,30,floor[6]));
+level[40].wall.push(createWall(100,190, 100,30,floor[6]));
+level[40].wall.push(createWall(70,200, 30,100,sideWall[2]));
+level[40].wall.push(createWall(70,300, 30,100,sideWall[2]));
+level[40].wall.push(createWall(70,400, 30,100,sideWall[2]));
+level[40].wall.push(createWall(70,500, 30,100,sideWall[5]));
+level[40].wall.push(createWall(70,190, 30,100,sideWall[5]));
+level[40].wall.push(createWall(1900,400, 30,100,sideWall[2]));
+level[40].wall.push(createWall(1900,300, 30,100,sideWall[2]));
+level[40].wall.push(createWall(1900,200, 30,100,sideWall[2]));
+level[40].wall.push(createWall(1900,500, 30,100,sideWall[5]));
+level[40].wall.push(createWall(1900,190, 30,100,sideWall[5]));
+level[40].lamps.push(new Lamp(120,320));
+level[40].lamps.push(new Lamp(270,320));
+level[40].lamps.push(new Lamp(870,320));
+level[40].lamps.push(new FlickerLamp(1020,320));
+level[40].lamps.push(new Lamp(1720,330));
+level[40].lamps.push(new Lamp(1870,330));
+level[40].creature.push(Marine(1450,300,3));
+level[40].creature.push(Marine(1550,300,3));
+level[40].creature.push(Marine(1420,300,3));
+level[40].foreGround.push(new ForeGround(1570,400, pipes[11]));
+level[40].foreGround.push(new ForeGround(1570,300, pipes[11]));
+level[40].foreGround.push(new ForeGround(1590,200, pipes[11]));
+level[40].foreGround.push(new ForeGround(1630,400, pipes[5]));
+level[40].foreGround.push(new ForeGround(1630,300, pipes[5]));
+level[40].foreGround.push(new ForeGround(1630,200, pipes[5]));
+level[40].foreGround.push(new ForeGround(1130,400, pipes[5]));
+level[40].foreGround.push(new ForeGround(1130,300, pipes[5]));
+level[40].foreGround.push(new ForeGround(1130,200, pipes[5]));
+level[40].foreGround.push(new ForeGround(1170,200, pipes[11]));
+level[40].foreGround.push(new ForeGround(1100,190, ceiling[0]));
+level[40].foreGround.push(new ForeGround(1200,190, ceiling[0]));level[40].foreGround.push(new ForeGround(90,300, pipes[17]));
+level[40].foreGround.push(new ForeGround(90,400, pipes[17]));
+level[40].foreGround.push(new ForeGround(90,200, pipes[14]));
+level[40].foreGround.push(new ForeGround(190,200, pipes[12]));
+level[40].foreGround.push(new ForeGround(290,200, pipes[12]));
+level[40].foreGround.push(new ForeGround(390,200, pipes[15]));
+level[40].foreGround.push(new ForeGround(420,130, pipes[11]));
+level[40].foreGround.push(new ForeGround(400,190, ceiling[0]));
+level[40].foreGround.push(new ForeGround(100,500, floor[4]));
+level[40].wallPanels.push(new ForeGround(900,390, wallFeatures[0]));
+level[40].wallPanels.push(new ForeGround(900,300, wallFeatures[0]));
+level[40].wallPanels.push(new ForeGround(900,200, wallFeatures[0]));
+level[40].wallPanels.push(new ForeGround(900,400, wallFeatures[2]));
+level[40].wallPanels.push(new ForeGround(900,300, wallFeatures[2]));
+level[40].wallPanels.push(new ForeGround(900,200, wallFeatures[2]));
+level[40].wallPanels.push(new ForeGround(900,200, wallFeatures[1]));level[40].wallPanels.push(new ForeGround(900,300, wallFeatures[1]));
+level[40].wallPanels.push(new ForeGround(900,400, wallFeatures[1]));level[40].wallPanels.push(new fan(1220,320, 0.2,0,1));
+level[40].exits.push(new Exit(200, 400, 39, true, 1400,300));
+level[40].exits.push(new Exit(1800, 400, 41, true, 1600,400));
+
+
+level[41] = new Level('Operations')
+level[41].wall.push(createWall(500,1000, 100,30,floor[5]));
+level[41].wall.push(createWall(1000,1000, 100,30,floor[5]));
+
+level[41].wallPanels.push(new Panel(800,900, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(900,900, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(1000,900, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(1100,900, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(1200,900, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(1300,900, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(1400,900, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(700,900, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(600,900, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(500,900, panelHall[12], 2,0.7));level[41].wallPanels.push(new Panel(700,800, panelHall[12], 0,0.7));
+level[41].wallPanels.push(new Panel(800,800, panelHall[12], 0,0.7));
+level[41].wallPanels.push(new Panel(900,800, panelHall[12], 0,0.7));
+level[41].wallPanels.push(new Panel(1000,800, panelHall[12], 0,0.7));
+level[41].wallPanels.push(new Panel(1100,800, panelHall[12], 0,0.7));
+level[41].wallPanels.push(new Panel(1200,800, panelHall[12], 0,0.7));
+level[41].wallPanels.push(new Panel(1200,700, panelHall[12], 0,0.7));
+
+level[41].wallPanels.push(new Panel(700,700, panelHall[12], 0,0.7));
+level[41].wallPanels.push(new Panel(700,600, panelHall[12], 0,0.7));
+level[41].wallPanels.push(new Panel(1200,600, panelHall[12], 0,0.7));
+level[41].wallPanels.push(new Panel(700,500, panelHall[12], 0,0.7));
+level[41].wallPanels.push(new Panel(1200,500, panelHall[12], 0,0.7));level[41].wallPanels.push(new Panel(700,400, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1200,400, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1300,400, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1400,400, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1500,400, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1600,400, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(600,400, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(500,400, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(400,400, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(300,400, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(500,600, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(600,600, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(500,800, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(600,800, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1300,800, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1400,800, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1300,600, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1400,600, panelHall[12], 1,0.7));
+level[41].wall.push(createWall(500,800, 100,30,floor[4]));
+level[41].wall.push(createWall(600,800, 100,30,floor[4]));level[41].wall.push(createWall(470,600, 30,100,sideWall[9]));
+level[41].wall.push(createWall(1500,600, 30,100,sideWall[9]));
+level[41].wall.push(createWall(1300,600, 100,30,floor[7]));
+level[41].wall.push(createWall(200,600, 100,30,floor[7]));
+level[41].wall.push(createWall(1300,800, 100,30,floor[4]));
+level[41].wall.push(createWall(1400,800, 100,30,floor[4]));
+level[41].wall.push(createWall(1300,400, 100,30,floor[6]));
+level[41].wall.push(createWall(200,400, 100,30,floor[6]));
+level[41].wall.push(createWall(700,400, 100,30,floor[3]));
+level[41].wall.push(createWall(1200,400, 100,30,floor[3]));
+level[41].wall.push(createWall(800,600, 30,100,sideWall[1]));
+level[41].wall.push(createWall(800,500, 30,100,sideWall[1]));
+level[41].wall.push(createWall(800,400, 30,100,sideWall[1]));
+level[41].wall.push(createWall(1170,400, 30,100,sideWall[1]));
+level[41].wall.push(createWall(1170,500, 30,100,sideWall[1]));
+level[41].wall.push(createWall(1170,600, 30,100,sideWall[1]));
+level[41].wall.push(createWall(800,670, 100,30,floor[0]));
+level[41].wall.push(createWall(900,670, 100,30,floor[0]));
+level[41].wall.push(createWall(1000,670, 100,30,floor[0]));
+level[41].wall.push(createWall(1100,670, 100,30,floor[0]));
+level[41].wall.push(createWall(170,500, 30,100,sideWall[0]));
+level[41].wall.push(createWall(170,400, 30,100,sideWall[0]));
+level[41].wall.push(createWall(170,600, 30,100,sideWall[5]));
+level[41].wall.push(createWall(1800,600, 30,100,sideWall[5]));
+level[41].wall.push(createWall(1800,500, 30,100,sideWall[0]));
+level[41].wall.push(createWall(1800,400, 30,100,sideWall[0]));
+level[41].wall.push(createWall(1500,1000, 30,100,sideWall[5]));
+level[41].wall.push(createWall(470,1000, 30,100,sideWall[5]));
+level[41].wallPanels.push(new Panel(200,400, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1700,400, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1300,700, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(1400,700, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(500,700, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(600,700, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(200,500, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(300,500, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(400,500, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(500,500, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(600,500, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(1300,500, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(1400,500, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(1500,500, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(1600,500, panelHall[12], 2,0.7));
+level[41].wallPanels.push(new Panel(1700,500, panelHall[12], 2,0.7));
+
+
+level[41].wallPanels.push(new Panel(800,700, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(900,700, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1000,700, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new Panel(1100,700, panelHall[12], 1,0.7));
+level[41].wallPanels.push(new ForeGround(900,700, foreGPic[28]));level[41].wallPanels.push(new Monitor(900,700, 'eta beta colony 17 hrs',0));
+level[41].wallPanels.push(new Monitor(800,800, 'insects detected at gamma station --- security units not present',0));
+level[41].wallPanels.push(new Monitor(1100,800, 'phase-2 mutation in approx 2 hrs',0));level[41].wallPanels.push(new ForeGround(550,650, windowArt[2]));
+level[41].wallPanels.push(new ForeGround(1350,650, windowArt[0]));
+level[41].wallPanels.push(new ForeGround(550,450, windowArt[2]));
+level[41].wallPanels.push(new ForeGround(1350,450, windowArt[3]));
+level[41].wallPanels.push(new AniDoor(500,800, 1,0));
+level[41].wallPanels.push(new AniDoor(1300,800, 0,1));level[41].wallPanels.push(new AniDoor(200,400, 0,1));
+level[41].wallPanels.push(new AniDoor(1600,400, 0,1));
+level[41].wallPanels.push(new ForeGround(920,900, wallFeatures[30]));level[41].wallPanels.push(new Server(980,900, '1',0));level[41].wallPanels.push(new Server(1020,900, '1',0));
+level[41].wallPanels.push(new Server(880,900, '1',0));
+level[41].wallPanels.push(new ForeGround(850,900, wallFeatures[22]));
+level[41].wallPanels.push(new ForeGround(1080,900, wallFeatures[22]));
+level[41].wallPanels.push(new ForeGround(630,700, wallFeatures[22]));
+level[41].wallPanels.push(new ForeGround(1300,700, wallFeatures[22]));
+level[41].foreGround.push(new ForeGround(700,610, pipes[6]));
+level[41].foreGround.push(new ForeGround(500,610, pipes[6]));
+level[41].foreGround.push(new ForeGround(1200,610, pipes[6]));
+level[41].foreGround.push(new ForeGround(1400,610, pipes[6]));level[41].foreGround.push(new ForeGround(690,600, wallFeatures[1]));
+level[41].foreGround.push(new ForeGround(690,700, wallFeatures[1]));
+level[41].foreGround.push(new ForeGround(690,800, wallFeatures[1]));
+level[41].foreGround.push(new ForeGround(690,900, wallFeatures[1]));
+level[41].foreGround.push(new ForeGround(690,500, wallFeatures[1]));
+level[41].foreGround.push(new ForeGround(690,400, wallFeatures[1]));
+level[41].foreGround.push(new ForeGround(1210,500, wallFeatures[2]));
+level[41].foreGround.push(new ForeGround(1210,400, wallFeatures[2]));
+level[41].foreGround.push(new ForeGround(1210,600, wallFeatures[2]));
+level[41].foreGround.push(new ForeGround(1210,700, wallFeatures[2]));
+level[41].foreGround.push(new ForeGround(1210,800, wallFeatures[2]));
+level[41].foreGround.push(new ForeGround(1210,900, wallFeatures[2]));
+level[41].foreGround.push(new ForeGround(700,580, pipes[4]));
+level[41].foreGround.push(new ForeGround(600,580, pipes[4]));
+level[41].foreGround.push(new ForeGround(500,580, pipes[4]));
+level[41].foreGround.push(new ForeGround(1200,580, pipes[4]));
+level[41].foreGround.push(new ForeGround(1300,580, pipes[4]));
+level[41].foreGround.push(new ForeGround(1400,580, pipes[4]));
+level[41].foreGround.push(new ForeGround(600,610, pipes[6]));
+level[41].foreGround.push(new ForeGround(1300,610, pipes[6]));
+level[41].elevators.push(new elevator(700,1000, 200,400));level[41].wall.push(createWall(700,1000, 100,30,ceiling[0]));
+level[41].elevators.push(new elevator(1200,1000, 400,400));level[41].wall.push(createWall(1200,1000, 100,30,ceiling[0]));
+level[41].lamps.push(new Lamp(810,700));
+level[41].lamps.push(new Lamp(1180,700));
+level[41].lamps.push(new Lamp(880,700));
+level[41].lamps.push(new Lamp(1110,700));
+level[41].dLights.push(new GenLight(1000,810,10, 0.2));
+level[41].dLights.push(new GenLight(1040,730,10, 0.2));
+level[41].lamps.push(new pulseLight(500,1000));
+level[41].lamps[4].addPLight(600, 1000);
+level[41].lamps[4].addPLight(700, 1000);
+level[41].lamps[4].addPLight(800, 1000);
+level[41].lamps[4].addPLight(900, 1000);
+level[41].lamps[4].addPLight(1000, 1000);
+level[41].lamps[4].addPLight(1000, 900);
+level[41].lamps.push(new pulseLight(1500,1000));
+level[41].lamps[5].addPLight(1400, 1000);
+level[41].lamps[5].addPLight(1300, 1000);
+level[41].lamps[5].addPLight(1200, 1000);
+level[41].lamps[5].addPLight(1100, 1000);
+level[41].lamps[5].addPLight(1000, 1000);
+level[41].lamps[5].addPLight(1000, 900);
+level[41].lamps.push(new FlickerLamp(370,440));
+level[41].lamps.push(new FlickerLamp(1620,440));
+level[41].lamps.push(new Lamp(670,440));
+level[41].lamps.push(new Lamp(1320,440));
+level[41].lamps.push(new Lamp(1320,640));
+level[41].lamps.push(new Lamp(1320,840));
+level[41].lamps.push(new Lamp(670,840));
+level[41].lamps.push(new FlickerLamp(670,640));
+level[41].lamps.push(new deadLamp(520,440));
+level[41].lamps.push(new Lamp(1470,440));
+level[41].wallPanels.push(new wordWall(390,460, 'Gamma',5));
+level[41].wallPanels.push(new wordWall(390,470, 'station',5));level[41].wallPanels.push(new wordWall(1540,460, 'barracks',5));
+level[41].wallPanels.push(new wordWall(1270,860, 'cargo',5));
+level[41].wallPanels.push(new wordWall(1270,870, 'bay',5));
+level[41].items.push(messageTrap(1140,900, recorder, 'retreat', 'The last security checkpoint between the prototype labs and operations control has fallen! ~~All personel are instructed to purge the computer databases and abandon ship.  Repeat! All data servers must be wiped clean.  This ship is headed for the nearest populated star system as per emergency procedure.  ~~We are inbound for the Eridani System and will arrive in a matter of hours, there can be no black box evidence of UASA activities. ~~We are going to crash this ship and wipe out those monsters forever. ~~You are all reminded of your legal obligations to protect UASA profits.  The Eridani Convention will not look kindly on the eggheads biological handiwork. ~~DeQuesne Out.'));
+level[41].items.push(messageTrap(1140,900, recorder, 'retreat', "So that's where they're going.  No way in hell they get out before we do! $0"));
+
+level[41].items.push(messageTrap(830,900, recorder, 'Alert', 'Insect based prototypes have been detected entering the gamma security checkpoint. ~~Large numbers of prototypes are moving directly to operations control. ~~Phase 2 mutation expected within 2 hours, at this time all personel must be clear of the ship as the up surge in replication will be unstoppable.'));
+level[41].items.push(messageTrap(830,900, recorder, 'Alert', 'Phase 2? This sounds like that bio grwoth in the hallways. $0'));
+level[41].exits.push(new Exit(300,500, 39, true, 1400, 300));
+level[41].exits.push(new Exit(1700,500, 40, true, 1700, 300));
+level[41].exits.push(new Exit(1400,900, 42, true, 200, 400));
+
+
+level[42] = new Level('')
+level[42].wallPanels.push(new Panel(200,400, panelHall[12], 1,0.7));
+level[42].wallPanels.push(new Panel(300,400, panelHall[12], 1,0.7));
+level[42].wallPanels.push(new Panel(200,500, panelHall[12], 2,0.7));
+level[42].wallPanels.push(new Panel(300,500, panelHall[12], 2,0.7));
+level[42].wallPanels.push(new Panel(400,500, panelHall[2], 2,0.5));
+level[42].wallPanels.push(new Panel(400,200, panelHall[2], 1,0.5));
+level[42].wallPanels.push(new Panel(400,300, panelHall[2], 0,0.5));
+level[42].wallPanels.push(new Panel(400,400, panelHall[2], 0,0.5));
+level[42].wallPanels.push(new ForeGround(400,500, wallFeatures[1]));
+level[42].wallPanels.push(new ForeGround(400,400, wallFeatures[1]));
+level[42].wallPanels.push(new ForeGround(400,500, pipes[17]));
+level[42].wallPanels.push(new ForeGround(400,400, pipes[17]));
+level[42].wallPanels.push(new ForeGround(400,300, pipes[17]));
+level[42].wallPanels.push(new ForeGround(400,200, pipes[17]));
+level[42].wallPanels.push(new Panel(500,400, panelHall[1], 0,0.5));
+level[42].wallPanels.push(new Panel(500,300, panelHall[1], 0,0.5));
+level[42].wallPanels.push(new Panel(600,400, panelHall[1], 0,0.5));
+level[42].wallPanels.push(new Panel(600,300, panelHall[1], 0,0.5));
+level[42].wallPanels.push(new Panel(700,300, panelHall[1], 0,0.5));
+level[42].wallPanels.push(new Panel(700,400, panelHall[1], 0,0.5));
+level[42].wallPanels.push(new Panel(800,400, panelHall[2], 0,0.5));
+level[42].wallPanels.push(new Panel(800,300, panelHall[2], 0,0.5));
+level[42].wallPanels.push(new Panel(800,200, panelHall[2], 1,0.5));
+level[42].wallPanels.push(new Panel(800,500, panelHall[2], 2,0.5));
+level[42].wallPanels.push(new Panel(500,200, panelHall[0], 1,0.5));
+level[42].wallPanels.push(new Panel(600,200, panelHall[0], 1,0.5));
+level[42].wallPanels.push(new Panel(700,200, panelHall[0], 1,0.5));
+level[42].wallPanels.push(new Panel(500,500, panelHall[0], 2,0.5));
+level[42].wallPanels.push(new Panel(600,500, panelHall[0], 2,0.5));
+level[42].wallPanels.push(new Panel(700,500, panelHall[0], 2,0.5));
+level[42].wallPanels.push(new ForeGround(800,500, pipes[17]));
+level[42].wallPanels.push(new ForeGround(800,400, pipes[17]));
+level[42].wallPanels.push(new ForeGround(800,300, pipes[17]));
+level[42].wallPanels.push(new ForeGround(800,200, pipes[17]));
+level[42].wallPanels.push(new ForeGround(430,130, pipes[11]));
+level[42].wallPanels.push(new ForeGround(830,130, pipes[11]));
+level[42].wallPanels.push(new AniDoor(200,400, 0,1));
+level[42].wall.push(createWall(170,500, 30,100,sideWall[2]));
+level[42].wall.push(createWall(170,400, 30,100,sideWall[2]));
+level[42].wall.push(createWall(200,600, 100,30,floor[5]));
+level[42].wall.push(createWall(700,600, 100,30,floor[5]));
+level[42].wall.push(createWall(1400,600, 100,30,floor[5]));
+level[42].wall.push(createWall(1400,400, 100,30,floor[7]));
+level[42].wall.push(createWall(1400,800, 100,30,floor[7]));
+level[42].wall.push(createWall(1900,200, 30,100,sideWall[8]));level[42].wall.push(createWall(1900,600, 30,100,sideWall[8]));
+level[42].wall.push(createWall(1400,1000, 100,30,floor[7]));
+level[42].wall.push(createWall(1900,1000, 30,100,sideWall[5]));
+level[42].wall.push(createWall(1170,600, 30,100,sideWall[9]));level[42].wall.push(createWall(1400,190, 100,30,floor[6]));
+level[42].wall.push(createWall(900,190, 100,30,floor[6]));
+level[42].wall.push(createWall(400,190, 100,30,floor[6]));
+level[42].wall.push(createWall(300,390, 100,50,ceiling[0]));
+level[42].wall.push(createWall(200,390, 100,50,ceiling[0]));
+level[42].wall.push(createWall(370,290, 30,100,sideWall[2]));
+level[42].wall.push(createWall(370,190, 30,100,sideWall[2]));
+level[42].wall.push(createWall(170,390, 30,100,sideWall[5]));
+level[42].wall.push(createWall(170,600, 30,100,sideWall[5]));
+level[42].wall.push(createWall(1900,190, 30,100,sideWall[5]));
+level[42].wall.push(createWall(1170,1000, 30,100,sideWall[5]));
+level[42].wall.push(createWall(1200,1000, 100,30,floor[0]));
+level[42].wall.push(createWall(1300,1000, 100,30,floor[0]));level[42].foreGround.push(new ForeGround(1400,750, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,700, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,650, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,600, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,550, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,500, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,450, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,400, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,350, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,300, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,250, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,200, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,800, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,850, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,900, wallFeatures[38]));
+level[42].foreGround.push(new ForeGround(1400,950, wallFeatures[38]));
+
+//level[42].items.push(spawnTrap(1000,500, recorder, '0', '3','300,500'));
+//level[42].items.push(spawnTrap(1000,500, recorder, '0', '3','310,500'));
+level[42].items.push(spawnTrap(1000,500, recorder, '0', '3','320,500'));
+level[42].items.push(spawnTrap(1000,500, recorder, '0', '1','340,500'));
+level[42].items.push(spawnTrap(1000,500, recorder, '0', '3','360,500'));
+//level[42].items.push(spawnTrap(1000,500, recorder, '0', '4','340,500'));
+//level[42].items.push(spawnTrap(1000,500, recorder, '0', '4','320,500'));
+level[42].items.push(spawnTrap(1000,500, recorder, '0', '4','315,500'));
+level[42].items.push(spawnTrap(1000,500, recorder, '3', '1','1800,300'));
+level[42].items.push(spawnTrap(1000,500, recorder, '3', '1','1780,300'));
+level[42].items.push(spawnTrap(1000,500, recorder, '3', '1','1800,300'));
+level[42].items.push(spawnTrap(1000,500, recorder, '0', '2','300,500'));
+level[42].items.push(messageTrap(1000,500, blankPic, 'You!', 'There you are! ~~Your going to pay for killing our sisters. $99'));
+level[42].items.push(messageTrap(1000,500, blankPic, 'You!', 'They came at us! $0'));
+level[42].items.push(messageTrap(1000,500, blankPic, 'You!', "All the same we're going to ea-- $99"));
+level[42].items.push(messageTrap(1000,500, blankPic, 'Form Up!', "Hostiles in sight!  $98"));
+level[42].items.push(messageTrap(1000,500, blankPic, 'Form Up!', "Take em down!!  $97"));
+
+level[42].items.push(spawnTrap(1000,500, recorder, '0', '4','300,500'));
+level[42].items.push(spawnTrap(1000,500, recorder, '0', '4','300,500'));
+level[42].items.push(spawnTrap(1000,500, recorder, '0', '4','300,500'));
+level[42].wallPanels.push(new Panel(1200,500, panelHall[2], 0,0.4));
+level[42].wallPanels.push(new Panel(1300,500, panelHall[2], 0,0.4));
+level[42].wallPanels.push(new Panel(1300,400, panelHall[2], 0,0.4));
+level[42].wallPanels.push(new Panel(1200,400, panelHall[2], 0,0.4));
+level[42].wallPanels.push(new Panel(1200,300, panelHall[2], 0,0.4));
+level[42].wallPanels.push(new Panel(1300,300, panelHall[2], 0,0.4));
+level[42].wallPanels.push(new Panel(1300,800, panelHall[2], 0,0.4));
+level[42].wallPanels.push(new Panel(1200,800, panelHall[2], 0,0.4));
+level[42].wallPanels.push(new Panel(1200,700, panelHall[2], 0,0.4));
+level[42].wallPanels.push(new Panel(1300,700, panelHall[2], 0,0.4));
+level[42].wallPanels.push(new Panel(1300,600, panelHall[2], 0,0.4));
+level[42].wallPanels.push(new Panel(1200,600, panelHall[2], 0,0.4));
+level[42].wallPanels.push(new Panel(1200,200, panelHall[2], 1,0.4));
+level[42].wallPanels.push(new Panel(1300,200, panelHall[2], 1,0.4));
+level[42].wallPanels.push(new Panel(1200,900, panelHall[2], 2,0.4));
+level[42].wallPanels.push(new Panel(1300,900, panelHall[2], 2,0.4));
+level[42].wallPanels.push(new Panel(900,400, panelHall[11], 0,0.5));
+level[42].wallPanels.push(new Panel(1000,400, panelHall[11], 0,0.5));
+level[42].wallPanels.push(new Panel(1100,400, panelHall[11], 0,0.5));
+level[42].wallPanels.push(new Panel(900,300, panelHall[11], 0,0.5));
+level[42].wallPanels.push(new Panel(1000,300, panelHall[11], 0,0.5));
+level[42].wallPanels.push(new Panel(1100,300, panelHall[11], 0,0.5));
+level[42].wallPanels.push(new Panel(900,200, panelHall[0], 1,0.5));
+level[42].wallPanels.push(new Panel(1000,200, panelHall[0], 1,0.5));
+level[42].wallPanels.push(new Panel(1100,200, panelHall[0], 1,0.5));
+level[42].wallPanels.push(new Panel(900,500, panelHall[0], 2,0.5));
+level[42].wallPanels.push(new Panel(1000,500, panelHall[0], 2,0.5));
+level[42].wallPanels.push(new Panel(1100,500, panelHall[0], 2,0.5));
+level[42].wallPanels.push(new Panel(1400,800, panelHall[3], 1,0.8));
+level[42].wallPanels.push(new Panel(1500,800, panelHall[3], 1,0.8));
+level[42].wallPanels.push(new Panel(1600,800, panelHall[3], 1,0.8));
+level[42].wallPanels.push(new Panel(1700,800, panelHall[3], 1,0.8));
+level[42].wallPanels.push(new Panel(1800,800, panelHall[3], 1,0.8));
+level[42].wallPanels.push(new Panel(1400,900, panelHall[3], 2,0.8));
+level[42].wallPanels.push(new Panel(1500,900, panelHall[3], 2,0.8));
+level[42].wallPanels.push(new Panel(1600,900, panelHall[3], 2,0.8));
+level[42].wallPanels.push(new Panel(1700,900, panelHall[3], 2,0.8));
+level[42].wallPanels.push(new Panel(1800,900, panelHall[3], 2,0.8));
+level[42].wallPanels.push(new Panel(1400,300, panelHall[3], 2,0.8));
+level[42].wallPanels.push(new Panel(1500,300, panelHall[3], 2,0.8));
+level[42].wallPanels.push(new Panel(1600,300, panelHall[3], 2,0.8));
+level[42].wallPanels.push(new Panel(1700,300, panelHall[3], 2,0.8));
+level[42].wallPanels.push(new Panel(1800,300, panelHall[3], 2,0.8));
+level[42].wallPanels.push(new Panel(1400,200, panelHall[3], 1,0.8));
+level[42].wallPanels.push(new Panel(1500,200, panelHall[3], 1,0.8));
+level[42].wallPanels.push(new Panel(1600,200, panelHall[3], 1,0.8));
+level[42].wallPanels.push(new Panel(1700,200, panelHall[3], 1,0.8));
+level[42].wallPanels.push(new Panel(1800,200, panelHall[3], 1,0.8));
+level[42].wallPanels.push(new Panel(1400,500, panelHall[0], 2,0.5));
+level[42].wallPanels.push(new Panel(1500,500, panelHall[0], 2,0.5));
+level[42].wallPanels.push(new Panel(1800,500, panelHall[2], 2,0.5));
+level[42].wallPanels.push(new Panel(1800,400, panelHall[2], 1,0.5));
+level[42].wallPanels.push(new Panel(1800,600, panelHall[2], 1,0.5));
+level[42].wallPanels.push(new Panel(1800,700, panelHall[2], 2,0.5));
+level[42].wallPanels.push(new Panel(1400,700, panelHall[0], 2,0.5));
+level[42].wallPanels.push(new Panel(1500,700, panelHall[0], 2,0.5));
+level[42].wallPanels.push(new Panel(1400,400, panelHall[0], 1,0.5));
+level[42].wallPanels.push(new Panel(1500,400, panelHall[0], 1,0.5));
+level[42].wallPanels.push(new Panel(1400,600, panelHall[0], 1,0.5));
+level[42].wallPanels.push(new Panel(1500,600, panelHall[0], 1,0.5));
+level[42].wallPanels.push(new Panel(1600,400, panelHall[1], 1,0.5));
+level[42].wallPanels.push(new Panel(1700,400, panelHall[1], 1,0.5));
+level[42].wallPanels.push(new Panel(1600,600, panelHall[1], 1,0.5));
+level[42].wallPanels.push(new Panel(1700,600, panelHall[1], 1,0.5));
+level[42].wallPanels.push(new Panel(1600,500, panelHall[1], 2,0.5));
+level[42].wallPanels.push(new Panel(1700,500, panelHall[1], 2,0.5));
+level[42].wallPanels.push(new Panel(1600,700, panelHall[1], 2,0.5));
+level[42].wallPanels.push(new Panel(1700,700, panelHall[1], 2,0.5));
+level[42].wallPanels.push(new ForeGround(920,420, wallFeatures[11]));
+level[42].wallPanels.push(new ForeGround(700,400, wallFeatures[25]));
+level[42].wallPanels.push(new ForeGround(500,400, wallFeatures[27]));level[42].wallPanels.push(new Monitor(600,400, 'evac now in effect',0));
+level[42].lamps.push(new Lamp(480,410));
+level[42].lamps.push(new Lamp(810,410));
+level[42].lamps.push(new Lamp(220,440));
+level[42].lamps.push(new Lamp(370,440));
+level[42].wallPanels.push(new ForeGround(1120,420, wallFeatures[28]));
+level[42].wallPanels.push(new ForeGround(1020,420, wallFeatures[28]));
+level[42].wallPanels.push(new fan(920,320, 0.1,1,1));
+level[42].wallPanels.push(new fan(1020,320, 0.1,1,1));
+level[42].wallPanels.push(new fan(1120,320, 0.1,1,1));
+level[42].elevators.push(new CargoElevator(1200,1000, 360,600));level[42].wallPanels.push(new AniDoor(1600,200, 0,1));
+level[42].wallPanels.push(new AniDoor(1600,800, 0,1));
+level[42].wallPanels.push(new AniDoor(1600,400, 1,1));
+level[42].wallPanels.push(new AniDoor(1600,600, 1,0));level[42].foreGround.push(new ForeGround(1800,500, pipes[17]));
+level[42].foreGround.push(new ForeGround(1800,600, pipes[17]));
+level[42].foreGround.push(new ForeGround(1500,900, pipes[17]));
+level[42].foreGround.push(new ForeGround(1500,800, pipes[13]));
+level[42].foreGround.push(new ForeGround(1800,400, pipes[13]));
+level[42].foreGround.push(new ForeGround(1700,400, pipes[12]));
+level[42].foreGround.push(new ForeGround(1600,400, pipes[12]));
+level[42].foreGround.push(new ForeGround(1500,400, pipes[12]));
+level[42].foreGround.push(new ForeGround(1400,400, pipes[12]));
+level[42].foreGround.push(new ForeGround(1300,400, pipes[12]));
+level[42].foreGround.push(new ForeGround(1200,400, pipes[12]));
+level[42].foreGround.push(new ForeGround(1100,400, pipes[12]));
+level[42].foreGround.push(new ForeGround(1000,400, pipes[16]));
+level[42].foreGround.push(new ForeGround(1000,300, pipes[17]));
+level[42].foreGround.push(new ForeGround(1000,200, pipes[17]));
+level[42].wallPanels.push(new ForeGround(1030,130, pipes[11]));
+level[42].foreGround.push(new ForeGround(1800,700, pipes[15]));
+level[42].foreGround.push(new ForeGround(1700,700, pipes[12]));
+level[42].foreGround.push(new ForeGround(1600,700, pipes[12]));
+level[42].foreGround.push(new ForeGround(1500,700, pipes[12]));
+level[42].foreGround.push(new ForeGround(1400,700, pipes[12]));
+level[42].foreGround.push(new ForeGround(1300,700, pipes[12]));
+level[42].foreGround.push(new ForeGround(1200,700, pipes[12]));
+level[42].foreGround.push(new ForeGround(1130,730, pipes[6]));
+level[42].foreGround.push(new ForeGround(1400,800, pipes[12]));
+level[42].foreGround.push(new ForeGround(1300,800, pipes[12]));
+level[42].foreGround.push(new ForeGround(1200,800, pipes[12]));
+level[42].foreGround.push(new ForeGround(1130,830, pipes[6]));
+level[42].lamps.push(new BigLamp(1510,630));
+level[42].lamps.push(new BigLamp(1510,200));
+level[42].lamps.push(new BigLampDead(1510,420));
+level[42].lamps.push(new BigLampFlicker(1510,820));
+level[42].lamps.push(new Lamp(1770,840));
+level[42].lamps.push(new FlickerLamp(1770,640));
+level[42].lamps.push(new FlickerLamp(1770,430));
+level[42].lamps.push(new Lamp(1770,230));
+level[42].items.push(spawnTrap(1700,900, recorder, '1', '1','1700,900'));
+level[42].items.push(spawnTrap(1700,900, recorder, '1', '1','1700,900'));
+level[42].items.push(messageTrap(1700,900, blankPic, 'Help!', 'Where are we?! ~~The two of us just came through this utility passage, the guards lit up a demolition charge and collapsed the hallway. ~~Three of us died, do you know a way out? $99'));
+level[42].items.push(messageTrap(1700,900, blankPic, 'Help!', 'Come with us, were heaed for the main cargo bay. ~~The scientists and guards are going that way, I read they were going to destroy the ship. ~~If they have a way off the ship maybe we can beat them to it. $0'));
+level[42].wallPanels.push(new wordWall(1560,280, 'cargo',5));
+level[42].wallPanels.push(new wordWall(1560,290, 'bay',5));
+level[42].wallPanels.push(new ForeGround(1510,210, wallFeatures[3]));
+level[42].wallPanels.push(new wordWall(1570,880, 'utility',5));
+level[42].wallPanels.push(new wordWall(1570,890, 'corridor',5));level[42].wallPanels.push(new ForeGround(1560,830, wallFeatures[3]));
+level[42].exits.push(new Exit(300,500, 41, true, 1300, 800));
+level[42].exits.push(new Exit(1700,900, 43, true, 200, 200));
+
+
+level[43] = new Level('Blockage')
+level[43].exits.push(new Exit(300,300, 42, true, 1600, 800));
+
+level[43].wallPanels.push(new Panel(200,200, panelHall[0], 1,0.3));
+level[43].wallPanels.push(new Panel(300,200, panelHall[0], 1,0.3));
+level[43].wallPanels.push(new Panel(500,200, panelHall[0], 1,0.3));
+level[43].wallPanels.push(new Panel(600,200, panelHall[0], 1,0.3));
+level[43].wallPanels.push(new Panel(800,200, panelHall[0], 1,0.3));
+level[43].wallPanels.push(new Panel(900,200, panelHall[0], 1,0.3));
+level[43].wallPanels.push(new Panel(1100,200, panelHall[0], 1,0.3));
+level[43].wallPanels.push(new Panel(1200,200, panelHall[0], 1,0.3));
+level[43].wallPanels.push(new Panel(500,300, panelHall[0], 2,0.3));
+level[43].wallPanels.push(new Panel(600,300, panelHall[0], 2,0.3));
+level[43].wallPanels.push(new Panel(800,300, panelHall[0], 2,0.3));
+level[43].wallPanels.push(new Panel(900,300, panelHall[0], 2,0.3));
+level[43].wallPanels.push(new Panel(1100,300, panelHall[0], 2,0.3));
+level[43].wallPanels.push(new Panel(1200,300, panelHall[0], 2,0.3));
+level[43].wallPanels.push(new Panel(200,300, panelHall[0], 2,0.3));
+level[43].wallPanels.push(new Panel(300,300, panelHall[0], 2,0.3));
+level[43].wallPanels.push(new AniDoor(200,200, 0,1));
+level[43].wallPanels.push(new Panel(400,200, panelHall[2], 1,0.3));
+level[43].wallPanels.push(new Panel(700,200, panelHall[2], 1,0.3));
+level[43].wallPanels.push(new Panel(1000,200, panelHall[2], 1,0.3));
+level[43].wallPanels.push(new Panel(400,300, panelHall[2], 2,0.3));
+level[43].wallPanels.push(new Panel(700,300, panelHall[2], 2,0.3));
+level[43].wallPanels.push(new Panel(1000,300, panelHall[2], 2,0.3));
+level[43].wall.push(createWall(200,190, 100,30,floor[6]));
+level[43].wall.push(createWall(800,190, 100,30,floor[6]));
+level[43].wall.push(createWall(200,400, 100,30,floor[7]));
+level[43].wall.push(createWall(700,400, 100,30,floor[7]));
+level[43].wall.push(createWall(1200,400, 100,30,floor[4]));
+level[43].wall.push(createWall(1300,300, 30,100,sideWall[1]));
+level[43].wall.push(createWall(1300,200, 30,100,sideWall[1]));
+level[43].wall.push(createWall(1300,400, 30,100,sideWall[5]));
+level[43].wall.push(createWall(1300,190, 30,100,sideWall[5]));
+level[43].wall.push(createWall(170,400, 30,100,sideWall[5]));
+level[43].wall.push(createWall(170,300, 30,100,sideWall[1]));
+level[43].wall.push(createWall(170,200, 30,100,sideWall[1]));
+level[43].wall.push(createWall(170,190, 30,100,sideWall[5]));
+level[43].wall.push(createWall(720,240, 30,100,sideWall[1]));
+level[43].wallPanels.push(new ForeGround(400,200, pipes[17]));
+level[43].wallPanels.push(new ForeGround(400,300, pipes[17]));
+level[43].wallPanels.push(new ForeGround(430,130, pipes[11]));level[43].wallPanels.push(new ForeGround(700,230, pipes[17]));
+level[43].wallPanels.push(new ForeGround(700,190, ceilingHole[0], 0,0));
+level[43].wallPanels.push(new ForeGround(620,340, pipes[4]));
+level[43].foreGround.push(new ForeGround(710,300, floor[1]));
+level[43].wallPanels.push(new ForeGround(640,370, floor[2]));
+level[43].wallPanels.push(new ForeGround(810,370, floor[2]));level[43].foreGround.push(new ForeGround(680,200, foreGPic[6]));
+level[43].foreGround.push(new ForeGround(790,200, foreGPic[7]));
+level[43].foreGround.push(new ForeGround(730,300, foreGPic[7]));
+level[43].lamps.push(new Lamp(370,220));
+level[43].lamps.push(new Lamp(220,220));
+level[43].lamps.push(new FlickerLamp(570,220));
+level[43].lamps.push(new deadLamp(670,220));
+level[43].lamps.push(new deadLamp(820,220));
+level[43].lamps.push(new FlickerLamp(920,220));
+level[43].lamps.push(new sparker(700,200));
+level[43].lamps.push(new sparker(680,200));
+level[43].lamps.push(new sparker(790,200));
+level[43].lamps.push(new sparker(730,240));
+level[43].lamps.push(new sparker(700,200));
+level[43].lamps.push(new sparker(700,230));
+level[43].lamps.push(new sparker(790,230));
+level[43].wallPanels.push(new Fire(650,390, 'test'));
+level[43].wallPanels.push(new Fire(710,300, 'test'));
+level[43].wallPanels.push(new Fire(780,300, 'test'));
+level[43].wallPanels.push(new Fire(750,300, 'test'));
+level[43].wallPanels.push(new Fire(730,240, 'It makes no difference'));
+level[43].wallPanels.push(new Fire(740,300, 'It makes no difference'));
+level[43].wallPanels.push(new Fire(780,400, 'It makes no difference'));
+level[43].wallPanels.push(new Fire(710,400, 'It makes no difference'));
+level[43].wallPanels.push(new Fire(680,400, 'It makes no difference'));
+level[43].wallPanels.push(new Fire(820,400, 'It makes no difference'));
+level[43].dLights.push(new steamJet(740,230));
+level[43].dLights.push(new steamJet(700,380));
+level[43].dLights.push(new steamJet(790,200));
+level[43].wallPanels.push(new ForeGround(500,200, bioPic[67]));
+level[43].wallPanels.push(new ForeGround(830,200, bioPic[66]));
+level[43].wallPanels.push(new ForeGround(1070,200, bioPic[74]));
+level[43].wallPanels.push(new ForeGround(600,270, bioPic[0]));
+level[43].wallPanels.push(new ForeGround(810,270, bioPic[4]));
+level[43].dLights.push(new steamJet(450,300));
+level[43].wallPanels.push(new Animator(710,190, animators[2].pic));
+level[43].foreGround.push(new Animator(730,300, animators[1].pic));
+level[43].foreGround.push(new Animator(730,300, animators[5].pic));
+level[43].foreGround.push(new Animator(730,200, animators[5].pic));level[43].wallPanels.push(new Animator(730,200, animators[7].pic));
+level[43].wallPanels.push(new Animator(760,200, animators[9].pic));
+
+
+
+level[44] = new Level('Equipment Processing')
+level[44].wallPanels.push(new Panel(200,200, panelHall[3], 1,0.5));
+level[44].wallPanels.push(new Panel(300,200, panelHall[3], 1,0.5));
+level[44].wallPanels.push(new Panel(400,200, panelHall[3], 1,0.5));
+level[44].wallPanels.push(new Panel(500,200, panelHall[3], 1,0.5));
+level[44].wallPanels.push(new Panel(600,200, panelHall[3], 1,0.5));
+level[44].wallPanels.push(new Panel(700,200, panelHall[3], 1,0.5));
+level[44].wallPanels.push(new Panel(200,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(300,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(400,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(500,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(600,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(700,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(800,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(900,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(1000,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(1100,300, panelHall[3], 2,0.5));level[44].wallPanels.push(new Panel(800,200, panelHall[3], 1,0.2));
+level[44].wallPanels.push(new Panel(900,200, panelHall[3], 1,0.2));
+level[44].wallPanels.push(new Panel(1000,200, panelHall[3], 1,0.2));
+level[44].wallPanels.push(new Panel(1100,200, panelHall[3], 1,0.2));
+level[44].wallPanels.push(new Panel(1200,200, panelHall[3], 1,0.2));level[44].wallPanels.push(new cBelt(850,280,'9','7'));
+level[44].wallPanels.push(new Panel(1200,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(1300,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(1400,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(1250,200, panelHall[3], 1,0.5));
+level[44].wallPanels.push(new Panel(1300,200, panelHall[3], 1,0.5));
+level[44].wallPanels.push(new Panel(1400,200, panelHall[3], 1,0.5));
+level[44].wallPanels.push(new Panel(1500,200, panelHall[3], 1,0.5));
+level[44].wallPanels.push(new Panel(1600,200, panelHall[3], 1,0.5));
+level[44].wallPanels.push(new Panel(1700,200, panelHall[3], 1,0.5));
+level[44].wallPanels.push(new Panel(1500,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(1600,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new Panel(1700,300, panelHall[3], 2,0.5));
+level[44].wallPanels.push(new AniDoor(300,200, 0,0));
+level[44].wallPanels.push(new AniDoor(1600,200, 0,1));
+level[44].wallPanels.push(new ForeGround(800,200, wallFeatures[0]));
+level[44].wallPanels.push(new ForeGround(900,200, wallFeatures[0]));level[44].wallPanels.push(new ForeGround(1000,200, wallFeatures[0]));
+level[44].wallPanels.push(new ForeGround(1100,200, wallFeatures[0]));
+level[44].wallPanels.push(new ForeGround(1160,200, wallFeatures[0]));
+level[44].wallPanels.push(new ForeGround(1160,200, wallFeatures[2]));
+level[44].wallPanels.push(new ForeGround(790,200, wallFeatures[1]));
+level[44].wallPanels.push(new ForeGround(1020,220, wallFeatures[4]));
+level[44].wall.push(createWall(200,400, 100,30,floor[7]));
+level[44].wall.push(createWall(700,400, 100,30,floor[7]));
+level[44].wall.push(createWall(1200,400, 100,30,floor[7]));
+level[44].wall.push(createWall(1300,400, 100,30,floor[7]));
+level[44].wall.push(createWall(1300,190, 100,30,floor[6]));
+level[44].wall.push(createWall(800,190, 100,30,floor[6]));
+level[44].wall.push(createWall(300,190, 100,30,floor[6]));
+level[44].wall.push(createWall(200,190, 100,30,floor[6]));
+level[44].wall.push(createWall(170,200, 30,100,sideWall[2]));
+level[44].wall.push(createWall(170,300, 30,100,sideWall[2]));
+level[44].wall.push(createWall(170,400, 30,100,sideWall[5]));
+level[44].wall.push(createWall(170,190, 30,100,sideWall[5]));
+level[44].wall.push(createWall(1800,300, 30,100,sideWall[2]));
+level[44].wall.push(createWall(1800,200, 30,100,sideWall[2]));
+level[44].wall.push(createWall(1800,400, 30,100,sideWall[5]));
+level[44].wall.push(createWall(1800,190, 30,100,sideWall[5]));
+level[44].wallPanels.push(new ForeGround(220,300, pipes[11]));
+level[44].wallPanels.push(new ForeGround(180,300, pipes[11]));
+level[44].wallPanels.push(new ForeGround(180,200, pipes[11]));
+level[44].wallPanels.push(new ForeGround(220,200, pipes[11]));
+level[44].wallPanels.push(new ForeGround(250,300, pipes[5]));
+level[44].wallPanels.push(new ForeGround(210,300, pipes[5]));
+level[44].wallPanels.push(new ForeGround(210,200, pipes[5]));
+level[44].wallPanels.push(new ForeGround(250,200, pipes[5]));
+level[44].lamps.push(new BigLamp(360,200));
+level[44].lamps.push(new BigLamp(1660,200));level[44].wallPanels.push(new fan(620,220, 0.2,0,1));
+level[44].wallPanels.push(new fan(720,220, 0.2,0,1));
+level[44].wallPanels.push(new fan(520,220, 0.2,0,1));
+level[44].foreGround.push(new ForeGround(1340,300, foreGPic[24]));
+level[44].foreGround.push(new ForeGround(1340,200, foreGPic[25]));level[44].foreGround.push(new ForeGround(610,300, foreGPic[25]));
+level[44].foreGround.push(new ForeGround(610,200, foreGPic[23]));
+level[44].wallPanels.push(new ForeGround(660,300, wallFeatures[44]));level[44].wallPanels.push(new ForeGround(490,300, wallFeatures[44]));
+level[44].wallPanels.push(new ForeGround(320,300, wallFeatures[50]));
+level[44].wallPanels.push(new ForeGround(500,250, wallFeatures[40]));
+level[44].wallPanels.push(new ForeGround(220,300, pipes[11]));
+level[44].wallPanels.push(new ForeGround(180,300, pipes[11]));
+level[44].wallPanels.push(new ForeGround(180,200, pipes[11]));
+level[44].wallPanels.push(new ForeGround(220,200, pipes[11]));
+level[44].wallPanels.push(new ForeGround(250,300, pipes[5]));
+level[44].wallPanels.push(new ForeGround(210,300, pipes[5]));
+level[44].wallPanels.push(new ForeGround(210,200, pipes[5]));
+level[44].wallPanels.push(new ForeGround(250,200, pipes[5]));
+level[44].lamps.push(new BigLamp(360,200));
+level[44].lamps.push(new BigLamp(1660,200));level[44].wallPanels.push(new fan(620,220, 0.2,0,1));
+level[44].wallPanels.push(new fan(720,220, 0.2,0,1));
+level[44].wallPanels.push(new fan(520,220, 0.2,0,1));
+level[44].foreGround.push(new ForeGround(1340,300, foreGPic[24]));
+level[44].foreGround.push(new ForeGround(1340,200, foreGPic[25]));level[44].foreGround.push(new ForeGround(610,300, foreGPic[25]));
+level[44].foreGround.push(new ForeGround(610,200, foreGPic[23]));
+level[44].wallPanels.push(new ForeGround(660,300, wallFeatures[44]));level[44].wallPanels.push(new ForeGround(490,300, wallFeatures[44]));
+level[44].wallPanels.push(new ForeGround(320,300, wallFeatures[50]));
+level[44].wallPanels.push(new ForeGround(500,250, wallFeatures[40]));level[44].dLights.push(new GenLight(850,250,4, 0.8));
+level[44].dLights.push(new GenLight(900,250,4, 0.8));
+level[44].dLights.push(new GenLight(950,250,4, 0.8));
+level[44].dLights.push(new GenLight(1000,250,4, 0.8));
+level[44].dLights.push(new GenLight(1050,250,4, 0.8));
+level[44].dLights.push(new GenLight(1100,250,4, 0.8));
+level[44].dLights.push(new GenLight(1150,250,4, 0.8));
+level[44].dLights.push(new GenLight(1200,250,4, 0.8));
+level[44].dLights.push(new spinLight(1550,240,50,0));
+level[44].creature.push(ScientistArmed(1460,200,3));
+level[44].creature.push(ScientistArmed(1520,200,3));
+
+level[45] = new Level('Equipment Processing Sector 2')
+level[45].wallPanels.push(new Panel(1700,800, panelHall[1], 1,0.3));
+level[45].wallPanels.push(new Panel(1600,800, panelHall[1], 1,0.3));
+level[45].wallPanels.push(new Panel(1600,900, panelHall[1], 2,0.4));
+level[45].wallPanels.push(new Panel(1700,900, panelHall[1], 2,0.4));
+level[45].wallPanels.push(new AniDoor(1600,800, 0,1));
+level[45].wallPanels.push(new Panel(1500,800, panelHall[11], 1,0.3));
+level[45].wallPanels.push(new Panel(1400,800, panelHall[11], 1,0.3));
+level[45].wallPanels.push(new Panel(1300,800, panelHall[11], 1,0.3));
+level[45].wallPanels.push(new Panel(1200,800, panelHall[2], 1,0.3));
+level[45].wallPanels.push(new Panel(1200,900, panelHall[2], 2,0.4));
+level[45].wallPanels.push(new Panel(1300,900, panelHall[0], 2,0.4));
+level[45].wallPanels.push(new Panel(1400,900, panelHall[0], 2,0.4));
+level[45].wallPanels.push(new Panel(1500,900, panelHall[0], 2,0.4));level[45].wallPanels.push(new Panel(1800,900, panelHall[3], 2,0.8));
+level[45].wallPanels.push(new Panel(1800,800, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(1800,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(1700,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(1600,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(1500,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(1400,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(1300,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(1200,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(1100,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(1100,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(1200,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(1300,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(1400,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(1500,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(1600,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(1700,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(1800,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new ForeGround(1750,950, wallFeatures[38]));
+level[45].wallPanels.push(new ForeGround(1750,900, wallFeatures[38]));
+level[45].wallPanels.push(new ForeGround(1750,850, wallFeatures[38]));
+level[45].wallPanels.push(new ForeGround(1750,800, wallFeatures[38]));
+level[45].wallPanels.push(new ForeGround(1700,800, wallFeatures[38]));
+level[45].wallPanels.push(new ForeGround(1700,850, wallFeatures[38]));
+level[45].wallPanels.push(new ForeGround(1700,900, wallFeatures[38]));
+level[45].wallPanels.push(new ForeGround(1700,950, wallFeatures[38]));
+level[45].foreGround.push(new ForeGround(1790,900, pipes[17]));
+level[45].foreGround.push(new ForeGround(1790,800, pipes[17]));
+level[45].foreGround.push(new ForeGround(1790,700, pipes[17]));
+level[45].foreGround.push(new ForeGround(1790,600, pipes[13]));
+level[45].foreGround.push(new ForeGround(1690,600, pipes[12]));
+level[45].foreGround.push(new ForeGround(1590,600, pipes[12]));
+level[45].foreGround.push(new ForeGround(1490,600, pipes[12]));
+level[45].foreGround.push(new ForeGround(1390,600, pipes[12]));
+level[45].foreGround.push(new ForeGround(1290,600, pipes[12]));
+level[45].foreGround.push(new ForeGround(1190,600, pipes[12]));
+level[45].foreGround.push(new ForeGround(1090,600, pipes[14]));
+level[45].foreGround.push(new ForeGround(1090,700, pipes[17]));
+level[45].wallPanels.push(new ForeGround(1220,900, pipes[11]));
+level[45].wallPanels.push(new ForeGround(1220,800, pipes[11]));
+level[45].wallPanels.push(new ForeGround(1200,900, pipes[5]));
+level[45].wallPanels.push(new ForeGround(1200,800, pipes[5]));
+level[45].wallPanels.push(new Panel(1100,800, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(1000,800, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(1000,900, panelHall[3], 2,0.8));
+level[45].wallPanels.push(new Panel(1100,900, panelHall[3], 2,0.8));
+level[45].foreGround.push(new ForeGround(1090,800, pipes[17]));
+level[45].foreGround.push(new ForeGround(1090,900, pipes[17]));
+level[45].wall.push(createWall(1400,1000, 100,30,floor[5]));
+level[45].wall.push(createWall(900,1000, 100,30,floor[5]));
+level[45].wall.push(createWall(1900,600, 30,100,sideWall[8]));
+level[45].wall.push(createWall(1400,590, 100,30,floor[6]));
+level[45].wall.push(createWall(900,590, 100,30,floor[6]));
+level[45].lamps.push(new UpLamp(1320,970));level[45].lamps.push(new UpLamp(1420,970));
+level[45].lamps.push(new UpLamp(1520,970));
+level[45].wallPanels.push(new fan(1520,820, 0.2,0,1));
+level[45].wallPanels.push(new fan(1320,820, 0.2,0,1));
+level[45].wallPanels.push(new ForeGround(1400,800, wallFeatures[42]));
+level[45].wall.push(createWall(1900,1000, 30,100,sideWall[5]));
+level[45].wall.push(createWall(1900,590, 30,100,sideWall[5]));
+level[45].wallPanels.push(new ForeGround(1020,900, wallFeatures[44]));
+level[45].wallPanels.push(new Panel(1000,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(900,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(800,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(700,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(600,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(900,800, panelHall[1], 1,0.3));
+level[45].wallPanels.push(new Panel(800,800, panelHall[1], 1,0.3));
+level[45].wallPanels.push(new Panel(700,800, panelHall[1], 1,0.3));level[45].wallPanels.push(new Panel(400,800, panelHall[1], 1,0.3));
+level[45].wallPanels.push(new Panel(300,800, panelHall[1], 1,0.3));
+level[45].wallPanels.push(new Panel(200,800, panelHall[1], 1,0.3));
+level[45].wallPanels.push(new Panel(100,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(200,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(300,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(400,700, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(500,700, panelHall[3], 0,0.8));level[45].wallPanels.push(new Panel(100,900, panelHall[3], 2,0.8));
+level[45].wallPanels.push(new Panel(100,800, panelHall[3], 0,0.8));level[45].wallPanels.push(new Panel(300,900, panelHall[1], 2,0.4));
+level[45].wallPanels.push(new Panel(400,900, panelHall[1], 2,0.4));
+level[45].wallPanels.push(new Panel(800,900, panelHall[1], 2,0.4));
+level[45].wallPanels.push(new Panel(900,900, panelHall[1], 2,0.4));
+level[45].wallPanels.push(new Panel(700,900, panelHall[1], 2,0.3));
+level[45].wallPanels.push(new Panel(200,900, panelHall[1], 2,0.3));level[45].wallPanels.push(new cBelt(230,900,'13','9'));
+level[45].wallPanels.push(new ForeGround(230,900, wallFeatures[38]));
+level[45].wallPanels.push(new ForeGround(230,950, wallFeatures[38]));
+level[45].wallPanels.push(new ForeGround(830,900, wallFeatures[38]));
+level[45].wallPanels.push(new ForeGround(830,950, wallFeatures[38]));
+level[45].wallPanels.push(new ForeGround(470,900, wallFeatures[38]));
+level[45].wallPanels.push(new ForeGround(470,950, wallFeatures[38]));
+level[45].wallPanels.push(new Panel(500,900, panelHall[3], 2,0.8));
+level[45].wallPanels.push(new Panel(600,900, panelHall[3], 2,0.8));
+level[45].wallPanels.push(new Panel(500,800, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(600,800, panelHall[3], 0,0.8));
+level[45].wallPanels.push(new Panel(1000,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(900,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(800,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(700,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(600,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(500,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(400,600, panelHall[3], 1,0.8));level[45].wallPanels.push(new Panel(100,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(200,600, panelHall[3], 1,0.8));
+level[45].wallPanels.push(new Panel(300,600, panelHall[3], 1,0.8));
+level[45].wall.push(createWall(400,590, 100,30,floor[6]));
+level[45].wall.push(createWall(100,590, 100,30,floor[6]));
+level[45].wall.push(createWall(70,600, 30,100,sideWall[8]));
+level[45].wall.push(createWall(100,1000, 100,30,floor[5]));
+level[45].wall.push(createWall(500,1000, 100,30,floor[5]));
+level[45].wall.push(createWall(70,1000, 30,100,sideWall[5]));
+level[45].wall.push(createWall(70,590, 30,100,sideWall[5]));
+level[45].elevators.push(new elevator(520,1000, 0,0));level[45].wall.push(createWall(520,1000, 100,30,ceiling[0]));
+level[45].wallPanels.push(new wordWall(630,850, 'access',5));
+level[45].wallPanels.push(new wordWall(630,860, 'lift',5));
+level[45].wallPanels.push(new wordWall(630,870, 'D-9',5));
+level[45].wallPanels.push(new ForeGround(650,800, wallFeatures[3]));
+level[45].wallPanels.push(new ForeGround(1030,830, wallFeatures[5]));
+level[45].foreGround.push(new ForeGround(990,900, pipes[17]));
+level[45].foreGround.push(new ForeGround(990,800, pipes[17]));
+level[45].foreGround.push(new ForeGround(990,700, pipes[13]));
+level[45].foreGround.push(new ForeGround(890,700, pipes[12]));
+level[45].foreGround.push(new ForeGround(790,700, pipes[12]));
+level[45].foreGround.push(new ForeGround(690,700, pipes[12]));
+level[45].foreGround.push(new ForeGround(590,700, pipes[12]));
+level[45].foreGround.push(new ForeGround(490,700, pipes[12]));
+level[45].foreGround.push(new ForeGround(390,700, pipes[12]));
+level[45].foreGround.push(new ForeGround(290,700, pipes[12]));
+level[45].foreGround.push(new ForeGround(190,700, pipes[12]));
+level[45].foreGround.push(new ForeGround(90,700, pipes[14]));
+level[45].foreGround.push(new ForeGround(90,800, pipes[17]));
+level[45].foreGround.push(new ForeGround(90,900, pipes[17]));
+level[45].dLights.push(new spinLight(1100,830,50,0));level[45].dLights.push(new spinLight(600,830,50,0));
+level[45].dLights.push(new spinLight(160,830,50,0));
+
+level[45].lamps.push(new Lamp(340,820));
+level[45].lamps.push(new Lamp(840,820));
+
+
+
+level[46] = new Level('Equipment Loading')
+level[46].wallPanels.push(new Panel(200,700, panelHall[2], 2,0.6));
+level[46].wallPanels.push(new Panel(600,700, panelHall[2], 2,0.6));
+level[46].wallPanels.push(new Panel(700,700, panelHall[2], 2,0.6));
+level[46].wallPanels.push(new Panel(600,600, panelHall[2], 1,0.6));
+level[46].wallPanels.push(new Panel(700,600, panelHall[2], 1,0.6));
+level[46].wallPanels.push(new Panel(300,700, panelHall[0], 2,0.6));
+level[46].wallPanels.push(new Panel(800,700, panelHall[0], 2,0.6));
+level[46].wallPanels.push(new Panel(1000,700, panelHall[0], 2,0.6));
+level[46].wallPanels.push(new Panel(200,600, panelHall[2], 0,0.6));
+level[46].wallPanels.push(new Panel(200,500, panelHall[2], 0,0.6));
+level[46].wallPanels.push(new Panel(200,400, panelHall[2], 0,0.6));
+level[46].wallPanels.push(new Panel(400,700, panelHall[1], 2,0.6));
+level[46].wallPanels.push(new Panel(500,700, panelHall[1], 2,0.6));
+level[46].wallPanels.push(new Panel(900,700, panelHall[1], 2,0.6));
+level[46].wallPanels.push(new Panel(1300,700, panelHall[1], 2,0.6));
+level[46].wallPanels.push(new Panel(400,600, panelHall[1], 1,0.6));
+level[46].wallPanels.push(new Panel(500,600, panelHall[1], 1,0.6));
+level[46].wallPanels.push(new Panel(800,600, panelHall[1], 1,0.6));
+level[46].wallPanels.push(new Panel(900,600, panelHall[1], 1,0.6));
+level[46].wallPanels.push(new Panel(1000,600, panelHall[1], 1,0.6));
+level[46].wallPanels.push(new Panel(1300,600, panelHall[1], 1,0.6));
+level[46].wallPanels.push(new Panel(1400,600, panelHall[1], 1,0.6));
+level[46].wallPanels.push(new Panel(300,600, panelHall[1], 1,0.6));
+level[46].wall.push(createWall(200,800, 100,30,floor[5]));level[46].wall.push(createWall(700,800, 100,30,floor[5]));
+level[46].wall.push(createWall(1300,800, 100,30,floor[5]));
+level[46].wall.push(createWall(170,400, 30,100,sideWall[9]));
+level[46].wall.push(createWall(300,400, 30,100,sideWall[2]));
+level[46].wall.push(createWall(300,500, 30,100,sideWall[3]));
+level[46].wall.push(createWall(300,590, 100,30,floor[6]));
+level[46].wall.push(createWall(800,590, 100,30,floor[6]));
+level[46].wall.push(createWall(1300,590, 100,30,floor[6]));
+level[46].wall.push(createWall(1700,700, 100,30,floor[1]));
+level[46].wall.push(createWall(1760,670, 100,30,floor[2]));
+level[46].wall.push(createWall(1720,670, 100,30,floor[2]));
+level[46].wall.push(createWall(1740,640, 100,30,floor[2]));
+level[46].wall.push(createWall(1750,610, 100,30,floor[2]));
+level[46].wall.push(createWall(1670,770, 100,30,floor[2]));
+level[46].wall.push(createWall(1620,770, 100,30,floor[2]));
+level[46].wallPanels.push(new Panel(1600,600, panelHall[0], 1,0.6));
+level[46].wallPanels.push(new Panel(1500,600, panelHall[0], 1,0.6));
+level[46].wallPanels.push(new Panel(1700,600, panelHall[1], 1,0.6));
+level[46].wallPanels.push(new Panel(1400,700, panelHall[1], 2,0.6));
+level[46].wallPanels.push(new Panel(1700,700, panelHall[1], 2,0.6));level[46].wallPanels.push(new Panel(1100,600, panelHall[2], 1,0.6));
+level[46].wallPanels.push(new Panel(1100,700, panelHall[2], 2,0.6));
+level[46].wallPanels.push(new Panel(1200,600, panelHall[1], 1,0.6));
+level[46].wallPanels.push(new Panel(1200,700, panelHall[1], 0,0.6));level[46].wallPanels.push(new Panel(1200,800, panelHall[1], 0,0.4));
+level[46].wallPanels.push(new Panel(1200,900, panelHall[1], 0,0.3));
+level[46].wallPanels.push(new Panel(1100,900, panelHall[1], 0,0.2));
+level[46].wallPanels.push(new Panel(1300,900, panelHall[1], 0,0.2));
+level[46].wallPanels.push(new Panel(1100,800, panelHall[1], 0,0.1));
+level[46].wallPanels.push(new Panel(1300,800, panelHall[1], 0,0.1));
+level[46].wallPanels.push(new Panel(1100,1000, panelHall[1], 0,0.1));
+level[46].wallPanels.push(new Panel(1200,1000, panelHall[1], 0,0.1));
+level[46].wallPanels.push(new Panel(1300,1000, panelHall[1], 0,0.1));
+level[46].wallPanels.push(new Panel(1400,1000, panelHall[1], 0,0.1));
+level[46].wallPanels.push(new Panel(1400,900, panelHall[1], 0,0.1));
+level[46].wallPanels.push(new Panel(1400,800, panelHall[1], 0,0.1));
+level[46].wallPanels.push(new Panel(1000,800, panelHall[1], 0,0.1));
+level[46].wallPanels.push(new Panel(1000,900, panelHall[1], 0,0.1));
+level[46].wallPanels.push(new Panel(1000,1000, panelHall[1], 0,0.1));
+level[46].lamps.push(new Lamp(610,620));
+level[46].lamps.push(new Lamp(680,620));
+level[46].lamps.push(new Lamp(1110,620));
+level[46].lamps.push(new Lamp(1180,620));
+level[46].wallPanels.push(new Panel(1500,700, panelHall[0], 2,0.6));
+level[46].wallPanels.push(new Panel(1600,700, panelHall[0], 2,0.6));
+level[46].wallPanels.push(new AniDoor(1400,600, 1,1));
+level[46].wallPanels.push(new AniDoor(800,600, 1,1));
+level[46].wallPanels.push(new Fire(910,800, 'test'));
+level[46].wallPanels.push(new Fire(960,800, 'test'));
+level[46].wallPanels.push(new Fire(1560,800, 'test'));
+level[46].wallPanels.push(new Fire(1450,800, 'test'));
+level[46].wallPanels.push(new Fire(1720,700, 'test'));
+level[46].wallPanels.push(new Fire(1660,800, 'test'));
+level[46].lamps.push(new sparker(1570,710));
+level[46].lamps.push(new sparker(1550,610));
+level[46].wallPanels.push(new ForeGround(1200,800, floorHole[0]));
+level[46].wallPanels.push(new ForeGround(1170,830, foreGPic[6]));
+level[46].wallPanels.push(new ForeGround(1300,830, foreGPic[7]));
+level[46].wallPanels.push(new ForeGround(1210,600, foreGPic[7]));
+level[46].lamps.push(new sparker(1200,820));
+level[46].lamps.push(new sparker(1240,800));
+level[46].lamps.push(new sparker(1270,810));
+level[46].lamps.push(new sparker(1300,820));
+level[46].lamps.push(new sparker(1300,870));
+level[46].lamps.push(new sparker(1190,870));
+level[46].wallPanels.push(new ForeGround(1100,600, pipes[17]));
+level[46].wallPanels.push(new ForeGround(1100,700, pipes[17]));
+level[46].wallPanels.push(new ForeGround(1100,800, pipes[17]));
+level[46].wallPanels.push(new ForeGround(1100,900, pipes[17]));
+level[46].wallPanels.push(new ForeGround(1100,1000, pipes[17]));
+level[46].foreGround.push(new ForeGround(1000,1000, pipes[12]));
+level[46].foreGround.push(new ForeGround(1100,1000, pipes[12]));
+level[46].foreGround.push(new ForeGround(1200,1000, pipes[12]));
+level[46].foreGround.push(new ForeGround(1300,1000, pipes[12]));
+level[46].foreGround.push(new ForeGround(1400,1000, pipes[12]));
+level[46].wall.push(createWall(1000,1100, 100,30,floor[5]));level[46].wall.push(createWall(1300,1100, 100,30,floor[5]));
+level[46].wallPanels.push(new Panel(1500,800, panelHall[0], 1,0.1));
+level[46].wallPanels.push(new Panel(1600,800, panelHall[0], 1,0.1));
+level[46].wallPanels.push(new Panel(1700,800, panelHall[0], 1,0.1));
+level[46].wallPanels.push(new Panel(1500,1000, panelHall[0], 2,0.1));
+level[46].wallPanels.push(new Panel(1600,1000, panelHall[0], 2,0.1));
+level[46].wallPanels.push(new Panel(1700,1000, panelHall[0], 2,0.1));
+level[46].wallPanels.push(new Panel(1500,900, panelHall[1], 0,0.1));
+level[46].wallPanels.push(new Panel(1600,900, panelHall[1], 0,0.1));
+level[46].wallPanels.push(new Panel(1700,900, panelHall[1], 0,0.1));
+level[46].dLights.push(new GenLight(1250,850,10, 0.2));
+level[46].dLights.push(new GenLight(1250,940,10, 0.2));level[46].dLights.push(new GenLight(1160,960,10, 0.05));
+level[46].dLights.push(new GenLight(1350,970,10, 0.05));
+level[46].dLights.push(new GenLight(1310,960,10, 0.05));
+level[46].dLights.push(new GenLight(1200,930,10, 0.05));
+level[46].dLights.push(new GenLight(1250,1030,10, 0.05));
+level[46].dLights.push(new GenLight(1210,1040,10, 0.05));
+level[46].wall.push(createWall(970,830, 30,100,sideWall[1]));
+level[46].wall.push(createWall(970,930, 30,100,sideWall[1]));
+level[46].wall.push(createWall(970,1030, 30,100,sideWall[1]));
+level[46].wall.push(createWall(1800,700, 30,100,sideWall[7]));
+level[46].wall.push(createWall(1800,600, 30,100,sideWall[0]));
+level[46].wall.push(createWall(1800,590, 30,100,sideWall[5]));
+level[46].wall.push(createWall(1800,1100, 30,100,sideWall[5]));
+level[46].wall.push(createWall(970,1100, 30,100,sideWall[5]));
+level[46].wall.push(createWall(970,820, 30,100,sideWall[6]));
+level[46].wall.push(createWall(1790,800, 30,100,sideWall[6]));
+level[46].wallPanels.push(new ForeGround(1500,1000, pipes[13]));
+level[46].wallPanels.push(new AniDoor(1600,900, 0,0));
+level[46].wallPanels.push(new ForeGround(1040,600, bioPic[18]));
+level[46].wallPanels.push(new ForeGround(990,600, bioPic[72]));level[46].wallPanels.push(new ForeGround(310,600, bioPic[71]));
+level[46].wall.push(createWall(170,800, 30,100,sideWall[5]));
+level[46].wallPanels.push(new ForeGround(620,700, pipes[11]));
+level[46].wallPanels.push(new ForeGround(620,600, pipes[11]));
+level[46].wallPanels.push(new ForeGround(720,700, pipes[11]));
+level[46].wallPanels.push(new ForeGround(720,600, pipes[11]));
+level[46].wallPanels.push(new ForeGround(600,700, pipes[5]));
+level[46].wallPanels.push(new ForeGround(600,600, pipes[5]));
+level[46].wallPanels.push(new ForeGround(700,600, pipes[5]));
+level[46].wallPanels.push(new ForeGround(700,700, pipes[5]));
+level[46].items.push(messageTrap(400,700, blankPic, 'Well...', "This doesn't look good. $0"));
+level[46].items.push(messageTrap(1500,700, blankPic, 'Jammed', "Damn! This is the only door on this level and its smashed. ~~We'll have to find another way."));
+level[46].items.push(rumbler(600,700, blankPic, '50', '0'));
+level[46].wall.push(createWall(200,400, 100,30,floor[4]));level[46].wall.push(createWall(200,590, 100,30,floor[4]));level[46].wallPanels.push(new Monitor(1300,600, 'cargo bay offline',0));
+level[46].items.push(spawnTrap(1600,1000, recorder, '0', '3','1150,830'));
+level[46].items.push(spawnTrap(1600,1000, recorder, '0', '3','1160,835'));
+level[46].items.push(spawnTrap(1600,1000, recorder, '0', '3','1170,840'));
+level[46].items.push(spawnTrap(1600,1000, recorder, '0', '3','1185,845'));
+level[46].wallPanels.push(new Animator(1120,1000, animators[2].pic));
+level[46].wallPanels.push(new Animator(1120,900, animators[2].pic));
+level[46].wallPanels.push(new Animator(1120,830, animators[2].pic));
+level[46].wallPanels.push(new Animator(1320,1000, animators[2].pic));
+level[46].wallPanels.push(new Animator(1320,1000, animators[2].pic));
+level[46].wallPanels.push(new Animator(1320,900, animators[2].pic));
+level[46].wallPanels.push(new Animator(1320,830, animators[2].pic));
+level[46].wallPanels.push(new Animator(1120,1000, animators[5].pic));
+level[46].wallPanels.push(new Animator(1320,1000, animators[5].pic));level[46].dLights.push(new WaterLight(1350,1100,150, 4));
+level[46].dLights.push(new WaterLight(1150,1100,150, 4));
+level[46].dLights.push(new spinLight(1620,940,50,0));
+level[46].wallPanels.push(new ForeGround(1260,830, foreGPic[6]));
+level[46].wallPanels.push(new ForeGround(1210,830, foreGPic[7]));
+
+
+
+level[47] = new Level('Product Loading')
+level[47].wallPanels.push(new Panel(200,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(300,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(400,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(500,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(600,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(700,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(800,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(900,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(1000,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(1100,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(1200,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(1300,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(1400,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(1500,1000, panelHall[12], 2,0.3));
+level[47].wallPanels.push(new Panel(1600,1000, panelHall[12], 2,0.3));level[47].wallPanels.push(new Panel(200,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(300,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(400,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(500,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(600,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(700,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(800,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(900,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(1000,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(1100,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(1200,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(1300,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(1400,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(1500,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(1600,900, panelHall[12], 0,0.3));
+level[47].wallPanels.push(new Panel(200,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(300,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(400,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(500,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(600,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(700,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(800,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(900,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(1000,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(1100,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(1200,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(1300,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(1400,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(1500,800, panelHall[12], 1,0.3));
+level[47].wallPanels.push(new Panel(1600,800, panelHall[12], 1,0.3));
+level[47].wall.push(createWall(200,1100, 100,30,floor[7]));
+level[47].wall.push(createWall(700,1100, 100,30,floor[7]));
+level[47].wall.push(createWall(1200,1100, 100,30,floor[7]));
+level[47].wall.push(createWall(1200,790, 100,30,floor[6]));
+level[47].wall.push(createWall(700,790, 100,30,floor[6]));
+level[47].wall.push(createWall(200,790, 100,30,floor[6]));
+level[47].wall.push(createWall(170,1000, 30,100,sideWall[0]));
+level[47].wall.push(createWall(170,900, 30,100,sideWall[0]));
+level[47].wall.push(createWall(170,800, 30,100,sideWall[0]));
+level[47].wall.push(createWall(1700,1000, 30,100,sideWall[0]));
+level[47].wall.push(createWall(1700,900, 30,100,sideWall[0]));
+level[47].wall.push(createWall(1700,800, 30,100,sideWall[0]));
+level[47].wall.push(createWall(1700,1100, 30,100,sideWall[5]));
+level[47].wall.push(createWall(1700,790, 30,100,sideWall[5]));
+level[47].wall.push(createWall(170,1100, 30,100,sideWall[5]));
+level[47].wall.push(createWall(170,790, 30,100,sideWall[5]));
+level[47].wallPanels.push(new ForeGround(200,1000, floor[7]));level[47].wallPanels.push(new ForeGround(200,900, wallFeatures[33]));
+level[47].wallPanels.push(new ForeGround(300,900, wallFeatures[33]));
+level[47].wallPanels.push(new ForeGround(400,900, wallFeatures[33]));
+level[47].wallPanels.push(new ForeGround(500,900, wallFeatures[33]));
+level[47].wallPanels.push(new ForeGround(600,900, wallFeatures[33]));
+level[47].wallPanels.push(new ForeGround(690,900, wallFeatures[1]));
+level[47].wallPanels.push(new ForeGround(690,800, wallFeatures[1]));
+level[47].wallPanels.push(new ForeGround(400,900, wallFeatures[1]));
+level[47].wallPanels.push(new ForeGround(400,800, wallFeatures[1]));
+level[47].wallPanels.push(new ForeGround(750,850, wallFeatures[42]));
+level[47].wallPanels.push(new ForeGround(1050,850, wallFeatures[42]));
+level[47].wallPanels.push(new AniDoor(850,900, 0,0));
+level[47].lamps.push(new Lamp(850,940));
+level[47].lamps.push(new Lamp(1040,940));level[47].foreGround.push(new ForeGround(200,900, wallFeatures[54]));
+level[47].foreGround.push(new ForeGround(400,900, wallFeatures[54]));
+level[47].foreGround.push(new ForeGround(600,900, wallFeatures[55]));level[47].foreGround.push(new ForeGround(300,900, wallFeatures[53]));
+level[47].foreGround.push(new ForeGround(500,900, wallFeatures[53]));level[47].wallPanels.push(new ForeGround(1110,1000, wallFeatures[44]));
+level[47].wallPanels.push(new ForeGround(1130,950, wallFeatures[40]));level[47].wallPanels.push(new ForeGround(380,950, wallFeatures[40]));level[47].wallPanels.push(new Server(1040,1000, '1',0));
+level[47].wallPanels.push(new AniDoor(1500,900, 0,0));
+level[47].wallPanels.push(new ForeGround(1260,1000, floor[1]));
+level[47].wallPanels.push(new ForeGround(1360,1000, floor[1]));
+level[47].wallPanels.push(new ForeGround(1320,900, floor[1]));level[47].lamps.push(new Lamp(1680,940));
+level[47].lamps.push(new Lamp(1510,940));level[47].dLights.push(new WaterLight(640,990,150, 4));
+level[47].dLights.push(new WaterLight(440,990,150, 4));
+level[47].dLights.push(new WaterLight(240,990,150, 4));
+level[47].dLights.push(new spinLight(1250,940,50,0));
+level[47].foreGround.push(new ForeGround(710,1000, pipes[17]));
+level[47].foreGround.push(new ForeGround(710,900, pipes[17]));
+level[47].foreGround.push(new ForeGround(710,800, pipes[17]));level[47].foreGround.push(new ForeGround(740,730, pipes[11]));
+level[47].foreGround.push(new ForeGround(700,790, ceiling[0]));
+level[47].foreGround.push(new ForeGround(700,1100, floor[4]));
+level[47].foreGround.push(new ForeGround(1600,1000, wallFeatures[33]));
+level[47].foreGround.push(new ForeGround(1500,1000, wallFeatures[33]));
+level[47].foreGround.push(new ForeGround(1600,1000, wallFeatures[0]));
+level[47].foreGround.push(new ForeGround(1500,1000, wallFeatures[0]));
+level[47].foreGround.push(new ForeGround(1500,900, wallFeatures[0]));
+level[47].foreGround.push(new ForeGround(1600,900, wallFeatures[0]));
+level[47].foreGround.push(new ForeGround(1400,1000, wallFeatures[2]));
+level[47].foreGround.push(new ForeGround(1400,900, wallFeatures[2]));
+level[47].creature.push(Marine(1250,910,3));
+level[47].creature.push(Marine(1310,900,3));
+level[47].wallPanels.push(new spawner(800,900, '0', '5','83'));
+
+
+level[48] = new Level('Product Loading Sector 2')
+level[48].wallPanels.push(new Panel(200,100, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(300,100, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(400,100, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(500,100, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(600,100, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(200,200, panelHall[1], 2,0.6));
+level[48].wallPanels.push(new Panel(300,200, panelHall[1], 2,0.6));
+level[48].wallPanels.push(new Panel(400,200, panelHall[1], 2,0.6));
+level[48].wallPanels.push(new Panel(500,200, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(600,200, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(600,300, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(500,300, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(500,400, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(600,400, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(500,500, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(600,500, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(500,600, panelHall[1], 2,0.6));
+level[48].wallPanels.push(new Panel(600,600, panelHall[1], 2,0.6));
+level[48].wall.push(createWall(200,90, 100,30,floor[6]));
+level[48].wall.push(createWall(710,290, 100,30,floor[6]));
+level[48].wall.push(createWall(700,200, 30,100,sideWall[1]));
+level[48].wall.push(createWall(700,100, 30,100,sideWall[1]));
+level[48].wall.push(createWall(700,270, 30,100,sideWall[5]));
+level[48].wall.push(createWall(700,90, 30,100,sideWall[5]));
+level[48].wall.push(createWall(200,300, 100,30,floor[0]));
+level[48].wall.push(createWall(300,300, 100,30,floor[0]));
+level[48].wall.push(createWall(400,300, 100,30,floor[0]));
+level[48].wall.push(createWall(170,200, 30,100,sideWall[1]));
+level[48].wall.push(createWall(170,100, 30,100,sideWall[1]));
+level[48].wall.push(createWall(170,300, 30,100,sideWall[5]));
+level[48].wall.push(createWall(170,90, 30,100,sideWall[5]));
+level[48].wallPanels.push(new AniDoor(200,100, 0,1));
+level[48].wall.push(createWall(500,700, 100,30,floor[5]));
+level[48].wall.push(createWall(1000,700, 100,30,floor[5]));
+level[48].wall.push(createWall(470,300, 30,100,sideWall[9]));
+level[48].wall.push(createWall(470,300, 30,100,sideWall[5]));
+level[48].wall.push(createWall(470,700, 30,100,sideWall[5]));
+level[48].wallPanels.push(new Panel(700,300, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(800,300, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(900,300, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(1000,300, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(1300,300, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(1400,300, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(1500,300, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(1600,300, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(1700,300, panelHall[1], 1,0.6));level[48].wallPanels.push(new Panel(800,600, panelHall[3], 2,0.2));
+level[48].wallPanels.push(new Panel(700,600, panelHall[3], 2,0.1));
+level[48].wallPanels.push(new Panel(700,500, panelHall[3], 0,0.1));
+level[48].wallPanels.push(new Panel(700,400, panelHall[3], 1,0.1));
+level[48].wallPanels.push(new Panel(800,400, panelHall[3], 1,0.1));
+level[48].wallPanels.push(new Panel(900,400, panelHall[3], 1,0.1));
+level[48].wallPanels.push(new Panel(1000,400, panelHall[3], 1,0.1));
+level[48].wallPanels.push(new Panel(1300,400, panelHall[3], 1,0.1));
+level[48].wallPanels.push(new Panel(1400,400, panelHall[3], 1,0.1));
+level[48].wallPanels.push(new Panel(1500,400, panelHall[3], 1,0.1));
+level[48].wallPanels.push(new Panel(1600,400, panelHall[3], 1,0.1));level[48].wallPanels.push(new Panel(800,500, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(900,500, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(1000,500, panelHall[3], 0,0.2));level[48].wallPanels.push(new Panel(800,450, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(900,450, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(1000,450, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(1300,450, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(1400,450, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(1500,450, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(1600,450, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(1300,500, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(1400,500, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(1500,500, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(1600,500, panelHall[3], 0,0.2));
+level[48].wallPanels.push(new Panel(900,600, panelHall[3], 2,0.3));
+level[48].wallPanels.push(new Panel(1000,600, panelHall[3], 2,0.3));
+level[48].wallPanels.push(new Panel(1300,600, panelHall[3], 2,0.3));
+level[48].wallPanels.push(new Panel(1400,600, panelHall[3], 2,0.3));
+level[48].wallPanels.push(new Panel(1500,600, panelHall[3], 2,0.3));
+level[48].wallPanels.push(new Panel(1600,600, panelHall[3], 2,0.3));
+level[48].wallPanels.push(new cBelt(820,650,'16','13'));
+level[48].wallPanels.push(new ForeGround(820,650, wallFeatures[38]));
+level[48].wallPanels.push(new ForeGround(1020,650, wallFeatures[38]));
+level[48].wallPanels.push(new ForeGround(1570,650, wallFeatures[38]));
+level[48].wallPanels.push(new ForeGround(1370,650, wallFeatures[38]));
+
+level[48].wallPanels.push(new tankMover(740,470,4,6));
+level[48].wallPanels.push(new tankMover(1270,470,4,6));
+
+
+level[48].elevators.push(new CargoElevator(500,700, 250,400));
+level[48].wallPanels.push(new Panel(1100,600, panelHall[2], 2,0.6));
+level[48].wallPanels.push(new Panel(1200,600, panelHall[2], 2,0.6));
+level[48].wallPanels.push(new Panel(1100,500, panelHall[2], 0,0.6));
+level[48].wallPanels.push(new Panel(1200,500, panelHall[2], 0,0.6));
+level[48].wallPanels.push(new Panel(1100,400, panelHall[2], 0,0.6));
+level[48].wallPanels.push(new Panel(1200,400, panelHall[2], 0,0.6));
+level[48].wallPanels.push(new Panel(1100,300, panelHall[2], 1,0.6));
+level[48].wallPanels.push(new Panel(1200,300, panelHall[2], 1,0.6));
+level[48].wall.push(createWall(1400,700, 100,30,floor[5]));
+level[48].wallPanels.push(new Panel(1700,600, panelHall[1], 2,0.6));
+level[48].wallPanels.push(new Panel(1800,600, panelHall[1], 2,0.6));
+level[48].wallPanels.push(new Panel(1700,500, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(1800,500, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(1700,400, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(1800,400, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(1800,300, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new ForeGround(1100,600, pipes[17]));
+level[48].wallPanels.push(new ForeGround(1200,600, pipes[17]));
+level[48].wallPanels.push(new ForeGround(1200,500, pipes[17]));
+level[48].wallPanels.push(new ForeGround(1200,400, pipes[17]));
+level[48].wallPanels.push(new ForeGround(1100,500, pipes[17]));
+level[48].wallPanels.push(new ForeGround(1100,400, pipes[17]));
+level[48].wallPanels.push(new ForeGround(1100,300, pipes[13]));
+level[48].wallPanels.push(new ForeGround(1200,300, pipes[14]));
+level[48].wallPanels.push(new ForeGround(1300,300, pipes[12]));
+level[48].wallPanels.push(new ForeGround(1400,300, pipes[12]));
+level[48].wallPanels.push(new ForeGround(1500,300, pipes[12]));
+level[48].wallPanels.push(new ForeGround(1600,300, pipes[12]));
+level[48].wallPanels.push(new ForeGround(1700,300, pipes[12]));
+level[48].wallPanels.push(new ForeGround(1800,300, pipes[12]));
+level[48].wallPanels.push(new ForeGround(1000,300, pipes[12]));
+level[48].wallPanels.push(new ForeGround(900,300, pipes[12]));
+level[48].wallPanels.push(new ForeGround(800,300, pipes[16]));
+level[48].wallPanels.push(new ForeGround(830,230, pipes[11]));
+level[48].foreGround.push(new ForeGround(500,300, pipes[12]));
+level[48].foreGround.push(new ForeGround(600,300, pipes[12]));
+level[48].foreGround.push(new ForeGround(700,300, pipes[13]));
+level[48].foreGround.push(new ForeGround(700,400, pipes[17]));
+level[48].foreGround.push(new ForeGround(700,500, pipes[17]));
+level[48].foreGround.push(new ForeGround(700,600, pipes[17]));
+level[48].lamps.push(new BigLamp(860,430));
+level[48].lamps.push(new BigLamp(1460,430));level[48].lamps.push(new UpLamp(1110,670));
+level[48].lamps.push(new UpLamp(1280,670));
+level[48].lamps.push(new UpLamp(680,670));level[48].lamps.push(new UpLamp(510,670));
+level[48].wallPanels.push(new AniDoor(1700,500, 0,1));
+
 
 
 })
@@ -11106,10 +20911,6 @@ Experience growth level, make some creature not upgradable
 
 features:
 
-More general computer terminals
---> make animated like word wall
-Massive monitor screens
-
 male surgical mask copy, does not match female
 gas mask
 
@@ -11118,44 +20919,62 @@ scientist stay unarmed
 --> make hazmat helmet
 
 
-Creatures need faces
-
-
-need first tiny creature
-
-
-
-make spawner object, creates units on per time basis
-
 fix AI, if cant reach enemy, can't shoot enemy OR at x but super far y under no path avail conditions, remove enemy from list
 ---> in testing, most ais stop jittering, but some continue doing their best, looks like
 		increase deadzone in motion left/right and make jitter look like a patrol
 		
 ignore deadzone fr allied followers, its fine as is.
 
-draw: trash can
-	vent cover
-	server machine(use midified static screen genreator for sever lights
-	tables and other cafeteria stuff-> use end peices from desks, make textured midsection
-									-> make the sneeze guard buffet style
-									-> dishes stack
-									coffee urn
-									trash piles for the floor
-	posters
+draw: 
 	otherside of door art?  general hallway with pipes etc? make a generator for the door itself? esp anidoor
 
 	sond options configurable to make trigger on plyre proximity
 		-> jump scares!
 		
-	corner spider webs
-	cocooned humans
+	
 	dead bodies of marines and scientists
 	200x200 giant web masses for wall panels
 	large blood smear, maybe even some more writing
 	1 massive 400px blood message
 	
+	deadzone on followers
 	
-	4legs insect, make stand stance show all 4 legs, not just two
+	add elevators to cutscene draw code
 	
 	
-*/
+	make a special value for end of string on message recorder for last creature, ex 99 = creature.length
+	
+	gameplay question: need main character?
+	
+	cool hatchs for storage areas out of the new wall panels
+	
+	reversed horizonaly water pour
+
+	modify mutation sequence to not max out torso before other
+									
+	
+	make death clear all arrays, jump to main menu, reset all levels (make entire level definition area a single function)
+
+	manual reload of weapons with sound effect
+	slow down reload, so its a real thing
+	
+	make cutscenes able to prompt?
+	
+	weights
+	
+	board room style table
+	
+	basic chairs, garbage for tables
+
+	rumble feature
+	
+	
+	conveyor belts that work on creatures!
+	
+	looping level system
+	
+	
+	
+	more small converyor objects
+	a few more narrow tanks with bodies inside
+	*/
