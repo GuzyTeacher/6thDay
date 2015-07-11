@@ -8,9 +8,14 @@ $(document).ready(function(){
 	var w = $("#canvas").width();
 	var h = $("#canvas").height();
 	var mx, my;
-	
+
 	function addNotes(mess){notes += "  -" + mess + "~"}
-	var notes = "Last update: June 3rd 2015 ~~New stuff: ~~"
+	var notes = "Last update: June 22nd 2015 ~~New stuff: ~~"
+	addNotes("Alternate Vision modes, press v in game to see them!");
+	addNotes("Up to Level 50 now");
+	addNotes("Animated conveyor belts");
+	addNotes("Animated welder arms");
+	addNotes("Couple quick bug fixes");
 	addNotes("More Levels!");
 	addNotes("Tweaks to UI for elevators");
 	addNotes("Bug Fix for prompts");
@@ -70,6 +75,7 @@ $(document).ready(function(){
 	var terminalVel = 20
 	
 	var screen = 0;
+	var videoMode = 1; //0- unlit, 1- regular, 2-Green NightV, 3- Insect Motion Vision
 	var cS = 0;
 	var playerCharacter;
 	var allies = []
@@ -269,8 +275,8 @@ $(document).ready(function(){
 		for(var a =0; a < i; a++){
 			this.row[a] = []
 			for(var b=0; b < i; b++){
-				this.row[a][b] = dist(a,b, Math.floor(i/2), Math.floor(i/2));
-				//if(this.row[a][b] > i / 2) this.row[a][b] = 100
+				if(dist(a,b, Math.floor(i/2), Math.floor(i/2)) > 0)	this.row[a][b] = dist(a,b, Math.floor(i/2), Math.floor(i/2));
+				else this.row[a][b] = 1
 			}
 		
 		}
@@ -328,9 +334,13 @@ $(document).ready(function(){
 	var pX, pY;
 	var header = "";
 	var levelEdit = ""
-	var lighting = false;
 	var gridLines = true;
 	
+	//Lighting Stuff
+	var lighting = false;
+	var dimming = 1;
+	var flashing = 10
+	var nightVision = false
 	
 	function output(t){
 		document.getElementById("output").value += t + "\n";
@@ -391,7 +401,7 @@ $(document).ready(function(){
 	for(var i=0; i < 10; i = i + 1)steamSound.push(addSound('Sounds/steam1.ogg', false));
 
 	var pulseLightSound = []
-	for(var i=0; i < 15; i++)pulseLightSound.push(addSound('Sounds/pulseLight4.ogg', false));
+	for(var i=0; i < 15; i++)pulseLightSound.push(addSound('Sounds/pulselight4.ogg', false));
 	
 	var florSound = []
 	for(var i=0; i < 15; i++)florSound.push(addSound('Sounds/florLight.ogg', false));
@@ -506,7 +516,7 @@ $(document).ready(function(){
 	var fanFrame2= makePicture("Animations/Objects/Features/fanFrame2.png");//w grate
 	var fanFrame3= makePicture("Animations/Objects/Features/fanFrame3.png");//black w grate
 	
-	
+	var shadow= makePicture("Animations/Objects/Shadows/shadow.png");
 	var lampLit= makePicture("Animations/Objects/LampLit.png");
 	var lampOut= makePicture("Animations/Objects/LampOut.png");
 	
@@ -633,6 +643,13 @@ $(document).ready(function(){
 	wallFeatures.push(makePicture('Animations/Objects/Features/narrowTank2.png'));
 	wallFeatures.push(makePicture('Animations/Objects/Features/narrowTank3.png'));
 	wallFeatures.push(makePicture('Animations/Objects/Features/narrowTank4.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/narrowTank5.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/narrowTank6.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/narrowTank7.png'));
+	wallFeatures.push(makePicture('Animations/Objects/Features/SmallThing1.png'));//60
+	wallFeatures.push(makePicture('Animations/Objects/Features/SmallThing2.png'));//61
+	wallFeatures.push(makePicture('Animations/Objects/Features/SmallThing3.png'));//62
+	wallFeatures.push(makePicture('Animations/Objects/Features/SmallThing4.png'));//63
 	
 	var floor = [];
 	floor.push(makePicture('Animations/Objects/floor1.png'));
@@ -675,8 +692,8 @@ $(document).ready(function(){
 	foreGPic[3] = makePicture('Animations/Objects/Foreground/MonitorOffRight.png')
 	foreGPic[4] = makePicture('Animations/Objects/Foreground/MonitorOnLeft.png')
 	foreGPic[5] = makePicture('Animations/Objects/Foreground/MonitorOffLeft.png')
-	foreGPic.push(makePicture('Animations/Objects/sideWallDebris.png'));
-	foreGPic.push(makePicture('Animations/Objects/sideWallDebris2.png'));
+	foreGPic.push(makePicture('Animations/Objects/SideWallDebris.png'));
+	foreGPic.push(makePicture('Animations/Objects/SideWallDebris2.png'));
 	foreGPic.push(makePicture('Animations/Objects/Foreground/Med1.png'));
 	foreGPic.push(makePicture('Animations/Objects/Foreground/lamp.png'));
 	foreGPic.push(makePicture('Animations/Objects/Foreground/DeskCenter.png'));
@@ -815,16 +832,16 @@ $(document).ready(function(){
 	
 	
 	var sideWall = []
-	sideWall.push(makePicture('Animations/Objects/sideWall1.png'));
-	sideWall.push(makePicture('Animations/Objects/sideWall2.png'));
-	sideWall.push(makePicture('Animations/Objects/sideWall3.png'));
-	sideWall.push(makePicture('Animations/Objects/sideWall4.png'));
-	sideWall.push(makePicture('Animations/Objects/sideWall5.png'));
-	sideWall.push(makePicture('Animations/Objects/sideWall6.png'));
-	sideWall.push(makePicture('Animations/Objects/sideWall7.png'));
-	sideWall.push(makePicture('Animations/Objects/sideWall1Tall.png'));
-	sideWall.push(makePicture('Animations/Objects/sideWall2Tall.png'));
-	sideWall.push(makePicture('Animations/Objects/sideWall3Tall.png'));
+	sideWall.push(makePicture('Animations/Objects/SideWall1.png'));
+	sideWall.push(makePicture('Animations/Objects/SideWall2.png'));
+	sideWall.push(makePicture('Animations/Objects/SideWall3.png'));
+	sideWall.push(makePicture('Animations/Objects/SideWall4.png'));
+	sideWall.push(makePicture('Animations/Objects/SideWall5.png'));
+	sideWall.push(makePicture('Animations/Objects/SideWall6.png'));
+	sideWall.push(makePicture('Animations/Objects/SideWall7.png'));
+	sideWall.push(makePicture('Animations/Objects/SideWall1Tall.png'));
+	sideWall.push(makePicture('Animations/Objects/SideWall2Tall.png'));
+	sideWall.push(makePicture('Animations/Objects/SideWall3Tall.png'));
 	sideWall.push(makePicture('Animations/Objects/Features/Bio/bioSideWall.png'));
 	
 	
@@ -1152,9 +1169,9 @@ $(document).ready(function(){
 	portReptileEyes.push(makePicture('Faces/Reptile/eyes3.png'));
 	
 	var portReptile = [];
-	portReptile.push(makePicture('Faces/Reptile/level1.png'));
-	portReptile.push(makePicture('Faces/Reptile/level2.png'));
-	portReptile.push(makePicture('Faces/Reptile/level3.png'));
+	portReptile.push(makePicture('Faces/Reptile/Level1.png'));
+	portReptile.push(makePicture('Faces/Reptile/Level2.png'));
+	portReptile.push(makePicture('Faces/Reptile/Level3.png'));
 	
 	var portInsect = [];
 	portInsect.push(makePicture('Faces/Insect/level1.png'));
@@ -1165,7 +1182,12 @@ $(document).ready(function(){
 	
 	//Buttons
 var lighter = new Button(70, 10, 50,30, "Lights");
-	lighter.job = function() {lighting = !lighting;}
+	lighter.job = function() {
+		videoMode++
+		if(videoMode > 3) videoMode = 0
+	//lighting = !lighting;
+	
+	}
 	
 		var OKButton = new ButtonGraphic(w/2 - 100, h/2 + 150, 200, 100, "OK");
 	OKButton.job = function(){
@@ -2296,11 +2318,30 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		items.push(rumbler( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.pic, this.spec, this.spec2))
 		lastEdit.push(6)
 	}
-	
+	iOptions[iOptions.length-1].spec = 35
+	iOptions[iOptions.length-1].spec2 = 1
 	iOptions[iOptions.length-1].config = function(){
 		this.spec = Number(prompt("Duration in screen draws?", "35"));
 		this.spec2 = Number(prompt("0- Constant    1- One time only", "1"));
 	}
+	
+	
+	iOptions.push(new editOption(230, h - 100, null));
+	iOptions[iOptions.length-1].imageText = "blankPic"
+	iOptions[iOptions.length-1].name = "Light Dimmer";
+	iOptions[iOptions.length-1].pic = blankPic;
+	iOptions[iOptions.length-1].insert = function(){
+		this.text = "items.push(lightDimmer(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ", " + this.imageText + ", '" + this.spec + "', '" + this.spec2 + "'));"
+		items.push(lightDimmer( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.pic, this.spec, this.spec2))
+		lastEdit.push(6)
+	}
+	iOptions[iOptions.length-1].spec = 0
+	iOptions[iOptions.length-1].spec2 = 1
+	iOptions[iOptions.length-1].config = function(){
+		this.spec = Number(prompt("Type? \n 0: Set lights to value \n 1: Flicker", "0"));
+		if(this.spec == 0) this.spec2 = Number(prompt("Lighting factor? 1- 100%  Effect", "0.5"));
+	}
+	
 	
 	var sOptions = [];
 	sOptions.push(new editOption(230, h - 100, null));
@@ -2404,6 +2445,24 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	aOptions[aOptions.length-1].insert = function(){
 		this.text = "wallPanels.push(new tankMover(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",'" + this.spec + "','" + this.spec2 + "'));"
 		wallPanels.push(new tankMover( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec, this.spec2))
+		lastEdit.push(10)
+	}
+	aOptions[aOptions.length-1].spec = 4
+	aOptions[aOptions.length-1].spec2 = 6
+	
+	aOptions[aOptions.length-1].config = function(){
+		this.spec = Number(prompt("Number of canisters?", "4"));
+		//this.spec2 = Number(prompt("Number of slots?", "1"));
+	}
+	
+	
+	aOptions.push(new editOption(230, h - 100, null));
+	aOptions[aOptions.length-1].imageText = ""
+	aOptions[aOptions.length-1].name = "Robot Arm";
+	aOptions[aOptions.length-1].pic = null;
+	aOptions[aOptions.length-1].insert = function(){
+		this.text = "wallPanels.push(new robotArm(" + Math.floor((mx-ctxOx) / snapSize)*snapSize + "," + Math.floor((my-ctxOy) / snapSize)*snapSize + ",'" + this.spec + "','" + this.spec2 + "'));"
+		wallPanels.push(new robotArm( Math.floor((mx-ctxOx) / snapSize)*snapSize, Math.floor((my- ctxOy) / snapSize)*snapSize, this.spec, this.spec2))
 		lastEdit.push(10)
 	}
 	aOptions[aOptions.length-1].spec = 4
@@ -2802,6 +2861,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	function loadLevel(n){
 		stopSound();
+		dimming = 1
 		levelName = level[n].name
 		elevators = level[n].elevators
 		exits = level[n].exits
@@ -3006,9 +3066,10 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 						else if(dist(creature[i].x+100, creature[i].y + 200, this.x - 50, this.y + this.maxH) < 40) this.gy = this.y + this.maxH;
 						else if(dist(creature[i].x+100, creature[i].y + 200, this.x + 150, this.y + this.maxH) < 40) this.gy = this.y + this.maxH;
 						*/
-					
-						if(this.x - (creature[i].x + 100) < 50 &&  this.x - (creature[i].x + 100) > 0) this.gy = creature[i].y + 200
-						else if(creature[i].x - this.x < 50 &&  creature[i].x - this.x > 0) this.gy = creature[i].y + 200
+						if(creature[i].y + 200 >= this.y && creature[i].y+200 < this.y + this.maxH){
+							if(this.x - (creature[i].x + 100) < 50 &&  this.x - (creature[i].x + 100) > 0) this.gy = creature[i].y + 200
+							else if(creature[i].x - this.x < 50 &&  creature[i].x - this.x > 0) this.gy = creature[i].y + 200
+						}
 					}
 					
 					
@@ -3034,7 +3095,8 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			this.blocker.setHeight(this.y + this.maxH - this.ty);
 			
 			this.speed = 3;
-			
+		
+		
 			if (this.ty < this.gy) {
 				this.ty+=this.speed;
 				this.light.y+=this.speed
@@ -3150,7 +3212,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 						}
 					}
 					
-					if(i == cS){
+					if(i == cS && creature[i].y + 200 >= this.y && creature[i].y+200 < this.y + this.maxH){
 						if(this.x - (creature[i].x + 100) < 50 &&  this.x - (creature[i].x + 100) > 0) this.gy = creature[i].y + 200
 						else if(creature[i].x -this.x - 100< 50 &&  creature[i].x - this.x -100 > 0) this.gy = creature[i].y + 200
 					}
@@ -3171,7 +3233,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			
 			this.light2.draw()
 			
-			
+	
 			this.lifter.y = this.ty;
 			this.lifter.x = this.tx
 			this.lifter2.y = this.ty;
@@ -3823,7 +3885,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		this.ani = []
 		this.itemIndex = []
 		for(var i=0; i < i2; i++){
-			this.itemIndex.push(rand(3));
+			this.itemIndex.push(rand(7));
 			this.ani.push(i* 50);
 		}
 		//this.aBelt = false;
@@ -3836,6 +3898,10 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 				if(this.itemIndex[i] == 0) ctx.drawImage(wallFeatures[41], this.x + this.ani[i], this.y-60)
 				else if(this.itemIndex[i] == 1) ctx.drawImage(wallFeatures[40], this.x + this.ani[i], this.y-60)
 				else if(this.itemIndex[i] == 2) ctx.drawImage(floor[2], this.x + this.ani[i], this.y-40)
+				else if(this.itemIndex[i] == 3) ctx.drawImage(wallFeatures[63], this.x + this.ani[i], this.y-40)
+				else if(this.itemIndex[i] == 4) ctx.drawImage(wallFeatures[60], this.x + this.ani[i], this.y-40)
+				else if(this.itemIndex[i] == 5) ctx.drawImage(wallFeatures[61], this.x + this.ani[i], this.y-40)
+				else if(this.itemIndex[i] == 6) ctx.drawImage(wallFeatures[62], this.x + this.ani[i], this.y-40)
 			}
 			
 			for(var i=0; i < this.l; i++) {
@@ -3848,7 +3914,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 				this.ani[i] += 2
 				if(this.ani[i] > (this.l-1) * 50){
 					this.ani[i] = 0;
-					this.itemIndex[i] = rand(3);
+					this.itemIndex[i] = rand(7);
 				}
 			}
 			
@@ -3857,6 +3923,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	var gripperOpen = makePicture("Animations/Objects/gripOpen.png")
 	var gripperClosed = makePicture("Animations/Objects/gripClosed.png")
+	var gripperBack = makePicture("Animations/Objects/gripBack.png")
 	function tankMover(a,b, len, i2){
 		//i2 unused
 	
@@ -3879,7 +3946,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		
 		for(var i=0; i < len + 1; i++){
 			this.itemIndex.push(true);
-			this.itemPicIndex.push(rand(4));
+			this.itemPicIndex.push(rand(7));
 		}
 		
 		this.itemIndex[temp] = false
@@ -3903,7 +3970,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			
 			//Targettting
 			if(this.grabIndex < 0){//Empty claw
-				while(this.targetIndex == -1) {
+				while(this.targetIndex == -1 || this.targetIndex == this.oldIndex) {
 					this.targetIndex = rand(this.itemIndex.length);
 				}
 				while(!this.itemIndex[this.targetIndex] || this.targetIndex == this.oldIndex) this.targetIndex = rand(this.itemIndex.length);
@@ -3975,26 +4042,110 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 					else if(this.gy > this.gty) this.gy--;
 				}
 			}else this.aniPause--;
-			
+		
+			ctx.drawImage(gripperBack, this.gx, this.y - 10);
 			for(var i=0; i < this.itemIndex.length; i++){
 				if(this.itemPicIndex[i] == 0) ctx.drawImage(wallFeatures[53], this.x + i * 100 - 50, this.y + 30);
 				else if(this.itemPicIndex[i] == 1) ctx.drawImage(wallFeatures[54], this.x + i * 100 - 50, this.y + 30);
 				else if(this.itemPicIndex[i] == 2) ctx.drawImage(wallFeatures[55], this.x + i * 100 - 50, this.y + 30);
 				else if(this.itemPicIndex[i] == 3) ctx.drawImage(wallFeatures[56], this.x + i * 100 - 50, this.y + 30);
-				else lightRegion(this.x + i * 100, this.y + 200, 10, 0.2);
+				else if(this.itemPicIndex[i] == 4) ctx.drawImage(wallFeatures[57], this.x + i * 100 - 50, this.y + 30);
+				else if(this.itemPicIndex[i] == 5) ctx.drawImage(wallFeatures[58], this.x + i * 100 - 50, this.y + 30);
+				else if(this.itemPicIndex[i] == 6) ctx.drawImage(wallFeatures[59], this.x + i * 100 - 50, this.y + 30);
+				//else lightRegion(this.x + i * 100, this.y + 200, 10, 0.2);
+				
+				if(this.itemPicIndex[i] >= 2){
+					lightRegion(this.x + i * 100 - 50, this.y + 100, 10, 0.2)
+					lightRegion(this.x + i * 100 - 40, this.y + 120, 10, 0.2)
+				}
 			}
 			
 			if(this.grabIndex == 0) ctx.drawImage(wallFeatures[53], this.gx, this.gy + 10);
 			else if(this.grabIndex == 1) ctx.drawImage(wallFeatures[54], this.gx, this.gy + 10);
 			else if(this.grabIndex == 2) ctx.drawImage(wallFeatures[55], this.gx, this.gy + 10);
 			else if(this.grabIndex == 3) ctx.drawImage(wallFeatures[56], this.gx, this.gy + 10);
+			else if(this.grabIndex == 4) ctx.drawImage(wallFeatures[57], this.gx, this.gy + 10);
+			else if(this.grabIndex == 5) ctx.drawImage(wallFeatures[58], this.gx, this.gy + 10);
+			else if(this.grabIndex == 6) ctx.drawImage(wallFeatures[59], this.gx, this.gy + 10);
 			
+		
 			if(this.grabIndex == -1) ctx.drawImage(gripperOpen, this.gx - 10, this.gy);
 			else ctx.drawImage(gripperClosed, this.gx - 10, this.gy);
 			
-			
+		
 		}
 	}
+	
+	var weldHead = makePicture("Animations/Objects/Features/welderHead.png")
+	function robotArm(a,b, in1, in2){
+		this.x = a;
+		this.y = b;
+		this.ex = a;
+		this.ey = b;
+		this.tx = a + rand(200) - 100;
+		this.ty = b + rand(50) + 25;
+		
+		this.timer = 10;
+		this.setArm = function(){
+			this.tx = this.x + rand(200) - 100;
+			this.ty = this.y + rand(50) + 25;
+			this.timer = 10;
+		}
+		
+		
+		this.jx;
+		this.jy;
+		this.angle = 0;
+		this.distance = 0;
+		this.spark = new sparker(a,b);
+		this.draw = function(){
+			if(this.ex < this.tx) this.ex++;
+			else if (this.ex > this.tx) this.ex--;
+		
+			if(this.ey < this.ty) this.ey++;
+			else if (this.ey > this.ty) this.ey--;
+		
+		
+			
+			if(this.timer ==0) this.setArm();
+		
+			ctx.fillStyle = '#222222'
+			ctx.fillRect(this.x -100, this.y,200 , 10);
+			ctx.fillStyle = '#0F0F0F'
+			ctx.fillRect(this.x - 98, this.y + 2, 196 , 6);
+			ctx.drawImage(gripperBack, this.ex - 50, this.y - 10);
+			
+			ctx.drawImage(weldHead, this.ex - 35, this.ey-50);
+		/*
+			ctx.fillStyle = 'red'
+			ctx.fillRect(this.x,this.y, 10,10);
+	
+			ctx.fillStyle = 'blue'
+			ctx.fillRect(this.tx, this.ty, 5,5);
+			
+			ctx.fillStyle = 'green'
+			ctx.fillRect(this.ex, this.ey, 5,5);
+			*/
+			/*
+			ctx.fillStyle = 'yellow'
+			ctx.fillRect(this.jx, this.jy, 5,5);
+			*/
+			
+			
+			if(this.ex == this.tx && this.ey == this.ty){
+				this.timer --;
+				this.spark.x = this.ex;
+				this.spark.y = this.ey+5;
+				this.spark.seq = 0;
+				this.spark.draw();
+			}
+			
+		}
+	
+	
+	
+	}
+	
 	function Animator(a,b, p){
 		this.lx = a
 		this.ly = b
@@ -4565,7 +4716,8 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		
 			for(var i=0; i < mainMenuButtons.length; i++) mainMenuButtons[i].draw();
 			
-			lightRegion(mx,my, 10, 0.5);
+			
+			lightRegion(mx,my, 10, 0.5/dimming);
 			
 			//lightRegionCol(mx + 100,my, 10, 0.09, {r:0,g:100,b:0});
 			shade();
@@ -4733,8 +4885,17 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			ctxOx += rand(rumble) - rumble/2
 			ctxOy += rand(rumble) - rumble/2
 			rumble--;
+			
 		}
 		
+		/*
+		oldDimming = dimming;
+		if(flashing > 0){
+			flashing--;
+			dimming = Math.random();
+			//if(Math.random() < 0.2) lighting = true
+			//else lighting = false;
+		}*/
 		if(ctxOx > 0) ctxOx = 0
 		if(ctxOy > 0) ctxOy = 0
 		if(ctxOx < w * -1) ctxOx = w * -1
@@ -4779,7 +4940,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		for(var i = 0; i < foreGround.length; i++) foreGround[i].draw();
 		
 
-		lightRegion(creature[cS].x + 100, creature[cS].y+ 100, 12, 0.5);
+		if(!nightVision) lightRegion(creature[cS].x + 100, creature[cS].y+ 100, 12, 0.5/dimming);
 		
 		
 	
@@ -4819,11 +4980,32 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		}
 		
 		ctx.restore()
-		shade();
+		if(rumble > 0){
+			if(Math.random() < 0.8) {
+				ctx.globalAlpha = Math.random();
+				ctx.fillStyle = 'black'
+				ctx.fillRect(0,0,w,h);
+				ctx.globalAlpha = 1;
+			}
+		}
 		
+		if(videoMode == 1) shade();
+		else if(videoMode == 2) shadeNight();
+		else if(videoMode == 3) shadeMotion();
 		
+		/*
+		if(nightVision) shadeNight();
+		else shade();
+		*/
+		if(flashing > 0){
+			flashing--;
+			ctx.globalAlpha = Math.random();
+			ctx.fillRect(0,0,w,h);
+			ctx.globalAlpha = 1;
+		}
 		
-		
+		//dimming = oldDimming;
+	
 		
 		//UI Stuff goes here
 		ctx.fillStyle = 'white'
@@ -4831,7 +5013,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		//paintDelay = Date.now() - tStart;
 		ctx.globalAlpha = 1;
 		
-		//ctx.fillText(paintDelay, 100,100);
+		ctx.fillText(dimming, 100,100);
 		
 		for(var i = 0; i < exits.length; i++){
 			if(dist(creature[cS].x + 100, creature[cS].y + 100, exits[i].x, exits[i].y) < 80){
@@ -5247,8 +5429,17 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			}
 	
 			ctx.restore()
-			if(lighting) shade()
+			if(rumble > 0){
+				if(lighting && Math.random() < 0.2) ctx.fillRect(0,0,w,h);
+				//if(lighting && Math.random() < 0.2) shade()
+			}else{
 			
+				//if(lighting) shade()
+				if(videoMode == 1) shade();
+				else if(videoMode == 2) shadeNight();
+				else if(videoMode == 3) shadeMotion();
+		
+			}
 			
 			ctx.fillStyle = 'black'
 			ctx.globalAlpha = 0.5
@@ -5503,8 +5694,131 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 	
 	
 	
+	function componentToHex(c) {
+		var hex = c.toString(16);
+		return hex.length == 1 ? "0" + hex : hex;
+	}
+
+	function getHexCol(r, g, b) {
+		return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+	}
 	
 	
+	function shadeNight(){	//Night vision goggles
+		var Ox = ctxOx % lightRes - Math.floor(lightRes/2)
+		var Oy = ctxOy % lightRes - Math.floor(lightRes/2)
+		var t1, t2;
+		var baseShade = 0.9//0.85
+		
+		var finalShade = 0;
+		//var extraShade = heartTimer / heartDelay;
+		//ctx.fillStyle = 'black'
+		/*
+		if(heartDelay < 8){
+			baseShade += extraShade*0.4
+			ctx.fillStyle = '#' + (Math.floor(extraShade * 128)).toString(16)+ '0000';
+		}*/
+		ctx.fillStyle = '#003300'
+
+		ctx.globalAlpha = 0.7
+		ctx.fillRect(0,0,w,h);
+		for(var i = 0; i < lightGrid.length; i++){
+			for(var j = 0; j < lightGrid[i].length; j++){
+				/*finalShade = (1- lightGrid[i][j])*baseShade;
+				if(finalShade < 0.1) finalShade = 0.1
+				else if(finalShade > 1) finalShade = 1;*/
+				//ctx.fillStyle = '#003300'
+				//ctx.globalAlpha = 0.5//finalShade
+				//ctx.fillRect(i*lightRes + Ox,j*lightRes + Oy,lightRes,lightRes);
+				
+				finalShade = (lightGrid[i][j])*baseShade / 4//+ Math.random()*0.2;
+				if(finalShade < 0) finalShade = 0
+				else if(finalShade > 0.9) finalShade = 0.9;
+				ctx.fillStyle = 'white'
+				ctx.globalAlpha = finalShade
+				ctx.fillRect(i*lightRes + Ox,j*lightRes + Oy,lightRes,lightRes);
+				
+				lightGrid[i][j] = 0
+				//lightGridC[i][j].r = 0
+				//lightGridC[i][j].g = 0
+				//lightGridC[i][j].b = 0
+				//ctx.globalAlpha = Math.random();
+				//ctx.fillRect(i*lightRes + rand(lightRes) + Ox, j*lightRes + rand(lightRes)+Oy, 2,2);
+			}
+		}
+	}
+	
+	var mAnimate = 0
+	function shadeMotion(){	//Motion Vision
+		var Ox = ctxOx % lightRes - Math.floor(lightRes/2)
+		var Oy = ctxOy % lightRes - Math.floor(lightRes/2)
+		var t1, t2;
+		var baseShade = 0.9//0.85
+		
+		var finalShade = 0;
+		var extraShade = heartTimer / heartDelay;
+		
+		
+		mAnimate++
+		if(mAnimate > 10) mAnimate = 0
+		
+		if(heartDelay < 8){
+			baseShade += extraShade*0.4
+			ctx.fillStyle = '#' + (Math.floor(extraShade * 128)).toString(16)+ '0000';
+		}
+		ctx.fillStyle = '#330000'
+//Clear Visual light from lights etc
+		for(var i = 0; i < lightGrid.length; i++){
+			for(var j = 0; j < lightGrid[i].length; j++){
+				lightGrid[i][j] = 0;
+			}
+		}
+		ctx.globalAlpha = 0.1*Math.sin(heartTimer*Math.PI*2/heartDelay) + 0.7
+		ctx.fillRect(0,0,w,h);
+		
+		
+		ctx.fillStyle = 'white'
+		ctx.stokeStyle = 'white'
+		ctx.globalAlpha = 1 - mAnimate/10
+		for(var i=0; i < creature.length; i++){
+			/*ctx.beginPath();
+			ctx.arc(creature[i].x +creature[i].hitBox.x + creature[i].hitBox.width/2 +ctxOx, creature[i].y +creature[i].hitBox.y + creature[i].hitBox.height/2 + ctxOy, mAnimate*10, 0, Math.PI*2)
+			ctx.stroke();
+			ctx.closePath();
+			
+			ctx.beginPath();
+			ctx.arc(creature[i].x +creature[i].hitBox.x + creature[i].hitBox.width/2 +ctxOx, creature[i].y +creature[i].hitBox.y + creature[i].hitBox.height/2 + ctxOy, mAnimate*12, 0, Math.PI*2)
+			ctx.stroke();
+			ctx.closePath();*/
+			if(creature[i].stats.type != creature[cS].stats.type){
+				lightRegion(creature[i].x +creature[i].hitBox.x + creature[i].hitBox.width/2, creature[i].y +creature[i].hitBox.y +creature[i].hitBox.height* 0.2, 3+Math.abs(Math.round(creature[i].sx)), 0.3+ Math.random()/2);
+				lightRegion(creature[i].x +creature[i].hitBox.x + rand(creature[i].hitBox.width/2), creature[i].y +creature[i].hitBox.y + creature[i].hitBox.height/2, 5 +Math.abs(Math.round(creature[i].sx)), 0.5);
+				lightRegion(creature[i].x +creature[i].hitBox.x + creature[i].hitBox.width/2, creature[i].y +creature[i].hitBox.y + creature[i].hitBox.height*0.8, 3+Math.abs(Math.round(creature[i].sx)), 0.3);
+			}
+		
+		}
+		
+		
+		
+		//Place visibility on all moving creatures
+		
+		
+		for(var i = 0; i < lightGrid.length; i++){
+			for(var j = 0; j < lightGrid[i].length; j++){
+				
+				finalShade = (lightGrid[i][j])*baseShade / 4//+ Math.random()*0.2;
+				if(finalShade < 0) finalShade = 0
+				else if(finalShade > 0.9) finalShade = 0.9;
+				
+				ctx.globalAlpha = finalShade
+				ctx.fillRect(i*lightRes + Ox,j*lightRes + Oy,lightRes,lightRes);
+				
+				lightGrid[i][j] = 0
+					
+			}
+		}
+		
+	}
 	
 	
 	function shade(){	
@@ -5513,6 +5827,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 		var t1, t2;
 		var baseShade = 0.9//0.85
 		
+		var finalShade = 0;
 		var extraShade = heartTimer / heartDelay;
 		ctx.fillStyle = 'black'
 		
@@ -5523,14 +5838,14 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 
 		for(var i = 0; i < lightGrid.length; i++){
 			for(var j = 0; j < lightGrid[i].length; j++){
-				if(1- lightGrid[i][j] < 0) ctx.globalAlpha = 0
-				else ctx.globalAlpha = 1 - lightGrid[i][j]
+				finalShade = (1- lightGrid[i][j])*baseShade;
 				
+				if(finalShade < 0) finalShade = 0
+				else if(finalShade > 1) finalShade = 1;
 				//ctx.fillStyle = lightGridC[i][j].getCol();
-				ctx.globalAlpha = ctx.globalAlpha * baseShade
-			
-				ctx.fillRect(i*lightRes + Ox,j*lightRes + Oy,lightRes,lightRes);
 				
+				ctx.globalAlpha = finalShade;
+				ctx.fillRect(i*lightRes + Ox,j*lightRes + Oy,lightRes,lightRes);
 				
 				lightGrid[i][j] = 0
 				//lightGridC[i][j].r = 0
@@ -5568,7 +5883,7 @@ mainMenuLevel.wallPanels.push(new wordWall(750,560, 'BY ADAM GUZY',5));
 			ctx.fillText(this.frame + "/" + this.endFrame, 50,50);
 		}
 		this.load = function(){
-			
+			dimming = 1;
 			stopSound();
 			wallPanels = this.lev.wallPanels
 			wall = this.lev.wall
@@ -5894,7 +6209,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 		//result.weapon.push(PISTOL());
 		
 		result.giveGun(PISTOL(), 3);
-		
+		result.stats.sight = 550
 		//result.weapon.push(null);
 	//	if(t == 0) result.weapon.push(MarinePISTOL());
 	//	else result.weapon.push(MarinePISTOL());
@@ -5956,6 +6271,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 		result.greets.push("Please no more!");
 		result.greets.push("We're sorry!");
 		result.greets.push("Please!");
+		result.stats.sight = 500
 		var temp = 0
 		if(Math.random() < 0.5) {//male
 			result.stats.torso = 4
@@ -6595,16 +6911,49 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 	}
 	
 	
+	function lightDimmer(a,b,p, t, factor){
+		var result = Trap(a,b,p, true);
+		result.factor = factor
+
+		result.timer = 0;
+		var type = Number(t)
+		if(type == 0){//set lights to
+			result.collect = function(){
+				dimming = this.factor;
+				this.x = -1000
+			}
+		}else if(type == 1){//flicker
+			result.collect = function(){
+				flashing += 20;
+				this.x = -1000
+			}
+		}else{
+			result.collect = function(){
+				/*if(this.timer == 0){
+					rumble = this.dur;
+					this.timer = 100;
+				}else this.timer--;*/
+				rumber = this.dur;
+				
+			}
+		
+		
+		}
+		
+		return result;
+	}
+	
+	
 	
 	function spawner(a,b, type, lev, r){
 		this.x = a
 		this.y = b
-		this.type = type
+		this.type = Number(type)
 		this.rate = r
 		this.counter = 0
 		this.spawnx = a;
 		this.spawny = b;
-		this.lev = lev;
+		this.lev = Number(lev);
 		
 		this.draw = function(){
 			this.counter++
@@ -6643,8 +6992,8 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 		result.message = ""
 		result.title = ""
 		result.pic = blankPic
-		result.type = type
-		result.lev = lev
+		result.type = Number(type)
+		result.lev = Number(lev)
 		
 		var spawnx = ""
 		var spawny = ""
@@ -6716,6 +7065,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 		result.stats.hair = -1
 		result.stats.type = t
 		result.sw = 1
+		result.stats.sight = 500
 		return result
 	}
 	
@@ -6723,6 +7073,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 		var result = createCreature(80,45,40,155);
 		result.x = a;
 		result.y = b;
+		result.stats.sight = 400
 		result.greeting = addSound('Sounds/bugGreeting.ogg');
 		result.weapon.push(Monster2Punch());
 		result.weapon.push(insectHeal());
@@ -7082,6 +7433,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 		var result = createCreature(80,45,40,155);
 		result.x = a;
 		result.y = b;
+		result.stats.sight = 230
 		result.greets.push("Another one!");
 		result.greets.push("Kill it!");
 		result.greets.push("It's mine!");
@@ -7127,7 +7479,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 		if(Math.random() > 0.5) result.greeting = addSound('Sounds/greeting2.ogg');
 		else result.greeting = addSound('Sounds/greeting1.ogg')
 		
-		
+		result.stats.sight = 500
 		//result.stats.health = 180;
 		result.stats.torso = rand(2) + 1;
 		result.stats.legs= 2 + rand(2);
@@ -7179,6 +7531,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 		result.greets.push("Time to feast!");
 		result.greets.push("More prey!");
 		result.greets.push("Easy meat.");
+		result.stats.sight = 600
 		if(Math.random() > 0.5) result.greeting = addSound('Sounds/greeting2.ogg');
 		else result.greeting = addSound('Sounds/greeting1.ogg')
 		var randType = Math.random();
@@ -7249,7 +7602,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 		result.stats.wing = 0
 		result.stats.hair = rand(5)+1
 		result.stats.type = 1
-		
+		result.stats.sight = 200
 		//result.portStats.mouth = rand(3)
 		result.portStats.eyes = rand(portReptileEyes.length)
 		
@@ -7266,6 +7619,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 		result.greets.push("Not another one");
 		result.greets.push("Kill it quick!");
 		result.greets.push("Putrid creature!");
+		result.stats.sight = 500
 		if(Math.random() < 0.4){
 			result.giveGun(SMG(), 2);
 			for(var i=0; i < 5; i++) result.levelUP();
@@ -7301,6 +7655,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 		result.greets.push("Break its bones!");
 		result.greets.push("Make it bleed");
 		result.greets.push("More prey meat.");
+		result.stats.sight = 700
 		if(Math.random() < 0.4){
 			result.giveGun(SMG(), 2);
 			result.giveGun(PISTOL(), 3);
@@ -7417,7 +7772,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 			facing:0, 	//0 right, 1- left: based on mouse position
 			cFloor:0,
 			hitBox:{x:a,y:b,width:c,height:d},
-			stats:{armorPlate:false, speed:5+Math.random(), jump:10, health:100, maxHealth:100, armor:0, arm:0, torso:0, legs:0, hair:1, abdomen:0, hasArms:true, wings:0, type:0}, //type 0- Insect, 1-Reptile
+			stats:{sight:300, armorPlate:false, speed:5+Math.random(), jump:10, health:100, maxHealth:100, armor:0, arm:0, torso:0, legs:0, hair:1, abdomen:0, hasArms:true, wings:0, type:0}, //type 0- Insect, 1-Reptile
 			weapon:wArray, 
 			sw:0,
 			light:true,
@@ -7439,9 +7794,12 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 			},
 			enemies: eArray,
 			targeter:16,
+			nemesis:null,
 			getEnemies: function(){
 				this.enemies = [];
-				for(var i=0; i < creature.length; i++) if(this.stats.type != creature[i].stats.type && creature[i].stats.health > 0) this.enemies.push(creature[i]);
+				if(this.nemesis != null && this.nemesis.stats.health > 0) this.enemies[0] = this.nemesis;
+	
+				for(var i=0; i < creature.length; i++) if(this.stats.type != creature[i].stats.type && creature[i].stats.health > 0 && dist(this.x, this.y, creature[i].x, creature[i].y) < this.stats.sight) this.enemies.push(creature[i]);
 			},
 			move:function(){
 			
@@ -7821,7 +8179,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 			},
 			lGun:-1,
 			rGun:-1,
-			goggles:rand(2),
+			goggles:1,//rand(2), //Totally unused at this time
 			drawIcon:function(x,y, pw, ph){
 				
 				if(this.stats.type == 3){
@@ -7894,9 +8252,10 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 				var off = 0;
 				if(this.state != 0) off = 10;
 			
-				
+			
 				if(this.stats.type == 0){	//Insect
 					if(this.stats.health > 0){
+					
 						//hip gun!
 						ctx.translate(x+100,y + 120 + off)
 						ctx.rotate(degRad(35))
@@ -8335,7 +8694,11 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 				else if(this.aimer.y > this.taimer.y + 100) this.aimer.y-=dA.y/5;
 				else this.aimer.y = this.taimer.y
 				
-				
+				//Shadow for character
+				if(this.stats.health > 0){
+					if(this.state == 4) ctx.drawImage(shadow,this.x+ this.hitBox.x - 10, this.y+ this.hitBox.y+45, this.hitBox.width/2, this.hitBox.height-45);
+					else 	if(this.stats.health > 0)ctx.drawImage(shadow,this.x+ this.hitBox.x - 10, this.y+ this.hitBox.y+20, this.hitBox.width/2, this.hitBox.height-20);
+				}
 				if(this.sw >= this.weapon.length) this.sw = 0;
 				//if(this.aimer.x >= this.x + 100){
 				if(this.weapon.length > 0){
@@ -8400,6 +8763,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 				
 				this.y += this.sy;
 				
+				//if(this.stats.health > 0)ctx.drawImage(shadow,this.x+ this.hitBox.x - 30, this.y+ this.hitBox.y+20, this.hitBox.width/2, this.hitBox.height-20);
 				
 				if(this.state == 0){//Standing Still
 					if(this.facing==0)	{
@@ -8409,6 +8773,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 					}
 					this.sx = 0;
 					this.aimArm(0);
+				
 					//this.hitBox.y = 45
 					//this.hitBox.height = 155
 				}else if(this.state == 1){//Jumping 
@@ -8420,6 +8785,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 					//this.hitBox.height = 155
 					if(ani == 0)this.aniFrame++;
 					if(this.aniFrame > 2) this.aniFrame = 0;
+					
 				}else if(this.state == 2){//walking right
 					if(this.facing == 0){
 						this.drawBody(this.aniFrame, this.x,this.y);
@@ -8452,7 +8818,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 					if(this.aniFrame > 8) this.aniFrame = 1;
 	
 				}else if(this.state == 4){//crouch
-					
+						
 						if(this.facing == 0) {
 							this.drawBody(9, this.x,this.y + 25);
 						}else {
@@ -8519,8 +8885,8 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 					//lightArea(this.aimer.x, this.aimer.y,1,0.1);
 					//ctx.fillStyle = 'yellow'
 					//ctx.fillText(Math.floor(dc) + " " + (1-dc/1200)/10, this.x, this.y);
-					if(dc > 50 && dc < 1200) lightRegion(this.aimer.x,this.aimer.y, Math.floor((dc/2)/lightRes), (1- dc/1200)/3);
-					else if(dc <= 50) lightRegion(this.aimer.x,this.aimer.y, 5, 0.2);
+					if(dc > 50 && dc < 1200) lightRegion(this.aimer.x,this.aimer.y, Math.floor((dc/2)/lightRes), (1- dc/1200)/3)/dimming;
+					else if(dc <= 50) lightRegion(this.aimer.x,this.aimer.y, 5, 0.2/dimming);
 				}
 				//	Path stuff
 				/*
@@ -8878,7 +9244,7 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 				}else if(this.fireCool <= 0) {
 					this.weapon[this.sw].clip--;
 					//lightArea(sx,sy, 2, 0.5);
-					lightRegion(sx,sy, 16, 0.4);
+					lightRegion(sx,sy, 16, 0.4/dimming);
 				}
 				}
 				
@@ -8905,8 +9271,9 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 						//Make creature just hit target this one
 						
 						this.gainXP(Math.round(this.weapon[this.sw].stats.damage / 5));
-						creature[results[bestI].t].enemies[0] = this
-						creature[results[bestI].t].target = 0
+						//creature[results[bestI].t].enemies[0] = this
+						creature[results[bestI].t].nemesis = this
+						//creature[results[bestI].t].target = 0
 						if(creature[results[bestI].t].stats.type == 3){
 							if(creature[results[bestI].t].weapon[creature[results[bestI].t].sw].useless) creature[results[bestI].t].sw = 1;
 						}
@@ -9422,11 +9789,15 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 	
 	
 	
-	function lightRegion(x,y,r,intensity){
+	function lightRegion(x,y,r,inty){
 		gX = Math.floor((x + ctxOx - ctxOx%lightRes)/lightRes) + 1
 		gY = Math.floor((y + ctxOy - ctxOy%lightRes)/lightRes) + 1
+		
+		var intensity = inty * dimming
+		
 		var bOffx = gX - r;
 		var bOffy = gY - r;
+		if(intensity > 0.01){
 		if(brushes[r] == null) brushes[r] = new Brush(r*2 + 1);
 		
 		if(gX + r < lightGrid.length || gX - r >= 0 || gY + r < lightGrid[0].length || gY -r >= 0){
@@ -9434,11 +9805,14 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 				for(var j = gY - r; j <= gY+r; j++){
 					if(i >= 0 && i < lightGrid.length && j >= 0 && j < lightGrid[0].length && brushes[r].row[i-bOffx][j-bOffy] <= r){
 						lightGrid[i][j]+= intensity *(r/(brushes[r].row[i-bOffx][j-bOffy]) -1)
+					
 					}
 				}
 			}
 		}
+		}
 	}
+	
 	
 		function lightRegionCol(x,y,r,intensity, col){
 		gX = Math.floor((x + ctxOx - ctxOx%lightRes)/lightRes) + 1
@@ -9467,10 +9841,12 @@ cutscene[0].lev.wallPanels.push(new ForeGround(600,300, wallFeatures[10], 0,0.5)
 		}
 	}
 	
-	function lightRegionSlow(x,y,r,intensity){
+	function lightRegionSlow(x,y,rad,inty){
 		//var ts = Date.now();
 		gX = Math.floor((x + ctxOx)/lightRes) + 1
 		gY = Math.floor((y + ctxOy)/lightRes) + 1
+		var intensity = inty
+		var r = rad
 		if(gX + r < lightGrid.length || gX - r >= 0 || gY + r < lightGrid[0].length || gY -r >= 0){
 			for(var i = gX - r; i <= gX+r; i++){
 				for(var j = gY - r; j <= gY+r; j++){
@@ -9941,7 +10317,7 @@ window.addEventListener('keyup', function(evt){
 	//2 50
 	//3 51
 	
-	
+
 	//w 87
 	//a 65
 	//s 83
@@ -10052,6 +10428,24 @@ window.addEventListener('keyup', function(evt){
 						creature[i].sy = 0
 						creature[i].state = 0;
 					}
+				}
+			
+			}
+		}else if (key == 86){
+			if(screen == 5){
+				if(creature[cS].stats.type == 0){//insect
+					if(videoMode == 1){
+						videoMode = 3
+					}else videoMode = 1;
+				}else if(creature[cS].stats.type == 1){//reptile
+					if(videoMode == 1){
+						videoMode = 3
+					}else videoMode = 1;
+				}else{//human
+					if(videoMode == 1){
+						videoMode = 2
+					}else videoMode = 1;
+				
 				}
 			
 			}
@@ -10229,6 +10623,7 @@ window.addEventListener('keyup', function(evt){
 			}
 			if(this.seq % 2 == 0 && this.seq < 5){
 				roundLight(this.x, this.y, Math.random() * 10, 10);
+				lightRegion(this.x,this.y, 10, 0.5);
 			}
 			ctx.globalAlpha = 1;
 			this.seq++;
@@ -12508,7 +12903,7 @@ level[3].wallPanels.push(new fan(1120,220, 0.4,0,1));
 
 
 
-level[4].exits.push(new Exit(600,300, 5, true, 650, 210));
+level[4].exits.push(new Exit(600,300, 2, true, 650, 210));
 level[3].exits.push(new Exit(1850,930, 3, false, 150, 400));
 
 
@@ -18398,6 +18793,44 @@ level[23].foreGround.push(new ForeGround(680,110, bioPic[74]));
 level[23].wallPanels.push(new ForeGround(210,600, bioPic[68]));level[24].foreGround.push(new ForeGround(1330,180, bioPic[70]));level[25].wallPanels.push(new ForeGround(1110,300, bioPic[73]));
 level[26].wallPanels.push(new ForeGround(820,300, bioPic[75]));
 level[27].wallPanels.push(new ForeGround(1370,500, bioPic[68]));
+level[3].wallPanels.push(new ForeGround(1230,950, wallFeatures[50]));
+level[3].wallPanels.push(new ForeGround(1680,1020, wallFeatures[63]));
+level[3].wallPanels.push(new ForeGround(520,1020, wallFeatures[60]));
+level[3].wallPanels.push(new ForeGround(520,990, wallFeatures[61]));
+level[3].wallPanels.push(new ForeGround(1760,670, wallFeatures[61]));level[3].wallPanels.push(new ForeGround(1810,700, wallFeatures[48]));
+level[3].wallPanels.push(new ForeGround(1600,950, wallFeatures[50]));
+
+level[4].foreGround.push(new ForeGround(460,300, wallFeatures[49]));
+level[6].foreGround.push(new ForeGround(1310,1000, wallFeatures[62]));
+level[6].foreGround.push(new ForeGround(850,1000, wallFeatures[62]));
+level[7].wallPanels.push(new ForeGround(1160,270, wallFeatures[60]));
+level[7].wallPanels.push(new ForeGround(1190,270, wallFeatures[60]));
+level[7].wallPanels.push(new ForeGround(1180,240, wallFeatures[61]));
+level[7].wallPanels.push(new ForeGround(660,270, wallFeatures[63]));
+level[8].wallPanels.push(new ForeGround(690,670, wallFeatures[63]));
+level[8].wallPanels.push(new ForeGround(750,670, wallFeatures[60]));
+level[8].wallPanels.push(new ForeGround(760,640, wallFeatures[60]));
+level[8].wallPanels.push(new ForeGround(780,670, wallFeatures[61]));
+level[12].wallPanels.push(new Animator(600,1060, animators[6].pic));
+level[12].wallPanels.push(new Animator(650,1060, animators[7].pic));
+level[13].wallPanels.push(new ForeGround(1540,800, wallFeatures[53]));
+level[13].wallPanels.push(new ForeGround(1760,970, wallFeatures[63]));
+level[13].wallPanels.push(new ForeGround(1110,970, wallFeatures[60]));
+level[13].wallPanels.push(new ForeGround(940,270, wallFeatures[60]));
+level[13].wallPanels.push(new ForeGround(1110,200, wallFeatures[50]));
+level[13].wallPanels.push(new ForeGround(800,300, wallFeatures[48]));
+level[15].wallPanels.push(new ForeGround(1380,700, wallFeatures[48]));
+level[15].wallPanels.push(new ForeGround(1560,770, wallFeatures[61]));
+level[15].wallPanels.push(new ForeGround(1530,770, wallFeatures[61]));
+level[15].wallPanels.push(new ForeGround(1540,740, wallFeatures[61]));
+level[15].wallPanels.push(new ForeGround(660,300, wallFeatures[50]));
+level[16].wallPanels.push(new ForeGround(1100,580, wallFeatures[50]));
+level[16].wallPanels.push(new ForeGround(1600,500, wallFeatures[48]));level[16].wallPanels.push(new ForeGround(840,580, wallFeatures[47]));
+level[18].wallPanels.push(new ForeGround(1420,570, wallFeatures[63]));
+level[19].wallPanels.push(new ForeGround(1110,400, wallFeatures[54]));
+level[19].wallPanels.push(new ForeGround(1210,400, wallFeatures[54]));
+level[19].wallPanels.push(new ForeGround(1590,400, wallFeatures[55]));
+level[19].wallPanels.push(new ForeGround(530,400, wallFeatures[58]));
 
 
 mainMenuLevel.wallPanels.push(new ForeGround(130,100, pipes[11]));
@@ -19811,7 +20244,7 @@ level[42].wallPanels.push(new wordWall(1570,880, 'utility',5));
 level[42].wallPanels.push(new wordWall(1570,890, 'corridor',5));level[42].wallPanels.push(new ForeGround(1560,830, wallFeatures[3]));
 level[42].exits.push(new Exit(300,500, 41, true, 1300, 800));
 level[42].exits.push(new Exit(1700,900, 43, true, 200, 200));
-
+level[42].exits.push(new Exit(1700,300, 44, true, 300, 200));
 
 level[43] = new Level('Blockage')
 level[43].exits.push(new Exit(300,300, 42, true, 1600, 800));
@@ -20007,6 +20440,8 @@ level[44].dLights.push(new GenLight(1200,250,4, 0.8));
 level[44].dLights.push(new spinLight(1550,240,50,0));
 level[44].creature.push(ScientistArmed(1460,200,3));
 level[44].creature.push(ScientistArmed(1520,200,3));
+level[44].exits.push(new Exit(400,300, 42, true, 1600, 200));
+level[44].exits.push(new Exit(1700,300, 45, true, 1600, 800));
 
 level[45] = new Level('Equipment Processing Sector 2')
 level[45].wallPanels.push(new Panel(1700,800, panelHall[1], 1,0.3));
@@ -20154,8 +20589,8 @@ level[45].dLights.push(new spinLight(160,830,50,0));
 
 level[45].lamps.push(new Lamp(340,820));
 level[45].lamps.push(new Lamp(840,820));
-
-
+level[45].exits.push(new Exit(1700,900, 44, true, 1600, 200));
+level[45].exits.push(new Exit(570,900, 46, true, 300, 600));
 
 level[46] = new Level('Equipment Loading')
 level[46].wallPanels.push(new Panel(200,700, panelHall[2], 2,0.6));
@@ -20315,8 +20750,9 @@ level[46].dLights.push(new WaterLight(1150,1100,150, 4));
 level[46].dLights.push(new spinLight(1620,940,50,0));
 level[46].wallPanels.push(new ForeGround(1260,830, foreGPic[6]));
 level[46].wallPanels.push(new ForeGround(1210,830, foreGPic[7]));
-
-
+level[46].elevators.push(new elevator(200,800, 0,0));
+level[46].exits.push(new Exit(1700,1000, 47, true, 840, 900));
+level[46].exits.push(new Exit(200,700, 45, true, 470, 800));
 
 level[47] = new Level('Product Loading')
 level[47].wallPanels.push(new Panel(200,1000, panelHall[12], 2,0.3));
@@ -20420,28 +20856,12 @@ level[47].foreGround.push(new ForeGround(1400,1000, wallFeatures[2]));
 level[47].foreGround.push(new ForeGround(1400,900, wallFeatures[2]));
 level[47].creature.push(Marine(1250,910,3));
 level[47].creature.push(Marine(1310,900,3));
-level[47].wallPanels.push(new spawner(800,900, '0', '5','83'));
-
+level[47].wallPanels.push(new spawner(800,900, '0', 5,83));
+level[47].exits.push(new Exit(1600,1000, 48, true, 200, 100));
+level[47].exits.push(new Exit(900,1000, 46, true, 1600, 900));
 
 level[48] = new Level('Product Loading Sector 2')
-level[48].wallPanels.push(new Panel(200,100, panelHall[1], 1,0.6));
-level[48].wallPanels.push(new Panel(300,100, panelHall[1], 1,0.6));
-level[48].wallPanels.push(new Panel(400,100, panelHall[1], 1,0.6));
-level[48].wallPanels.push(new Panel(500,100, panelHall[1], 1,0.6));
-level[48].wallPanels.push(new Panel(600,100, panelHall[1], 1,0.6));
-level[48].wallPanels.push(new Panel(200,200, panelHall[1], 2,0.6));
-level[48].wallPanels.push(new Panel(300,200, panelHall[1], 2,0.6));
-level[48].wallPanels.push(new Panel(400,200, panelHall[1], 2,0.6));
-level[48].wallPanels.push(new Panel(500,200, panelHall[1], 0,0.6));
-level[48].wallPanels.push(new Panel(600,200, panelHall[1], 0,0.6));
-level[48].wallPanels.push(new Panel(600,300, panelHall[1], 0,0.6));
-level[48].wallPanels.push(new Panel(500,300, panelHall[1], 0,0.6));
-level[48].wallPanels.push(new Panel(500,400, panelHall[1], 0,0.6));
-level[48].wallPanels.push(new Panel(600,400, panelHall[1], 0,0.6));
-level[48].wallPanels.push(new Panel(500,500, panelHall[1], 0,0.6));
-level[48].wallPanels.push(new Panel(600,500, panelHall[1], 0,0.6));
-level[48].wallPanels.push(new Panel(500,600, panelHall[1], 2,0.6));
-level[48].wallPanels.push(new Panel(600,600, panelHall[1], 2,0.6));
+
 level[48].wall.push(createWall(200,90, 100,30,floor[6]));
 level[48].wall.push(createWall(710,290, 100,30,floor[6]));
 level[48].wall.push(createWall(700,200, 30,100,sideWall[1]));
@@ -20455,7 +20875,7 @@ level[48].wall.push(createWall(170,200, 30,100,sideWall[1]));
 level[48].wall.push(createWall(170,100, 30,100,sideWall[1]));
 level[48].wall.push(createWall(170,300, 30,100,sideWall[5]));
 level[48].wall.push(createWall(170,90, 30,100,sideWall[5]));
-level[48].wallPanels.push(new AniDoor(200,100, 0,1));
+
 level[48].wall.push(createWall(500,700, 100,30,floor[5]));
 level[48].wall.push(createWall(1000,700, 100,30,floor[5]));
 level[48].wall.push(createWall(470,300, 30,100,sideWall[9]));
@@ -20498,14 +20918,34 @@ level[48].wallPanels.push(new Panel(1300,600, panelHall[3], 2,0.3));
 level[48].wallPanels.push(new Panel(1400,600, panelHall[3], 2,0.3));
 level[48].wallPanels.push(new Panel(1500,600, panelHall[3], 2,0.3));
 level[48].wallPanels.push(new Panel(1600,600, panelHall[3], 2,0.3));
-level[48].wallPanels.push(new cBelt(820,650,'16','13'));
 level[48].wallPanels.push(new ForeGround(820,650, wallFeatures[38]));
 level[48].wallPanels.push(new ForeGround(1020,650, wallFeatures[38]));
 level[48].wallPanels.push(new ForeGround(1570,650, wallFeatures[38]));
 level[48].wallPanels.push(new ForeGround(1370,650, wallFeatures[38]));
-
+level[48].wallPanels.push(new cBelt(820,650,'16','13'));
 level[48].wallPanels.push(new tankMover(740,470,4,6));
 level[48].wallPanels.push(new tankMover(1270,470,4,6));
+level[48].wallPanels.push(new Panel(200,100, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(300,100, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(400,100, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(500,100, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(600,100, panelHall[1], 1,0.6));
+level[48].wallPanels.push(new Panel(200,200, panelHall[1], 2,0.6));
+level[48].wallPanels.push(new Panel(300,200, panelHall[1], 2,0.6));
+level[48].wallPanels.push(new Panel(400,200, panelHall[1], 2,0.6));
+level[48].wallPanels.push(new Panel(500,200, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(600,200, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(600,300, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(500,300, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(500,400, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(600,400, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(500,500, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(600,500, panelHall[1], 0,0.6));
+level[48].wallPanels.push(new Panel(500,600, panelHall[1], 2,0.6));
+level[48].wallPanels.push(new Panel(600,600, panelHall[1], 2,0.6));
+
+level[48].wallPanels.push(new AniDoor(200,100, 0,1));
+
 
 
 level[48].elevators.push(new CargoElevator(500,700, 250,400));
@@ -20549,14 +20989,417 @@ level[48].foreGround.push(new ForeGround(700,300, pipes[13]));
 level[48].foreGround.push(new ForeGround(700,400, pipes[17]));
 level[48].foreGround.push(new ForeGround(700,500, pipes[17]));
 level[48].foreGround.push(new ForeGround(700,600, pipes[17]));
-level[48].lamps.push(new BigLamp(860,430));
-level[48].lamps.push(new BigLamp(1460,430));level[48].lamps.push(new UpLamp(1110,670));
+//level[48].lamps.push(new BigLamp(860,430));
+//level[48].lamps.push(new BigLamp(1460,430));
+level[48].lamps.push(new UpLamp(1110,670));
 level[48].lamps.push(new UpLamp(1280,670));
 level[48].lamps.push(new UpLamp(680,670));level[48].lamps.push(new UpLamp(510,670));
 level[48].wallPanels.push(new AniDoor(1700,500, 0,1));
 
+level[48].wall.push(createWall(1400,290, 100,30,floor[6]));
+level[48].wall.push(createWall(1200,290, 100,30,floor[6]));
+level[48].wall.push(createWall(1900,300, 30,100,sideWall[8]));
+level[48].wall.push(createWall(1900,290, 30,100,sideWall[5]));
+level[48].wall.push(createWall(1900,700, 30,100,sideWall[5]));
+
+level[48].wallPanels.push(new ForeGround(1300,600, wallFeatures[0]));
+level[48].wallPanels.push(new ForeGround(1400,600, wallFeatures[0]));
+level[48].wallPanels.push(new ForeGround(1500,600, wallFeatures[0]));
+level[48].wallPanels.push(new ForeGround(1600,600, wallFeatures[0]));level[48].wallPanels.push(new ForeGround(1000,600, wallFeatures[34]));
+level[48].wallPanels.push(new ForeGround(1000,500, wallFeatures[34]));
+level[48].wallPanels.push(new ForeGround(1000,400, wallFeatures[34]));
+level[48].wallPanels.push(new ForeGround(1300,600, wallFeatures[35]));
+level[48].wallPanels.push(new ForeGround(1300,500, wallFeatures[35]));
+level[48].wallPanels.push(new ForeGround(1300,400, wallFeatures[35]));
+level[48].wallPanels.push(new ForeGround(700,600, wallFeatures[35]));
+level[48].wallPanels.push(new ForeGround(700,500, wallFeatures[35]));
+level[48].wallPanels.push(new ForeGround(700,400, wallFeatures[35]));
+level[48].wallPanels.push(new ForeGround(1600,600, wallFeatures[34]));
+level[48].wallPanels.push(new ForeGround(1600,500, wallFeatures[34]));
+level[48].wallPanels.push(new ForeGround(1600,400, wallFeatures[34]));
+
+level[48].exits.push(new Exit(300,200, 47, true, 1500, 900));
+level[48].exits.push(new Exit(1800, 600, 49, true, 100, 200));
+
+level[49] = new Level('Production Sector B')
+level[49].wallPanels.push(new Panel(300,200, panelHall[3], 0,0.9));
+level[49].wallPanels.push(new Panel(400,200, panelHall[3], 0,0.9));
+level[49].wallPanels.push(new Panel(500,200, panelHall[3], 0,0.9));
+level[49].wallPanels.push(new Panel(600,200, panelHall[3], 0,0.9));
+level[49].wallPanels.push(new Panel(700,200, panelHall[3], 0,0.9));
+level[49].wallPanels.push(new Panel(800,200, panelHall[3], 0,0.9));
+level[49].wallPanels.push(new Panel(900,200, panelHall[3], 0,0.9));
+level[49].wallPanels.push(new Panel(300,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(400,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(500,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(600,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(700,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(800,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(900,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(1100,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(1200,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(1300,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(1400,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(1000,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(1500,300, panelHall[3], 2,0.9));
+level[49].wallPanels.push(new Panel(1500,200, panelHall[3], 0,0.9));
+level[49].wallPanels.push(new Panel(1400,200, panelHall[3], 0,0.9));
+level[49].wallPanels.push(new Panel(1300,200, panelHall[3], 0,0.9));
+level[49].wallPanels.push(new Panel(1200,200, panelHall[3], 0,0.9));
+level[49].wallPanels.push(new Panel(1000,200, panelHall[3], 0,0.9));
+level[49].wallPanels.push(new Panel(1100,200, panelHall[3], 0,0.9));level[49].wallPanels.push(new cBelt(240,300,'4','3'));
+level[49].wallPanels.push(new cBelt(600,300,'12','5'));
+level[49].wallPanels.push(new ForeGround(600,300, wallFeatures[38]));
+level[49].wallPanels.push(new ForeGround(600,350, wallFeatures[38]));
+level[49].wallPanels.push(new ForeGround(1150,300, wallFeatures[38]));
+level[49].wallPanels.push(new ForeGround(1150,350, wallFeatures[38]));
+level[49].wallPanels.push(new ForeGround(390,300, wallFeatures[38]));
+level[49].wallPanels.push(new ForeGround(390,350, wallFeatures[38]));
+level[49].wallPanels.push(new Panel(300,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new Panel(400,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new Panel(500,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new Panel(600,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new Panel(700,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new Panel(800,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new Panel(900,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new Panel(1000,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new Panel(1100,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new Panel(1200,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new Panel(1300,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new Panel(1400,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new Panel(1500,100, panelHall[3], 1,0.9));
+level[49].wallPanels.push(new ForeGround(1400,200, door[1], '', 0.5));
+level[49].wallPanels.push(new ForeGround(1330,300, wallFeatures[44]));
+level[49].wallPanels.push(new wordWall(1380,260, 'admin',5));
+level[49].wallPanels.push(new wordWall(1210,250, 'dock 4',5));
+level[49].wallPanels.push(new wordWall(450,250, 'dock 3',5));
+level[49].wallPanels.push(new wordWall(660,250, 'warehouse',5));
+level[49].wallPanels.push(new ForeGround(490,290, wallFeatures[6]));
+level[49].wallPanels.push(new ForeGround(1200,300, wallFeatures[22]));
+level[49].wallPanels.push(new ForeGround(430,300, wallFeatures[22]));
+level[49].wallPanels.push(new Panel(100,300, panelHall[1], 2,0.3));
+level[49].wallPanels.push(new Panel(200,300, panelHall[1], 2,0.3));
+level[49].wallPanels.push(new Panel(1600,100, panelHall[1], 1,0.3));
+level[49].wallPanels.push(new Panel(1700,100, panelHall[1], 1,0.3));
+level[49].wallPanels.push(new Panel(1600,200, panelHall[1], 0,0.3));
+level[49].wallPanels.push(new Panel(1700,200, panelHall[1], 0,0.3));
+level[49].wallPanels.push(new Panel(1600,300, panelHall[1], 2,0.3));
+level[49].wallPanels.push(new Panel(1700,300, panelHall[1], 2,0.3));
+level[49].wallPanels.push(new robotArm(290,220,'4','6'));
+level[49].wallPanels.push(new robotArm(750,220,'4','6'));
+level[49].wallPanels.push(new robotArm(1050,220,'4','6'));
+level[49].wallPanels.push(new Panel(200,200, panelHall[1], 0,0.3));
+level[49].wallPanels.push(new Panel(100,200, panelHall[1], 0,0.3));
+level[49].wallPanels.push(new Panel(200,100, panelHall[1], 1,0.3));
+level[49].wallPanels.push(new Panel(100,100, panelHall[1], 1,0.3));
+level[49].wallPanels.push(new AniDoor(100,200, 0,0));
+level[49].wallPanels.push(new AniDoor(1600,200, 0,0));
+level[49].wallPanels.push(new Panel(1800,100, panelHall[2], 1,0.3));
+level[49].wallPanels.push(new Panel(1800,200, panelHall[2], 0,0.3));
+level[49].wallPanels.push(new Panel(1800,300, panelHall[2], 2,0.3));level[49].wallPanels.push(new ForeGround(1500,300, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(1500,200, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(1400,200, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(1400,300, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(1300,300, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(1300,200, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(1200,200, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(1200,300, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(1100,300, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(1100,200, wallFeatures[0]));level[49].wallPanels.push(new ForeGround(1000,200, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(1000,300, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(300,300, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(400,300, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(500,300, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(600,300, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(700,300, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(800,300, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(800,200, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(700,200, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(600,200, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(500,200, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(400,200, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(300,200, wallFeatures[0]));
+level[49].wallPanels.push(new ForeGround(900,300, foreGPic[24]));
+level[49].wallPanels.push(new ForeGround(900,200, foreGPic[23]));
+level[49].wallPanels.push(new ForeGround(900,100, foreGPic[24]));
+level[49].foreGround.push(new ForeGround(300,300, wallFeatures[33]));
+level[49].foreGround.push(new ForeGround(400,300, wallFeatures[33]));
+level[49].foreGround.push(new ForeGround(500,300, wallFeatures[33]));
+level[49].foreGround.push(new ForeGround(600,300, wallFeatures[33]));
+level[49].foreGround.push(new ForeGround(800,300, wallFeatures[33]));
+level[49].foreGround.push(new ForeGround(900,300, wallFeatures[33]));
+level[49].foreGround.push(new ForeGround(1000,300, wallFeatures[33]));
+level[49].foreGround.push(new ForeGround(1500,300, wallFeatures[33]));
+level[49].foreGround.push(new ForeGround(1400,300, wallFeatures[33]));
+level[49].foreGround.push(new ForeGround(1300,300, wallFeatures[33]));
+level[49].foreGround.push(new ForeGround(1200,300, wallFeatures[33]));
+level[49].foreGround.push(new ForeGround(700,200, foreGPic[25]));
+
+level[49].foreGround.push(new ForeGround(1100,200, foreGPic[25]));
+
+level[49].foreGround.push(new ForeGround(700,300, foreGPic[26]));
+level[49].foreGround.push(new ForeGround(1100,300, foreGPic[24]));
+level[49].wallPanels.push(new ForeGround(1800,300, pipes[17]));
+level[49].wallPanels.push(new ForeGround(1800,200, pipes[17]));
+level[49].wallPanels.push(new ForeGround(1800,100, pipes[17]));level[49].wallPanels.push(new ForeGround(1830,30, pipes[11]));
+level[49].wallPanels.push(new ForeGround(800,300, wallFeatures[34]));
+level[49].wallPanels.push(new ForeGround(800,200, wallFeatures[34]));
+level[49].wallPanels.push(new ForeGround(800,100, wallFeatures[34]));
+level[49].wallPanels.push(new ForeGround(1500,300, wallFeatures[34]));
+level[49].wallPanels.push(new ForeGround(1500,200, wallFeatures[34]));
+level[49].wallPanels.push(new ForeGround(1500,100, wallFeatures[34]));
+level[49].wallPanels.push(new ForeGround(1000,300, wallFeatures[35]));
+level[49].wallPanels.push(new ForeGround(1000,200, wallFeatures[35]));
+level[49].wallPanels.push(new ForeGround(1000,100, wallFeatures[35]));
+level[49].wallPanels.push(new ForeGround(300,300, wallFeatures[35]));
+level[49].wallPanels.push(new ForeGround(300,200, wallFeatures[35]));
+level[49].wallPanels.push(new ForeGround(300,100, wallFeatures[35]));level[49].wall.push(createWall(300,400, 100,30,floor[7]));
+level[49].wall.push(createWall(800,400, 100,30,floor[7]));
+level[49].wall.push(createWall(1100,400, 100,30,floor[7]));
+level[49].wall.push(createWall(1600,400, 100,30,floor[0]));
+level[49].wall.push(createWall(1700,400, 100,30,floor[0]));
+level[49].wall.push(createWall(1800,400, 100,30,floor[0]));
+level[49].wall.push(createWall(200,400, 100,30,floor[0]));
+level[49].wall.push(createWall(100,400, 100,30,floor[0]));
+level[49].wall.push(createWall(70,300, 30,100,sideWall[1]));
+level[49].wall.push(createWall(70,200, 30,100,sideWall[1]));
+level[49].wall.push(createWall(70,100, 30,100,sideWall[1]));
+level[49].wall.push(createWall(1900,100, 30,100,sideWall[1]));
+level[49].wall.push(createWall(1900,200, 30,100,sideWall[1]));
+level[49].wall.push(createWall(1900,300, 30,100,sideWall[1]));
+level[49].wall.push(createWall(1900,400, 30,100,sideWall[5]));
+level[49].wall.push(createWall(70,400, 30,100,sideWall[5]));
+level[49].foreGround.push(new ForeGround(280,400, sideWall[6]));
+level[49].foreGround.push(new ForeGround(1590,400, sideWall[6]));
+level[49].wall.push(createWall(1400,90, 100,30,floor[6]));
+level[49].wall.push(createWall(900,90, 100,30,floor[6]));
+level[49].wall.push(createWall(400,90, 100,30,floor[6]));
+level[49].wall.push(createWall(100,90, 100,30,floor[6]));
+level[49].wall.push(createWall(70,90, 30,100,sideWall[5]));
+level[49].wall.push(createWall(1900,90, 30,100,sideWall[5]));
+level[49].foreGround.push(new ForeGround(100,120, pipes[6]));
+level[49].foreGround.push(new ForeGround(200,120, pipes[6]));
+level[49].foreGround.push(new ForeGround(1600,120, pipes[6]));
+level[49].foreGround.push(new ForeGround(1700,120, pipes[6]));
+level[49].foreGround.push(new ForeGround(1800,120, pipes[6]));
+level[49].foreGround.push(new ForeGround(1800,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(1700,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(1600,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(1500,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(1400,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(1300,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(1200,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(1100,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(1000,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(900,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(800,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(700,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(600,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(500,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(400,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(300,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(200,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(100,90, pipes[4]));
+level[49].foreGround.push(new ForeGround(700,100, foreGPic[25]));
+level[49].foreGround.push(new ForeGround(1100,100, foreGPic[26]));
+level[49].lamps.push(new Lamp(900,190));
+level[49].lamps.push(new Lamp(990,190));
+level[49].rLights.push(new staticLight(700,300, 20));
+level[49].rLights.push(new staticLight(700,200, 20));
+level[49].rLights.push(new staticLight(800,200, 20));
+level[49].rLights.push(new staticLight(800,300, 20));
+level[49].rLights.push(new staticLight(1100,200, 20));
+level[49].rLights.push(new staticLight(1100,300, 20));
+level[49].rLights.push(new staticLight(1200,300, 20));
+level[49].rLights.push(new staticLight(1200,200, 20));
+level[49].lamps.push(new BigLamp(410,150));
+level[49].lamps.push(new BigLamp(1410,150));
+level[49].lamps.push(new BigLampFlicker(160,220));
+level[49].lamps.push(new BigLampFlicker(1660,220));
+level[49].dLights.push(new spinLight(1620,240,50,0));
+level[49].dLights.push(new spinLight(120,240,50,0));
+level[49].exits.push(new Exit(1700,300, 50, true, 100,100));
+level[49].exits.push(new Exit(200,300, 48, true, 1700,500));
 
 
+level[50] = new Level('Production Sector C')
+level[50].wallPanels.push(new Panel(300,100, panelHall[2], 1,0.3));
+level[50].wallPanels.push(new Panel(400,100, panelHall[2], 1,0.3));
+level[50].wallPanels.push(new Panel(300,200, panelHall[2], 0,0.3));
+level[50].wallPanels.push(new Panel(400,200, panelHall[2], 0,0.3));
+level[50].wallPanels.push(new Panel(300,300, panelHall[2], 0,0.3));
+level[50].wallPanels.push(new Panel(400,300, panelHall[2], 0,0.3));level[50].wallPanels.push(new Panel(300,400, panelHall[2], 2,0.3));
+level[50].wallPanels.push(new Panel(400,400, panelHall[2], 2,0.3));
+level[50].wallPanels.push(new Panel(200,100, panelHall[1], 1,0.3));
+level[50].wallPanels.push(new Panel(100,100, panelHall[1], 1,0.3));
+level[50].wallPanels.push(new Panel(100,200, panelHall[1], 2,0.3));
+level[50].wallPanels.push(new Panel(200,200, panelHall[1], 2,0.3));level[50].wallPanels.push(new Panel(600,400, panelHall[12], 2,0.9));
+level[50].wallPanels.push(new Panel(700,400, panelHall[12], 2,0.9));
+level[50].wallPanels.push(new Panel(800,400, panelHall[12], 2,0.9));
+level[50].wallPanels.push(new Panel(900,400, panelHall[12], 2,0.9));
+level[50].wallPanels.push(new Panel(1100,400, panelHall[12], 2,0.9));
+level[50].wallPanels.push(new Panel(1200,400, panelHall[12], 2,0.9));
+level[50].wallPanels.push(new Panel(1300,400, panelHall[12], 2,0.9));
+level[50].wallPanels.push(new Panel(1400,400, panelHall[12], 2,0.9));
+level[50].wallPanels.push(new Panel(600,100, panelHall[12], 1,0.9));
+level[50].wallPanels.push(new Panel(700,100, panelHall[12], 1,0.9));
+level[50].wallPanels.push(new Panel(800,100, panelHall[12], 1,0.9));
+level[50].wallPanels.push(new Panel(900,100, panelHall[12], 1,0.9));
+level[50].wallPanels.push(new Panel(1100,100, panelHall[12], 1,0.9));
+level[50].wallPanels.push(new Panel(1200,100, panelHall[12], 1,0.9));
+level[50].wallPanels.push(new Panel(1300,100, panelHall[12], 1,0.9));
+level[50].wallPanels.push(new Panel(1400,100, panelHall[12], 1,0.9));
+level[50].wallPanels.push(new Panel(1100,200, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(1100,300, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(1200,300, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(1300,300, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(1400,300, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(1400,200, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(1300,200, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(1200,200, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(900,300, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(900,200, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(800,200, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(800,300, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(700,300, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(600,300, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(600,200, panelHall[12], 0,0.9));
+level[50].wallPanels.push(new Panel(700,200, panelHall[12], 0,0.9));level[50].wallPanels.push(new ForeGround(820,400, floor[1]));
+level[50].wallPanels.push(new ForeGround(930,400, floor[1]));
+level[50].wallPanels.push(new ForeGround(880,300, floor[1]));
+level[50].wallPanels.push(new ForeGround(1120,400, floor[1]));
+level[50].wallPanels.push(new ForeGround(1070,300, floor[1]));
+level[50].wallPanels.push(new ForeGround(1220,400, floor[1]));
+level[50].wallPanels.push(new ForeGround(1220,300, floor[1]));
+level[50].wallPanels.push(new ForeGround(1170,370, floor[2]));
+level[50].wallPanels.push(new ForeGround(1090,470, floor[2]));
+level[50].wallPanels.push(new ForeGround(980,370, floor[2]));
+level[50].wallPanels.push(new ForeGround(930,270, floor[2]));
+level[50].wallPanels.push(new ForeGround(790,470, floor[2]));
+level[50].wallPanels.push(new ForeGround(1240,270, floor[2]));
+level[50].wallPanels.push(new ForeGround(1320,470, floor[2]));
+level[50].wallPanels.push(new ForeGround(1320,440, floor[2]));
+level[50].wallPanels.push(new ForeGround(1360,470, floor[2]));
+level[50].wallPanels.push(new ForeGround(1350,440, floor[2]));
+level[50].wallPanels.push(new ForeGround(1340,410, floor[2]));
+level[50].wallPanels.push(new ForeGround(1410,470, floor[2]));
+level[50].wallPanels.push(new ForeGround(520,300, door[0], '', 0.5));
+level[50].wallPanels.push(new ForeGround(600,400, wallFeatures[33]));
+level[50].wallPanels.push(new ForeGround(700,400, wallFeatures[33]));
+level[50].wallPanels.push(new ForeGround(800,400, wallFeatures[33]));
+level[50].wallPanels.push(new ForeGround(900,400, wallFeatures[33]));
+level[50].wallPanels.push(new ForeGround(1100,400, wallFeatures[33]));
+level[50].wallPanels.push(new ForeGround(1200,400, wallFeatures[33]));
+level[50].wallPanels.push(new ForeGround(1300,400, wallFeatures[33]));
+level[50].wallPanels.push(new ForeGround(1400,400, wallFeatures[33]));
+level[50].wallPanels.push(new Panel(1000,400, panelHall[2], 2,0.4));
+level[50].wallPanels.push(new Panel(1000,300, panelHall[2], 0,0.4));
+level[50].wallPanels.push(new Panel(1000,200, panelHall[2], 0,0.4));
+level[50].wallPanels.push(new Panel(1000,100, panelHall[2], 1,0.4));
+level[50].wallPanels.push(new ForeGround(1000,400, pipes[17]));
+level[50].wallPanels.push(new ForeGround(1000,300, pipes[17]));
+level[50].wallPanels.push(new ForeGround(1000,200, pipes[17]));
+level[50].wallPanels.push(new ForeGround(1000,100, pipes[17]));
+level[50].wallPanels.push(new ForeGround(1030,30, pipes[11]));
+level[50].wallPanels.push(new ForeGround(900,100, wallFeatures[34]));
+level[50].wallPanels.push(new ForeGround(900,200, wallFeatures[34]));
+level[50].wallPanels.push(new ForeGround(900,300, wallFeatures[34]));
+level[50].wallPanels.push(new ForeGround(900,400, wallFeatures[34]));
+level[50].wallPanels.push(new ForeGround(1100,400, wallFeatures[35]));
+level[50].wallPanels.push(new ForeGround(1100,300, wallFeatures[35]));
+level[50].wallPanels.push(new ForeGround(1100,200, wallFeatures[35]));
+level[50].wallPanels.push(new ForeGround(1100,100, wallFeatures[35]));
+level[50].wallPanels.push(new ForeGround(600,400, wallFeatures[35]));
+level[50].wallPanels.push(new ForeGround(600,300, wallFeatures[35]));
+level[50].wallPanels.push(new ForeGround(600,200, wallFeatures[35]));
+level[50].wallPanels.push(new ForeGround(600,100, wallFeatures[35]));
+level[50].wallPanels.push(new ForeGround(1400,400, wallFeatures[34]));
+level[50].wallPanels.push(new ForeGround(1400,300, wallFeatures[34]));
+level[50].wallPanels.push(new ForeGround(1400,200, wallFeatures[34]));
+level[50].wallPanels.push(new ForeGround(1400,100, wallFeatures[34]));
+level[50].wallPanels.push(new Panel(500,200, panelHall[0], 0,0.3));
+level[50].wallPanels.push(new Panel(500,300, panelHall[0], 0,0.3));
+level[50].wallPanels.push(new Panel(500,400, panelHall[0], 2,0.3));
+level[50].wallPanels.push(new Panel(500,100, panelHall[0], 1,0.3));
+level[50].wallPanels.push(new Panel(1500,100, panelHall[0], 1,0.3));
+level[50].wallPanels.push(new Panel(1500,200, panelHall[0], 0,0.3));
+level[50].wallPanels.push(new Panel(1500,300, panelHall[0], 0,0.3));
+level[50].wallPanels.push(new Panel(1500,400, panelHall[0], 2,0.3));
+level[50].foreGround.push(new ForeGround(300,320, pipes[6]));
+level[50].foreGround.push(new ForeGround(400,320, pipes[6]));
+level[50].foreGround.push(new ForeGround(500,320, pipes[6]));
+level[50].foreGround.push(new ForeGround(1000,320, pipes[6]));
+level[50].foreGround.push(new ForeGround(300,300, pipes[4]));
+level[50].foreGround.push(new ForeGround(400,300, pipes[4]));
+level[50].foreGround.push(new ForeGround(500,300, pipes[4]));
+level[50].foreGround.push(new ForeGround(600,300, pipes[4]));level[50].foreGround.push(new ForeGround(700,300, pipes[4]));
+level[50].foreGround.push(new ForeGround(800,300, pipes[4]));
+level[50].foreGround.push(new ForeGround(900,300, pipes[4]));
+level[50].foreGround.push(new ForeGround(1000,300, pipes[4]));
+level[50].foreGround.push(new ForeGround(1100,300, pipes[4]));
+level[50].foreGround.push(new ForeGround(1200,300, pipes[4]));
+level[50].foreGround.push(new ForeGround(1300,300, pipes[1]));
+level[50].foreGround.push(new ForeGround(1300,400, pipes[5]));
+level[50].elevators.push(new CargoElevator(300,500, 20,200));
+level[50].wall.push(createWall(500,90, 100,30,floor[6]));
+level[50].wall.push(createWall(1100,90, 100,30,floor[6]));
+level[50].wall.push(createWall(1000,90, 100,30,floor[3]));
+level[50].wall.push(createWall(100,90, 100,30,floor[7]));
+level[50].wall.push(createWall(1500,90, 100,30,floor[4]));
+level[50].wall.push(createWall(1600,90, 100,30,floor[4]));
+level[50].wall.push(createWall(1700,90, 100,30,floor[4]));level[50].wallPanels.push(new ForeGround(1250,150, wallFeatures[42]));
+level[50].wallPanels.push(new ForeGround(750,150, wallFeatures[42]));
+level[50].wall.push(createWall(100,300, 100,30,floor[0]));
+level[50].wall.push(createWall(200,300, 100,30,floor[0]));
+level[50].wall.push(createWall(270,300, 30,100,sideWall[0]));
+level[50].wall.push(createWall(270,400, 30,100,sideWall[0]));
+level[50].wall.push(createWall(270,300, 30,100,sideWall[5]));
+level[50].wall.push(createWall(600,500, 100,30,floor[7]));
+level[50].wall.push(createWall(1000,500, 100,30,floor[7]));
+level[50].wall.push(createWall(70,100, 30,100,sideWall[1]));
+level[50].wall.push(createWall(70,200, 30,100,sideWall[1]));
+level[50].wall.push(createWall(70,300, 30,100,sideWall[5]));
+level[50].wall.push(createWall(70,90, 30,100,sideWall[5]));
+level[50].wall.push(createWall(500,500, 100,30,floor[0]));
+level[50].wall.push(createWall(400,500, 100,30,floor[0]));
+level[50].wall.push(createWall(300,500, 100,30,floor[0]));
+level[50].wall.push(createWall(270,500, 30,100,sideWall[5]));
+level[50].wall.push(createWall(1500,500, 100,30,floor[0]));
+level[50].wall.push(createWall(1600,500, 100,30,floor[0]));
+level[50].wall.push(createWall(1700,500, 100,30,floor[0]));
+level[50].wall.push(createWall(1800,100, 30,100,sideWall[9]));
+level[50].wall.push(createWall(1800,90, 30,100,sideWall[5]));
+level[50].wall.push(createWall(1800,500, 30,100,sideWall[5]));
+level[50].wallPanels.push(new AniDoor(100,100, 0,1));
+level[50].wallPanels.push(new Panel(1600,400, panelHall[1], 2,0.3));
+level[50].wallPanels.push(new Panel(1700,400, panelHall[1], 2,0.3));
+level[50].wallPanels.push(new Panel(1600,100, panelHall[1], 1,0.3));
+level[50].wallPanels.push(new Panel(1700,100, panelHall[1], 1,0.3));
+level[50].wallPanels.push(new Panel(1600,200, panelHall[1], 0,0.3));
+level[50].wallPanels.push(new Panel(1700,200, panelHall[1], 0,0.3));
+level[50].wallPanels.push(new Panel(1600,300, panelHall[1], 0,0.3));
+level[50].wallPanels.push(new Panel(1700,300, panelHall[1], 0,0.3));
+level[50].wallPanels.push(new AniDoor(1550,300, 0,1));
+level[50].wallPanels.push(new ForeGround(1700,400, bioPic[61]));
+level[50].wallPanels.push(new fan(1620,220, 0.2,0,1));
+level[50].wallPanels.push(new fan(1720,220, 0.2,0,1));
+level[50].wallPanels.push(new fan(1620,120, 0.2,0,1));
+level[50].wallPanels.push(new fan(1720,120, 0.2,0,1));
+level[50].lamps.push(new Lamp(520,310));
+level[50].lamps.push(new Lamp(1570,310));
+level[50].lamps.push(new BigLampFlicker(160,120));
+level[50].lamps.push(new Lamp(740,240));
+level[50].lamps.push(new Lamp(940,240));
+level[50].lamps.push(new Lamp(1140,240));
+level[50].lamps.push(new Lamp(1340,240));
+level[50].dLights.push(new spinLight(1720,310,50,0));
+level[50].items.push(messageTrap(600,400, blankPic, 'Close', "Looks like we are getting close to the main cargo area. ~~I wonder if the guards and scientists are already there, havn't seen one in a while... $0"));
+level[50].exits.push(new Exit(200,200, 49, true, 1600, 200));
+
+
+level[2].items.push(rumbler(900,300, blankPic, '35', '1'));
+level[2].items.push(lightDimmer(900,300, blankPic, '1', '1'));
+level[4].items.push(lightDimmer(300,300, blankPic, '0', '0.05'));
 })
 /*
 SideScroller Plan
@@ -20962,19 +21805,10 @@ draw:
 	
 	weights
 	
-	board room style table
-	
-	basic chairs, garbage for tables
 
-	rumble feature
-	
-	
 	conveyor belts that work on creatures!
 	
 	looping level system
 	
-	
-	
-	more small converyor objects
-	a few more narrow tanks with bodies inside
+
 	*/
